@@ -168,6 +168,62 @@ export class ProductsRepository extends BaseRepository<Product> {
   async deleteProjectIntegration(integrationId: string): Promise<void> {
     await this.client.delete(`/project-integrations/${integrationId}`);
   }
+
+  // Management Notes
+  async getManagementNotes(productId: string): Promise<unknown[]> {
+    const response = await this.client.get(
+      `${this.basePath}/${productId}/management-notes`,
+    );
+    return response.data;
+  }
+
+  async createManagementNote(data: {
+    product_id: string;
+    author_id: string;
+    content: string;
+  }): Promise<unknown> {
+    const response = await this.client.post(
+      `${this.basePath}/${data.product_id}/management-notes`,
+      data,
+    );
+    return response.data;
+  }
+
+  async deleteManagementNote(noteId: string): Promise<void> {
+    await this.client.delete(`/products/management-notes/${noteId}`);
+  }
+
+  async toggleManagementNotePin(noteId: string): Promise<unknown> {
+    const response = await this.client.patch(
+      `/products/management-notes/${noteId}/pin`,
+    );
+    return response.data;
+  }
+
+  // Partner Notes
+  async getPartnerNotes(productId: string): Promise<unknown[]> {
+    const response = await this.client.get(
+      `${this.basePath}/${productId}/partner-notes`,
+    );
+    return response.data;
+  }
+
+  async createPartnerNote(data: {
+    product_id: string;
+    author_id: string;
+    partner_name: string;
+    content: string;
+  }): Promise<unknown> {
+    const response = await this.client.post(
+      `${this.basePath}/${data.product_id}/partner-notes`,
+      data,
+    );
+    return response.data;
+  }
+
+  async deletePartnerNote(noteId: string): Promise<void> {
+    await this.client.delete(`/products/partner-notes/${noteId}`);
+  }
 }
 
 export const productsRepository = new ProductsRepository();

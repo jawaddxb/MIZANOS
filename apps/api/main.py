@@ -13,6 +13,7 @@ from apps.api.routers import (
     auth,
     products,
     tasks,
+    task_templates,
     qa,
     documents,
     notifications,
@@ -69,6 +70,7 @@ app.include_router(vault.router, prefix="/vault", tags=["vault"])
 app.include_router(team.router, prefix="/team", tags=["team"])
 app.include_router(settings_router.router, prefix="/settings", tags=["settings"])
 app.include_router(specifications.router, prefix="/specifications", tags=["specifications"])
+app.include_router(task_templates.router, prefix="/task-templates", tags=["task-templates"])
 app.include_router(scrape.router, prefix="/scrape", tags=["scrape"])
 
 

@@ -5,7 +5,13 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 
 from apps.api.dependencies import CurrentUser, DbSession
-from apps.api.schemas.knowledge import KnowledgeCreate, KnowledgeResponse, KnowledgeUpdate
+from apps.api.schemas.knowledge import (
+    FileUploadCreate,
+    KnowledgeCreate,
+    KnowledgeResponse,
+    KnowledgeUpdate,
+    TranscribeCreate,
+)
 from apps.api.services.knowledge_service import KnowledgeService
 
 router = APIRouter()
@@ -43,3 +49,15 @@ async def update_entry(entry_id: UUID, body: KnowledgeUpdate, user: CurrentUser 
 @router.delete("/{entry_id}", status_code=204)
 async def delete_entry(entry_id: UUID, user: CurrentUser = None, service: KnowledgeService = Depends(get_service)):
     await service.delete(entry_id)
+
+
+@router.post("/upload-file", response_model=KnowledgeResponse, status_code=201)
+async def upload_file(body: FileUploadCreate, user: CurrentUser = None, service: KnowledgeService = Depends(get_service)):
+    """Create a knowledge entry from file upload metadata (placeholder)."""
+    return await service.upload_file(body)
+
+
+@router.post("/transcribe-audio", response_model=KnowledgeResponse, status_code=201)
+async def transcribe_audio(body: TranscribeCreate, user: CurrentUser = None, service: KnowledgeService = Depends(get_service)):
+    """Create a knowledge entry for audio transcription (placeholder)."""
+    return await service.transcribe_audio(body)

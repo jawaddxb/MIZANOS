@@ -23,3 +23,14 @@ class RunAuditRequest(BaseSchema):
     """Request to run a new audit."""
 
     product_id: UUID
+
+
+class CompareResponse(BaseSchema):
+    """Audit comparison response."""
+
+    product_id: UUID
+    current: AuditResponse | None = None
+    previous: AuditResponse | None = None
+    score_diff: float = 0
+    categories_diff: dict = {}
+    has_comparison: bool = False

@@ -57,3 +57,43 @@ class ProductListResponse(PaginatedResponse):
     """Paginated product list."""
 
     data: list[ProductResponse]
+
+
+class ManagementNoteCreate(BaseSchema):
+    """Management note creation."""
+
+    content: str
+    author_id: UUID
+    is_pinned: bool = False
+
+
+class ManagementNoteResponse(BaseSchema):
+    """Management note response."""
+
+    id: UUID
+    product_id: UUID
+    author_id: UUID
+    content: str
+    is_pinned: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class PartnerNoteCreate(BaseSchema):
+    """Partner note creation."""
+
+    partner_name: str
+    content: str
+    author_id: UUID
+
+
+class PartnerNoteResponse(BaseSchema):
+    """Partner note response."""
+
+    id: UUID
+    product_id: UUID
+    author_id: UUID
+    partner_name: str
+    content: str
+    created_at: datetime
+    updated_at: datetime

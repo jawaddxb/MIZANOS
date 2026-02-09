@@ -5,7 +5,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.api.models.settings import TeamHoliday
+from apps.api.models.settings import NationalHoliday, TeamHoliday
 from apps.api.models.user import Profile
 from apps.api.schemas.team import HolidayCreate
 from packages.common.utils.error_handlers import not_found
@@ -54,3 +54,27 @@ class TeamService:
         if not holiday:
             raise not_found("Holiday")
         await self.session.delete(holiday)
+
+    async def get_national_holidays(self) -> list[NationalHoliday]:
+        stmt = select(NationalHoliday).order_by(NationalHoliday.date)
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_availability(self, profile_id: UUID) -> dict:
+        """Get combined availability for a profile."""
+        profile = await self.session.get(Profile, profile_id)
+        if not profile:
+            raise not_found("Profile")
+        personal_stmt = (
+            select(TeamHoliday)
+            .where(TeamHoliday.profile_id == profile_id)
+            .order_by(TeamHoliday.start_date)
+        )
+        personal_result = await self.session.execute(personal_stmt)
+        personal_holidays = list(personal_result.scalars().all())
+        national_holidays = await self.get_national_holidays()
+        return {
+            "profile_id": profile_id,
+            "personal_holidays": personal_holidays,
+            "national_holidays": national_holidays,
+        }

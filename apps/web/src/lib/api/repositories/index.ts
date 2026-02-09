@@ -16,3 +16,4 @@ export { TeamRepository, teamRepository } from "./team.repository";
 export { SettingsRepository, settingsRepository } from "./settings.repository";
 export { SpecificationsRepository, specificationsRepository } from "./specifications.repository";
 export { ScrapeRepository, scrapeRepository } from "./scrape.repository";
+export { TaskTemplatesRepository, taskTemplatesRepository } from "./task-templates.repository";

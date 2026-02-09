@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.models.knowledge import KnowledgeEntry
-from apps.api.schemas.knowledge import KnowledgeCreate
+from apps.api.schemas.knowledge import FileUploadCreate, KnowledgeCreate, TranscribeCreate
 from apps.api.services.base_service import BaseService
 
 
@@ -28,4 +28,33 @@ class KnowledgeService(BaseService[KnowledgeEntry]):
 
     async def create_entry(self, data: KnowledgeCreate) -> KnowledgeEntry:
         entry = KnowledgeEntry(**data.model_dump())
+        return await self.repo.create(entry)
+
+    async def upload_file(self, data: FileUploadCreate) -> KnowledgeEntry:
+        """Create a knowledge entry from file upload metadata."""
+        entry = KnowledgeEntry(
+            created_by=data.created_by,
+            title=data.title,
+            category=data.category,
+            entry_type="file",
+            file_name=data.file_name,
+            file_type=data.file_type,
+            file_size=data.file_size,
+            file_path=data.file_path,
+            content=f"File uploaded: {data.file_name}",
+        )
+        return await self.repo.create(entry)
+
+    async def transcribe_audio(self, data: TranscribeCreate) -> KnowledgeEntry:
+        """Create a knowledge entry for audio transcription (placeholder)."""
+        entry = KnowledgeEntry(
+            created_by=data.created_by,
+            title=data.title,
+            category=data.category,
+            entry_type="audio",
+            file_name=data.file_name,
+            file_type=data.file_type,
+            file_size=data.file_size,
+            content="Audio transcription pending. AI integration coming soon.",
+        )
         return await self.repo.create(entry)

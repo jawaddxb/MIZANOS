@@ -57,3 +57,22 @@ class HolidayResponse(BaseSchema):
     end_date: date
     reason: str | None = None
     created_at: datetime
+
+
+class NationalHolidayResponse(BaseSchema):
+    """National holiday response."""
+
+    id: UUID
+    name: str
+    date: date
+    location: str
+    recurring: bool | None = None
+    created_at: datetime
+
+
+class AvailabilityResponse(BaseSchema):
+    """Combined availability response."""
+
+    profile_id: UUID
+    personal_holidays: list[HolidayResponse] = []
+    national_holidays: list[NationalHolidayResponse] = []

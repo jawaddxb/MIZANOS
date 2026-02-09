@@ -75,3 +75,42 @@ class ChecklistItemResponse(ChecklistItemBase):
     id: UUID
     product_id: UUID
     created_at: datetime
+
+
+class CredentialCreate(BaseSchema):
+    """Marketing credential creation."""
+
+    product_id: UUID
+    created_by: UUID
+    label: str
+    credential_type: str
+    username: str | None = None
+    email: str | None = None
+    password: str | None = None
+    additional_info: str | None = None
+    domain_id: UUID | None = None
+    social_handle_id: UUID | None = None
+
+
+class CredentialResponse(BaseSchema):
+    """Marketing credential response."""
+
+    id: UUID
+    product_id: UUID
+    created_by: UUID
+    label: str
+    credential_type: str
+    username: str | None = None
+    email: str | None = None
+    additional_info: str | None = None
+    domain_id: UUID | None = None
+    social_handle_id: UUID | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class CredentialDecryptResponse(BaseSchema):
+    """Decrypted credential password."""
+
+    id: UUID
+    password: str | None = None

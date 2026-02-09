@@ -5,7 +5,14 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from apps.api.dependencies import CurrentUser, DbSession
-from apps.api.schemas.team import HolidayCreate, HolidayResponse, ProfileResponse, ProfileUpdate
+from apps.api.schemas.team import (
+    AvailabilityResponse,
+    HolidayCreate,
+    HolidayResponse,
+    NationalHolidayResponse,
+    ProfileResponse,
+    ProfileUpdate,
+)
 from apps.api.services.team_service import TeamService
 
 router = APIRouter()
@@ -43,3 +50,13 @@ async def create_holiday(body: HolidayCreate, user: CurrentUser = None, service:
 @router.delete("/holidays/{holiday_id}", status_code=204)
 async def delete_holiday(holiday_id: UUID, user: CurrentUser = None, service: TeamService = Depends(get_service)):
     await service.delete_holiday(holiday_id)
+
+
+@router.get("/holidays/national", response_model=list[NationalHolidayResponse])
+async def list_national_holidays(user: CurrentUser = None, service: TeamService = Depends(get_service)):
+    return await service.get_national_holidays()
+
+
+@router.get("/availability/{profile_id}", response_model=AvailabilityResponse)
+async def get_availability(profile_id: UUID, user: CurrentUser = None, service: TeamService = Depends(get_service)):
+    return await service.get_availability(profile_id)

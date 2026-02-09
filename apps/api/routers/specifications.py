@@ -6,6 +6,9 @@ from fastapi import APIRouter, Depends
 
 from apps.api.dependencies import CurrentUser, DbSession
 from apps.api.schemas.specifications import (
+    ImportFeatureRequest,
+    LibraryFeatureResponse,
+    MarkReusableRequest,
     SpecFeatureCreate,
     SpecFeatureResponse,
     SpecificationCreate,
@@ -49,6 +52,83 @@ async def list_features(spec_id: UUID, user: CurrentUser = None, service: Specif
 @router.post("/features", response_model=SpecFeatureResponse, status_code=201)
 async def create_feature(body: SpecFeatureCreate, user: CurrentUser = None, service: SpecificationService = Depends(get_service)):
     return await service.create_feature(body)
+
+
+@router.get("/features/library", response_model=list[LibraryFeatureResponse])
+async def list_library_features(
+    user: CurrentUser = None,
+    service: SpecificationService = Depends(get_service),
+):
+    """Get all reusable features in the library."""
+    return await service.get_library_features()
+
+
+@router.post(
+    "/features/{feature_id}/mark-reusable",
+    response_model=SpecFeatureResponse,
+)
+async def mark_reusable(
+    feature_id: UUID,
+    body: MarkReusableRequest,
+    user: CurrentUser = None,
+    service: SpecificationService = Depends(get_service),
+):
+    """Mark a feature as reusable with a category."""
+    return await service.mark_feature_reusable(
+        feature_id, body.reusable_category
+    )
+
+
+@router.post(
+    "/features/{feature_id}/import",
+    response_model=SpecFeatureResponse,
+    status_code=201,
+)
+async def import_feature(
+    feature_id: UUID,
+    body: ImportFeatureRequest,
+    user: CurrentUser = None,
+    service: SpecificationService = Depends(get_service),
+):
+    """Import a reusable feature to a target product."""
+    return await service.import_feature(feature_id, body)
+
+
+@router.get("/features/{feature_id}/import-count")
+async def get_import_count(
+    feature_id: UUID,
+    user: CurrentUser = None,
+    service: SpecificationService = Depends(get_service),
+):
+    """Get how many times a feature has been imported."""
+    count = await service.get_import_count(feature_id)
+    return {"feature_id": str(feature_id), "import_count": count}
+
+
+@router.post(
+    "/features/{feature_id}/queue",
+    response_model=SpecFeatureResponse,
+)
+async def queue_feature(
+    feature_id: UUID,
+    user: CurrentUser = None,
+    service: SpecificationService = Depends(get_service),
+):
+    """Create a task from feature data and link it."""
+    return await service.queue_feature(feature_id)
+
+
+@router.post(
+    "/features/{feature_id}/unqueue",
+    response_model=SpecFeatureResponse,
+)
+async def unqueue_feature(
+    feature_id: UUID,
+    user: CurrentUser = None,
+    service: SpecificationService = Depends(get_service),
+):
+    """Remove task link from feature."""
+    return await service.unqueue_feature(feature_id)
 
 
 @router.post("/generate")

@@ -1,5 +1,6 @@
 """Marketing service."""
 
+import base64
 from uuid import UUID
 
 from sqlalchemy import select
@@ -7,9 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.models.marketing import (
     MarketingChecklistItem,
+    MarketingCredential,
     MarketingDomain,
     MarketingSocialHandle,
 )
+from apps.api.schemas.marketing import CredentialCreate
 from packages.common.utils.error_handlers import not_found
 
 
@@ -67,3 +70,44 @@ class MarketingService:
         await self.session.flush()
         await self.session.refresh(item)
         return item
+
+    async def create_credential(self, data: CredentialCreate) -> MarketingCredential:
+        password_encrypted = None
+        if data.password:
+            password_encrypted = base64.b64encode(
+                data.password.encode()
+            ).decode()
+        credential = MarketingCredential(
+            product_id=data.product_id,
+            created_by=data.created_by,
+            label=data.label,
+            credential_type=data.credential_type,
+            username=data.username,
+            email=data.email,
+            password_encrypted=password_encrypted,
+            additional_info=data.additional_info,
+            domain_id=data.domain_id,
+            social_handle_id=data.social_handle_id,
+        )
+        self.session.add(credential)
+        await self.session.flush()
+        await self.session.refresh(credential)
+        return credential
+
+    async def get_credentials(self, product_id: UUID) -> list[MarketingCredential]:
+        stmt = select(MarketingCredential).where(
+            MarketingCredential.product_id == product_id
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def decrypt_credential(self, credential_id: UUID) -> dict:
+        credential = await self.session.get(MarketingCredential, credential_id)
+        if not credential:
+            raise not_found("Credential")
+        password = None
+        if credential.password_encrypted:
+            password = base64.b64decode(
+                credential.password_encrypted.encode()
+            ).decode()
+        return {"id": credential.id, "password": password}

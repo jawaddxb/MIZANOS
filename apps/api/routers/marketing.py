@@ -8,6 +8,9 @@ from apps.api.dependencies import CurrentUser, DbSession
 from apps.api.schemas.marketing import (
     ChecklistItemCreate,
     ChecklistItemResponse,
+    CredentialCreate,
+    CredentialDecryptResponse,
+    CredentialResponse,
     DomainCreate,
     DomainResponse,
     SocialHandleCreate,
@@ -55,3 +58,18 @@ async def create_checklist_item(body: ChecklistItemCreate, user: CurrentUser = N
 @router.patch("/checklist/{item_id}", response_model=ChecklistItemResponse)
 async def toggle_checklist_item(item_id: UUID, user: CurrentUser = None, service: MarketingService = Depends(get_service)):
     return await service.toggle_checklist_item(item_id)
+
+
+@router.post("/credentials", response_model=CredentialResponse, status_code=201)
+async def create_credential(body: CredentialCreate, user: CurrentUser = None, service: MarketingService = Depends(get_service)):
+    return await service.create_credential(body)
+
+
+@router.get("/credentials", response_model=list[CredentialResponse])
+async def list_credentials(product_id: UUID, user: CurrentUser = None, service: MarketingService = Depends(get_service)):
+    return await service.get_credentials(product_id)
+
+
+@router.get("/credentials/{credential_id}/decrypt", response_model=CredentialDecryptResponse)
+async def decrypt_credential(credential_id: UUID, user: CurrentUser = None, service: MarketingService = Depends(get_service)):
+    return await service.decrypt_credential(credential_id)

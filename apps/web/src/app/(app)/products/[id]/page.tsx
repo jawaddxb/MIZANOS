@@ -12,6 +12,8 @@ import { DocumentsList } from "@/components/organisms/product/DocumentsList";
 import { DocumentUpload } from "@/components/organisms/product/DocumentUpload";
 import { AuditHistoryList } from "@/components/organisms/product/AuditHistoryList";
 import { DeploymentChecklist } from "@/components/organisms/product/DeploymentChecklist";
+import { GoLiveChecklist } from "@/components/organisms/product/GoLiveChecklist";
+import { ProjectIntegrations } from "@/components/organisms/product/ProjectIntegrations";
 import { CommitHistory } from "@/components/organisms/product/CommitHistory";
 import { QATab } from "@/components/organisms/product/QATab";
 import { EnvironmentsTab } from "@/components/organisms/product/EnvironmentsTab";
@@ -83,7 +85,13 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         tasksContent={<TasksTab productId={id} />}
         documentsContent={documentsContent}
         auditContent={<AuditHistoryList productId={id} />}
-        deploymentContent={<DeploymentChecklist productId={id} />}
+        deploymentContent={
+          <div className="space-y-6">
+            <DeploymentChecklist productId={id} />
+            <GoLiveChecklist productId={id} />
+            <ProjectIntegrations productId={id} />
+          </div>
+        }
         commitContent={<CommitHistory productId={id} repositoryUrl={product.product?.repository_url} />}
         qaContent={<QATab productId={id} />}
         environmentsContent={<EnvironmentsTab productId={id} />}

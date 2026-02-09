@@ -52,6 +52,31 @@ class FolderResponse(BaseSchema):
     created_at: datetime
 
 
+class VersionCreate(BaseSchema):
+    """Document version creation."""
+
+    file_path: str
+    file_type: str
+    file_size: int
+    change_notes: str | None = None
+    uploaded_by: UUID
+
+
+class VersionResponse(BaseSchema):
+    """Document version response."""
+
+    id: UUID
+    document_id: UUID
+    uploaded_by: UUID
+    file_path: str
+    file_type: str
+    file_size: int
+    version_number: int
+    is_current: bool
+    change_notes: str | None = None
+    created_at: datetime
+
+
 class AccessLinkCreate(BaseSchema):
     """Document access link creation."""
 

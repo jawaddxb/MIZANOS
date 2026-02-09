@@ -2,114 +2,25 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/display/Card";
 import { Badge } from "@/components/atoms/display/Badge";
-import { Progress } from "@/components/atoms/feedback/Progress";
 import { Skeleton } from "@/components/atoms/display/Skeleton";
-import { HealthScore } from "@/components/molecules/indicators/HealthScore";
 import { PillarBadge } from "@/components/molecules/indicators/PillarBadge";
+import { StatsGrid } from "@/components/molecules/indicators/StatsGrid";
 import { useProductDetail } from "@/hooks/queries/useProductDetail";
 import { useTasks } from "@/hooks/queries/useTasks";
 import { useLatestSpecification } from "@/hooks/queries/useSpecifications";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
 import type { ProductMember } from "@/lib/types";
-import {
-  CheckCircle2,
-  Clock,
-  AlertTriangle,
-  TrendingUp,
-  FileText,
-  Users,
-} from "lucide-react";
+import { StakeholdersList } from "./StakeholdersList";
+import { ManagementNotes } from "./ManagementNotes";
+import { PartnerNotes } from "./PartnerNotes";
+import { Clock, FileText, Users } from "lucide-react";
 
 interface ProductOverviewProps {
   productId: string;
 }
 
 const STAGES = ["Intake", "Development", "QA", "Security", "Deployment"] as const;
-
-function StatsGrid({
-  healthScore,
-  progress,
-  tasksCompleted,
-  totalTasks,
-  blockers,
-}: {
-  healthScore: number;
-  progress: number;
-  tasksCompleted: number;
-  totalTasks: number;
-  blockers: number;
-}) {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Health Score
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <HealthScore score={healthScore} size="lg" />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Progress
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary" />
-            <span className="text-2xl font-semibold tabular-nums">
-              {progress}%
-            </span>
-          </div>
-          <Progress value={progress} className="h-1.5 mt-2" />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Tasks
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-            <span className="text-2xl font-semibold tabular-nums">
-              {tasksCompleted}/{totalTasks}
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            {totalTasks - tasksCompleted} remaining
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card className={blockers > 0 ? "border-destructive/30" : ""}>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Blockers
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-2">
-            {blockers > 0 ? (
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-            ) : (
-              <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-            )}
-            <span className="text-2xl font-semibold tabular-nums">{blockers}</span>
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            {blockers > 0 ? "Action required" : "No blockers"}
-          </p>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
 
 function StageProgress({ currentStage }: { currentStage: string }) {
   return (
@@ -188,6 +99,9 @@ function TeamCard({ members }: { members: ProductMember[] }) {
 }
 
 function ProductOverview({ productId }: ProductOverviewProps) {
+  const { user } = useAuth();
+  const { canViewManagementNotes, canViewPartnerNotes, canManageStakeholders } =
+    useRoleVisibility();
   const { data, isLoading } = useProductDetail(productId);
   const { data: tasks } = useTasks(productId);
   const { data: specification } = useLatestSpecification(productId);
@@ -284,6 +198,25 @@ function ProductOverview({ productId }: ProductOverviewProps) {
       </div>
 
       <TeamCard members={members} />
+
+      {canManageStakeholders && <StakeholdersList productId={productId} />}
+
+      {(canViewManagementNotes || canViewPartnerNotes) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {canViewManagementNotes && (
+            <ManagementNotes
+              productId={productId}
+              authorId={user?.id ?? ""}
+            />
+          )}
+          {canViewPartnerNotes && (
+            <PartnerNotes
+              productId={productId}
+              authorId={user?.id ?? ""}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

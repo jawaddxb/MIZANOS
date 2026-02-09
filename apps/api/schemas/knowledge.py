@@ -37,3 +37,26 @@ class KnowledgeResponse(KnowledgeBase):
     created_by: UUID
     created_at: datetime
     updated_at: datetime
+
+
+class FileUploadCreate(BaseSchema):
+    """Knowledge file upload creation."""
+
+    created_by: UUID
+    title: str
+    category: str = "document"
+    file_name: str
+    file_type: str
+    file_size: int
+    file_path: str | None = None
+
+
+class TranscribeCreate(BaseSchema):
+    """Knowledge audio transcription creation."""
+
+    created_by: UUID
+    title: str
+    category: str = "audio"
+    file_name: str
+    file_type: str = "audio/webm"
+    file_size: int = 0

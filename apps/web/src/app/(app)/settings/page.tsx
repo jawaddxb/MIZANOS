@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Settings } from "lucide-react";
 import { Skeleton } from "@/components/atoms/display/Skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/queries/useProfiles";
+import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
 import {
   useStandardsRepositories,
   useCreateStandardsRepository,
@@ -21,19 +22,23 @@ const IntegrationsTab = dynamic(() => import("@/components/organisms/settings/In
 const NotificationsTab = dynamic(() => import("@/components/organisms/settings/NotificationsTab").then((m) => ({ default: m.NotificationsTab })), { loading: () => <TabSkeleton /> });
 const StandardsTab = dynamic(() => import("@/components/organisms/settings/StandardsTab").then((m) => ({ default: m.StandardsTab })), { loading: () => <TabSkeleton /> });
 const HolidaysTab = dynamic(() => import("@/components/organisms/settings/HolidaysTab").then((m) => ({ default: m.HolidaysTab })), { loading: () => <TabSkeleton /> });
+const ComponentLibraryTab = dynamic(() => import("@/components/organisms/settings/ComponentLibraryTab").then((m) => ({ default: m.ComponentLibraryTab })), { loading: () => <TabSkeleton /> });
+const WorkflowRulesTab = dynamic(() => import("@/components/organisms/settings/WorkflowRulesTab").then((m) => ({ default: m.WorkflowRulesTab })), { loading: () => <TabSkeleton /> });
 
-const TABS = [
-  { id: "profile", label: "Profile" },
-  { id: "users", label: "Users" },
-  { id: "permissions", label: "Permissions" },
-  { id: "modules", label: "Modules" },
-  { id: "integrations", label: "Integrations" },
-  { id: "notifications", label: "Notifications" },
-  { id: "standards", label: "Standards" },
-  { id: "holidays", label: "Holidays" },
+const ALL_TABS = [
+  { id: "profile", label: "Profile", adminOnly: false },
+  { id: "standards", label: "Standards", adminOnly: false },
+  { id: "modules", label: "Modules", adminOnly: false },
+  { id: "integrations", label: "Integrations", adminOnly: false },
+  { id: "notifications", label: "Notifications", adminOnly: false },
+  { id: "holidays", label: "Holidays", adminOnly: false },
+  { id: "library", label: "Library", adminOnly: false },
+  { id: "users", label: "Users", adminOnly: true },
+  { id: "authority-matrix", label: "Authority Matrix", adminOnly: true },
+  { id: "workflow", label: "Workflow", adminOnly: true },
 ] as const;
 
-type TabId = (typeof TABS)[number]["id"];
+type TabId = (typeof ALL_TABS)[number]["id"];
 
 function TabSkeleton() {
   return <div className="space-y-4"><Skeleton className="h-10 w-full" /><Skeleton className="h-32 w-full" /><Skeleton className="h-10 w-full" /></div>;
@@ -42,28 +47,41 @@ function TabSkeleton() {
 const TAB_COMPONENTS: Partial<Record<TabId, React.ComponentType>> = {
   profile: ProfileTab,
   users: UserManagementTab,
-  permissions: PermissionMatrixTab,
+  "authority-matrix": PermissionMatrixTab,
   modules: ModulesTab,
   integrations: IntegrationsTab,
   notifications: NotificationsTab,
+  library: ComponentLibraryTab,
+  workflow: WorkflowRulesTab,
 };
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabId>("profile");
+  const { isAdmin } = useRoleVisibility();
+
+  const visibleTabs = useMemo(
+    () => ALL_TABS.filter((tab) => !tab.adminOnly || isAdmin),
+    [isAdmin],
+  );
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
         <Settings className="h-6 w-6" />
-        <h1 className="text-2xl font-semibold">Settings</h1>
+        <div>
+          <h1 className="text-2xl font-semibold">Settings</h1>
+          <p className="text-sm text-muted-foreground">
+            Configure system preferences, standards, and integrations
+          </p>
+        </div>
       </div>
 
-      <div className="flex gap-1 border-b">
-        {TABS.map((tab) => (
+      <div className="flex gap-1 border-b overflow-x-auto">
+        {visibleTabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === tab.id
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"

@@ -5,13 +5,20 @@ import logging
 from uuid import UUID
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.config import settings
+from apps.api.models.product import Product
 from apps.api.models.specification import Specification, SpecificationFeature
-from apps.api.schemas.specifications import SpecFeatureCreate, SpecificationCreate
+from apps.api.models.task import Task
+from apps.api.schemas.specifications import (
+    ImportFeatureRequest,
+    SpecFeatureCreate,
+    SpecificationCreate,
+)
 from apps.api.services.base_service import BaseService
+from packages.common.utils.error_handlers import not_found
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +57,140 @@ class SpecificationService(BaseService[Specification]):
         await self.repo.session.flush()
         await self.repo.session.refresh(feature)
         return feature
+
+    async def get_library_features(self) -> list[dict]:
+        """Get all reusable features with product names and import counts."""
+        stmt = (
+            select(
+                SpecificationFeature,
+                Product.name.label("product_name"),
+                func.count(SpecificationFeature.id)
+                .filter(
+                    SpecificationFeature.source_feature_id
+                    == SpecificationFeature.id
+                )
+                .label("import_count"),
+            )
+            .join(Product, SpecificationFeature.product_id == Product.id)
+            .where(SpecificationFeature.is_reusable.is_(True))
+            .group_by(SpecificationFeature.id, Product.name)
+            .order_by(SpecificationFeature.reusable_category)
+        )
+        result = await self.repo.session.execute(stmt)
+        rows = result.all()
+
+        features = []
+        for feature, product_name, _ in rows:
+            # Count imports separately for accuracy
+            count_stmt = select(func.count()).where(
+                SpecificationFeature.source_feature_id == feature.id
+            )
+            count_result = await self.repo.session.execute(count_stmt)
+            import_count = count_result.scalar_one()
+
+            feature_dict = {
+                "id": feature.id,
+                "name": feature.name,
+                "description": feature.description,
+                "priority": feature.priority,
+                "acceptance_criteria": feature.acceptance_criteria,
+                "is_reusable": feature.is_reusable,
+                "reusable_category": feature.reusable_category,
+                "github_path": feature.github_path,
+                "sort_order": feature.sort_order,
+                "specification_id": feature.specification_id,
+                "product_id": feature.product_id,
+                "task_id": feature.task_id,
+                "source_feature_id": feature.source_feature_id,
+                "source_product_id": feature.source_product_id,
+                "created_at": feature.created_at,
+                "product_name": product_name,
+                "import_count": import_count,
+            }
+            features.append(feature_dict)
+        return features
+
+    async def mark_feature_reusable(
+        self, feature_id: UUID, reusable_category: str
+    ) -> SpecificationFeature:
+        """Mark a feature as reusable with a category."""
+        feature = await self._get_feature_or_404(feature_id)
+        feature.is_reusable = True
+        feature.reusable_category = reusable_category
+        await self.repo.session.flush()
+        await self.repo.session.refresh(feature)
+        return feature
+
+    async def import_feature(
+        self, feature_id: UUID, data: ImportFeatureRequest
+    ) -> SpecificationFeature:
+        """Copy a reusable feature to a target product."""
+        source = await self._get_feature_or_404(feature_id)
+        imported = SpecificationFeature(
+            product_id=data.target_product_id,
+            specification_id=data.target_specification_id,
+            name=source.name,
+            description=source.description,
+            status=source.status,
+            priority=source.priority,
+            sort_order=0,
+            acceptance_criteria=source.acceptance_criteria,
+            source_feature_id=source.id,
+            source_product_id=source.product_id,
+        )
+        self.repo.session.add(imported)
+        await self.repo.session.flush()
+        await self.repo.session.refresh(imported)
+        return imported
+
+    async def get_import_count(self, feature_id: UUID) -> int:
+        """Count how many features were imported from this feature."""
+        stmt = select(func.count()).where(
+            SpecificationFeature.source_feature_id == feature_id
+        )
+        result = await self.repo.session.execute(stmt)
+        return result.scalar_one()
+
+    async def queue_feature(self, feature_id: UUID) -> SpecificationFeature:
+        """Create a task from feature data and link it."""
+        feature = await self._get_feature_or_404(feature_id)
+        task = Task(
+            product_id=feature.product_id,
+            title=feature.name,
+            description=feature.description,
+            status="todo",
+            priority=feature.priority,
+            pillar="development",
+        )
+        self.repo.session.add(task)
+        await self.repo.session.flush()
+        await self.repo.session.refresh(task)
+
+        feature.task_id = task.id
+        await self.repo.session.flush()
+        await self.repo.session.refresh(feature)
+        return feature
+
+    async def unqueue_feature(
+        self, feature_id: UUID
+    ) -> SpecificationFeature:
+        """Remove task link from feature."""
+        feature = await self._get_feature_or_404(feature_id)
+        feature.task_id = None
+        await self.repo.session.flush()
+        await self.repo.session.refresh(feature)
+        return feature
+
+    async def _get_feature_or_404(
+        self, feature_id: UUID
+    ) -> SpecificationFeature:
+        """Fetch a feature by ID or raise 404."""
+        result = await self.repo.session.get(
+            SpecificationFeature, feature_id
+        )
+        if result is None:
+            raise not_found("SpecificationFeature")
+        return result
 
     async def generate_specification(self, product_id: UUID) -> dict:
         """Generate specification using AI."""
