@@ -1,0 +1,182 @@
+"use client";
+
+import { type ReactNode, useState } from "react";
+import { cn } from "@/lib/utils/cn";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/components/atoms/layout/Tabs";
+import {
+  LayoutDashboard,
+  FileText,
+  ClipboardCheck,
+  FolderOpen,
+  History,
+  Rocket,
+  GitCommitHorizontal,
+  Shield,
+  Server,
+  Layers,
+  Megaphone,
+  FolderGit2,
+} from "lucide-react";
+
+interface ProductTabConfig {
+  value: string;
+  label: string;
+  icon: ReactNode;
+  content: ReactNode;
+  disabled?: boolean;
+  count?: number;
+}
+
+interface ProductTabsProps {
+  productId: string;
+  overviewContent?: ReactNode;
+  specContent?: ReactNode;
+  tasksContent?: ReactNode;
+  documentsContent?: ReactNode;
+  auditContent?: ReactNode;
+  deploymentContent?: ReactNode;
+  commitContent?: ReactNode;
+  qaContent?: ReactNode;
+  environmentsContent?: ReactNode;
+  featuresContent?: ReactNode;
+  marketingContent?: ReactNode;
+  sourcesContent?: ReactNode;
+  defaultTab?: string;
+  className?: string;
+}
+
+function ProductTabs({
+  productId,
+  overviewContent,
+  specContent,
+  tasksContent,
+  documentsContent,
+  auditContent,
+  deploymentContent,
+  commitContent,
+  qaContent,
+  environmentsContent,
+  featuresContent,
+  marketingContent,
+  sourcesContent,
+  defaultTab = "overview",
+  className,
+}: ProductTabsProps) {
+  const [activeTab, setActiveTab] = useState(defaultTab);
+
+  const tabs: ProductTabConfig[] = [
+    {
+      value: "overview",
+      label: "Overview",
+      icon: <LayoutDashboard className="h-4 w-4" />,
+      content: overviewContent,
+    },
+    {
+      value: "spec",
+      label: "Specification",
+      icon: <FileText className="h-4 w-4" />,
+      content: specContent,
+    },
+    {
+      value: "tasks",
+      label: "Tasks",
+      icon: <ClipboardCheck className="h-4 w-4" />,
+      content: tasksContent,
+    },
+    {
+      value: "documents",
+      label: "Documents",
+      icon: <FolderOpen className="h-4 w-4" />,
+      content: documentsContent,
+    },
+    {
+      value: "audit",
+      label: "Audit History",
+      icon: <History className="h-4 w-4" />,
+      content: auditContent,
+    },
+    {
+      value: "deployment",
+      label: "Deployment",
+      icon: <Rocket className="h-4 w-4" />,
+      content: deploymentContent,
+    },
+    {
+      value: "commits",
+      label: "Commits",
+      icon: <GitCommitHorizontal className="h-4 w-4" />,
+      content: commitContent,
+    },
+    {
+      value: "qa",
+      label: "QA",
+      icon: <Shield className="h-4 w-4" />,
+      content: qaContent,
+    },
+    {
+      value: "environments",
+      label: "Environments",
+      icon: <Server className="h-4 w-4" />,
+      content: environmentsContent,
+    },
+    {
+      value: "features",
+      label: "Features",
+      icon: <Layers className="h-4 w-4" />,
+      content: featuresContent,
+    },
+    {
+      value: "marketing",
+      label: "Marketing",
+      icon: <Megaphone className="h-4 w-4" />,
+      content: marketingContent,
+    },
+    {
+      value: "sources",
+      label: "Sources",
+      icon: <FolderGit2 className="h-4 w-4" />,
+      content: sourcesContent,
+    },
+  ];
+
+  return (
+    <Tabs
+      value={activeTab}
+      onValueChange={setActiveTab}
+      className={cn("w-full", className)}
+    >
+      <TabsList className="w-full justify-start overflow-x-auto">
+        {tabs.map((tab) => (
+          <TabsTrigger
+            key={tab.value}
+            value={tab.value}
+            disabled={tab.disabled}
+            className="flex items-center gap-2"
+          >
+            {tab.icon}
+            <span className="hidden sm:inline">{tab.label}</span>
+            {tab.count !== undefined && (
+              <span className="text-[10px] tabular-nums bg-secondary px-1.5 py-0.5 rounded-md">
+                {tab.count}
+              </span>
+            )}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+
+      {tabs.map((tab) => (
+        <TabsContent key={tab.value} value={tab.value} className="mt-6">
+          {tab.content}
+        </TabsContent>
+      ))}
+    </Tabs>
+  );
+}
+
+export { ProductTabs };
+export type { ProductTabsProps, ProductTabConfig };

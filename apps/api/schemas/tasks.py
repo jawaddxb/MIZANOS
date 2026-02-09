@@ -1,0 +1,54 @@
+"""Task schemas."""
+
+from datetime import datetime
+from uuid import UUID
+
+from apps.api.schemas.base import BaseSchema, PaginatedResponse
+
+
+class TaskBase(BaseSchema):
+    """Shared task fields."""
+
+    title: str
+    description: str | None = None
+    status: str = "backlog"
+    priority: str = "medium"
+    pillar: str | None = None
+    estimated_hours: float | None = None
+    sort_order: int = 0
+
+
+class TaskCreate(TaskBase):
+    """Task creation schema."""
+
+    product_id: UUID
+    assignee_id: UUID | None = None
+
+
+class TaskUpdate(BaseSchema):
+    """Task update schema."""
+
+    title: str | None = None
+    description: str | None = None
+    status: str | None = None
+    priority: str | None = None
+    pillar: str | None = None
+    assignee_id: UUID | None = None
+    estimated_hours: float | None = None
+    sort_order: int | None = None
+
+
+class TaskResponse(TaskBase):
+    """Task response."""
+
+    id: UUID
+    product_id: UUID
+    assignee_id: UUID | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class TaskListResponse(PaginatedResponse):
+    """Paginated task list."""
+
+    data: list[TaskResponse]

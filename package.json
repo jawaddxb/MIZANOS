@@ -1,0 +1,28 @@
+{
+  "name": "mizan-flow",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:web\" \"npm run dev:api\"",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "dev:api": "uvicorn apps.api.main:app --reload --port 8000",
+    "build": "npm run build --workspace=apps/web",
+    "lint": "npm run lint --workspace=apps/web",
+    "typecheck": "npm run typecheck --workspace=apps/web",
+    "test": "concurrently \"npm run test:web\" \"npm run test:api\"",
+    "test:web": "npm run test --workspace=apps/web",
+    "test:api": "pytest",
+    "db:migrate": "cd infra && alembic upgrade head",
+    "db:makemigration": "cd infra && alembic revision --autogenerate -m",
+    "db:seed": "python3 scripts/seed_admin.py",
+    "docker:up": "docker compose -f infra/docker-compose.yml up -d",
+    "docker:down": "docker compose -f infra/docker-compose.yml down",
+    "setup": "npm install && pip3 install -e \".[dev]\" && npm run docker:up && sleep 5 && npm run db:migrate && npm run db:seed"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

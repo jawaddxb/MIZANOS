@@ -1,0 +1,289 @@
+"use client";
+
+import { useState, useCallback, useMemo } from "react";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverEvent,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCorners,
+  DragOverlay,
+} from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
+import { KanbanColumn } from "./KanbanColumn";
+import { KanbanCard } from "./KanbanCard";
+import { KanbanFilters } from "./KanbanFilters";
+import { AddTaskDialog } from "./AddTaskDialog";
+import { useTasks } from "@/hooks/queries/useTasks";
+import {
+  useCreateTask,
+  useUpdateTask,
+} from "@/hooks/mutations/useTaskMutations";
+import type {
+  KanbanTask,
+  KanbanColumn as KanbanColumnType,
+  Task,
+} from "@/lib/types";
+import type { TaskStatus, PillarType, TaskPriority } from "@/lib/types";
+import { PILLAR_ORDER } from "@/lib/types";
+
+/* ------------------------------------------------------------------ */
+/*  Constants                                                          */
+/* ------------------------------------------------------------------ */
+
+const COLUMN_DEFINITIONS: { id: TaskStatus; title: string }[] = [
+  { id: "backlog", title: "Backlog" },
+  { id: "in_progress", title: "In Progress" },
+  { id: "review", title: "Review" },
+  { id: "done", title: "Done" },
+];
+
+/* ------------------------------------------------------------------ */
+/*  Helpers                                                            */
+/* ------------------------------------------------------------------ */
+
+function toKanbanTask(task: Task): KanbanTask {
+  return {
+    id: task.id,
+    title: task.title,
+    description: task.description ?? undefined,
+    pillar: (task.pillar ?? "development") as PillarType,
+    priority: (task.priority ?? "medium") as TaskPriority,
+    status: (task.status ?? "backlog") as TaskStatus,
+    assignee: undefined,
+    assigneeId: task.assignee_id ?? undefined,
+    dueDate: task.due_date ?? undefined,
+    createdAt: task.created_at,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Props                                                              */
+/* ------------------------------------------------------------------ */
+
+interface KanbanBoardProps {
+  productId: string;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Component                                                          */
+/* ------------------------------------------------------------------ */
+
+export function KanbanBoard({ productId }: KanbanBoardProps) {
+  const { data: rawTasks = [] } = useTasks(productId);
+  const kanbanTasks = useMemo(() => rawTasks.map(toKanbanTask), [rawTasks]);
+
+  const [localTasks, setLocalTasks] = useState<KanbanTask[]>([]);
+  const tasks = localTasks.length > 0 ? localTasks : kanbanTasks;
+
+  const [activeTask, setActiveTask] = useState<KanbanTask | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogStatus, setDialogStatus] = useState<TaskStatus>("backlog");
+
+  /* Filters */
+  const [search, setSearch] = useState("");
+  const [filterPillar, setFilterPillar] = useState<PillarType | "all">("all");
+  const [filterPriority, setFilterPriority] = useState<
+    TaskPriority | "all"
+  >("all");
+  const [filterAssignee, setFilterAssignee] = useState<string>("all");
+
+  const createTask = useCreateTask(productId);
+  const updateTask = useUpdateTask(productId);
+
+  /* Sensors */
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+  );
+
+  /* Sync local from server when server data changes */
+  const prevRef = useMemo(() => kanbanTasks, [kanbanTasks]);
+  if (prevRef !== kanbanTasks && localTasks.length > 0) {
+    setLocalTasks([]);
+  }
+
+  /* Filtered tasks */
+  const filtered = useMemo(() => {
+    return tasks.filter((t) => {
+      if (search && !t.title.toLowerCase().includes(search.toLowerCase())) {
+        return false;
+      }
+      if (filterPillar !== "all" && t.pillar !== filterPillar) return false;
+      if (filterPriority !== "all" && t.priority !== filterPriority)
+        return false;
+      if (filterAssignee !== "all" && t.assigneeId !== filterAssignee)
+        return false;
+      return true;
+    });
+  }, [tasks, search, filterPillar, filterPriority, filterAssignee]);
+
+  /* Build columns */
+  const columns: KanbanColumnType[] = COLUMN_DEFINITIONS.map((col) => ({
+    ...col,
+    tasks: filtered.filter((t) => t.status === col.id),
+  }));
+
+  /* Find task by id */
+  const findTask = useCallback(
+    (id: string) => tasks.find((t) => t.id === id),
+    [tasks],
+  );
+
+  /* DnD handlers */
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      const task = findTask(event.active.id as string);
+      if (task) setActiveTask(task);
+    },
+    [findTask],
+  );
+
+  const handleDragOver = useCallback(
+    (event: DragOverEvent) => {
+      const { active, over } = event;
+      if (!over) return;
+
+      const activeId = active.id as string;
+      const overId = over.id as string;
+
+      const isOverColumn = COLUMN_DEFINITIONS.some((c) => c.id === overId);
+      if (isOverColumn) {
+        setLocalTasks(
+          (tasks.length ? tasks : kanbanTasks).map((t) =>
+            t.id === activeId
+              ? { ...t, status: overId as TaskStatus }
+              : t,
+          ),
+        );
+        return;
+      }
+
+      const overTask = tasks.find((t) => t.id === overId);
+      if (overTask) {
+        setLocalTasks(
+          (tasks.length ? tasks : kanbanTasks).map((t) =>
+            t.id === activeId ? { ...t, status: overTask.status } : t,
+          ),
+        );
+      }
+    },
+    [tasks, kanbanTasks],
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      setActiveTask(null);
+      if (!over) return;
+
+      const activeId = active.id as string;
+      const overId = over.id as string;
+      if (activeId === overId) return;
+
+      const movedTask = findTask(activeId);
+      if (movedTask) {
+        updateTask.mutate({
+          id: activeId,
+          status: movedTask.status,
+          pillar: movedTask.pillar,
+        });
+      }
+
+      /* Reorder within same column */
+      const activeCol = tasks.find((t) => t.id === activeId)?.status;
+      const overTask = tasks.find((t) => t.id === overId);
+      if (overTask && activeCol === overTask.status) {
+        const colTasks = tasks.filter((t) => t.status === activeCol);
+        const oldIdx = colTasks.findIndex((t) => t.id === activeId);
+        const newIdx = colTasks.findIndex((t) => t.id === overId);
+        if (oldIdx !== newIdx) {
+          const reordered = arrayMove(colTasks, oldIdx, newIdx);
+          setLocalTasks([
+            ...tasks.filter((t) => t.status !== activeCol),
+            ...reordered,
+          ]);
+        }
+      }
+    },
+    [findTask, tasks, updateTask],
+  );
+
+  /* Add task */
+  const handleOpenAdd = (columnId: TaskStatus) => {
+    setDialogStatus(columnId);
+    setDialogOpen(true);
+  };
+
+  const handleCreate = (data: {
+    title: string;
+    description?: string;
+    pillar: PillarType;
+    priority: TaskPriority;
+    status: TaskStatus;
+    due_date?: string;
+    assignee_id?: string;
+  }) => {
+    createTask.mutate(
+      {
+        title: data.title,
+        description: data.description ?? null,
+        pillar: data.pillar,
+        priority: data.priority,
+        status: data.status,
+        due_date: data.due_date ?? null,
+        assignee_id: data.assignee_id ?? null,
+      },
+      { onSuccess: () => setDialogOpen(false) },
+    );
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <KanbanFilters
+        search={search}
+        onSearchChange={setSearch}
+        pillar={filterPillar}
+        onPillarChange={setFilterPillar}
+        priority={filterPriority}
+        onPriorityChange={setFilterPriority}
+        assignee={filterAssignee}
+        onAssigneeChange={setFilterAssignee}
+        productId={productId}
+      />
+
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex gap-4 overflow-x-auto pb-4">
+          {columns.map((column) => (
+            <KanbanColumn
+              key={column.id}
+              column={column}
+              onAddTask={handleOpenAdd}
+            />
+          ))}
+        </div>
+
+        <DragOverlay>
+          {activeTask ? <KanbanCard task={activeTask} isOverlay /> : null}
+        </DragOverlay>
+      </DndContext>
+
+      <AddTaskDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSubmit={handleCreate}
+        defaultStatus={dialogStatus}
+        isLoading={createTask.isPending}
+        productId={productId}
+      />
+    </div>
+  );
+}

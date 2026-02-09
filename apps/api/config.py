@@ -1,0 +1,44 @@
+"""Application configuration using Pydantic Settings."""
+
+from pydantic_settings import BaseSettings
+
+
+class Settings(BaseSettings):
+    """Application settings loaded from environment variables."""
+
+    # Database
+    database_url: str = "postgresql+asyncpg://mizan:mizan_dev_password@localhost:5433/mizan_flow"
+
+    # Redis
+    redis_url: str = "redis://localhost:6379"
+
+    # JWT
+    jwt_secret_key: str = "dev-secret-change-in-production"
+    jwt_algorithm: str = "HS256"
+    jwt_access_token_expire_minutes: int = 30
+    jwt_refresh_token_expire_days: int = 7
+
+    # CORS
+    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:3001"]
+
+    # External APIs
+    openai_api_key: str = ""
+    openrouter_api_key: str = ""
+    anthropic_api_key: str = ""
+    github_client_id: str = ""
+    github_client_secret: str = ""
+    firecrawl_api_key: str = ""
+
+    # Storage
+    s3_bucket: str = ""
+    s3_region: str = "us-east-1"
+    s3_access_key: str = ""
+    s3_secret_key: str = ""
+
+    # Encryption
+    credential_encryption_key: str = "dev-encryption-key-change-in-production"
+
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
+
+
+settings = Settings()

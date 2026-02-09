@@ -1,0 +1,221 @@
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Mizan AI Design System - Light Theme with Functional Density */
+
+@layer base {
+  :root {
+    /* Core surfaces */
+    --background: 0 0% 98%;
+    --foreground: 240 6% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 6% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 6% 10%;
+
+    /* Primary - neutral dark for buttons/actions */
+    --primary: 240 6% 10%;
+    --primary-foreground: 0 0% 98%;
+
+    /* Secondary - subtle backgrounds */
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 6% 10%;
+
+    /* Muted - subdued elements */
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;
+
+    /* Accent */
+    --accent: 240 5% 96%;
+    --accent-foreground: 240 6% 10%;
+
+    /* Destructive */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Borders and inputs */
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 240 6% 10%;
+
+    --radius: 0.5rem;
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 4%;
+    --sidebar-foreground: 0 0% 85%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 0 0% 40%;
+
+    /* Pillar Colors - Business (Amber) */
+    --pillar-business: 32 95% 44%;
+    --pillar-business-foreground: 0 0% 100%;
+    --pillar-business-tint: 48 96% 97%;
+
+    /* Pillar Colors - Marketing (Violet) */
+    --pillar-marketing: 263 70% 58%;
+    --pillar-marketing-foreground: 0 0% 100%;
+    --pillar-marketing-tint: 260 100% 98%;
+
+    /* Pillar Colors - Development (Emerald) */
+    --pillar-development: 160 84% 39%;
+    --pillar-development-foreground: 0 0% 100%;
+    --pillar-development-tint: 152 81% 96%;
+
+    /* Pillar Colors - Product (Blue) */
+    --pillar-product: 217 91% 60%;
+    --pillar-product-foreground: 0 0% 100%;
+    --pillar-product-tint: 214 100% 97%;
+
+    /* Status Colors */
+    --status-healthy: 142 71% 45%;
+    --status-warning: 38 92% 50%;
+    --status-critical: 0 84% 60%;
+
+    /* Text hierarchy */
+    --text-primary: 240 6% 10%;
+    --text-secondary: 240 4% 36%;
+    --text-muted: 240 4% 63%;
+  }
+
+  .dark {
+    /* Core surfaces - deep charcoal base */
+    --background: 240 10% 6%;
+    --foreground: 0 0% 95%;
+
+    --card: 240 8% 10%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 240 8% 12%;
+    --popover-foreground: 0 0% 95%;
+
+    /* Primary - bright for contrast */
+    --primary: 0 0% 95%;
+    --primary-foreground: 240 10% 6%;
+
+    /* Secondary - subtle elevation */
+    --secondary: 240 6% 14%;
+    --secondary-foreground: 0 0% 90%;
+
+    /* Muted - subdued elements */
+    --muted: 240 6% 14%;
+    --muted-foreground: 240 5% 55%;
+
+    /* Accent */
+    --accent: 240 6% 18%;
+    --accent-foreground: 0 0% 95%;
+
+    /* Destructive */
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 95%;
+
+    /* Borders and inputs */
+    --border: 240 6% 18%;
+    --input: 240 6% 16%;
+    --ring: 240 5% 65%;
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 4%;
+    --sidebar-foreground: 0 0% 85%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 0 0% 40%;
+
+    /* Pillar Colors - Adjusted for dark mode visibility */
+    --pillar-business: 36 100% 50%;
+    --pillar-business-foreground: 0 0% 0%;
+    --pillar-business-tint: 36 80% 12%;
+
+    --pillar-marketing: 263 80% 65%;
+    --pillar-marketing-foreground: 0 0% 0%;
+    --pillar-marketing-tint: 263 50% 15%;
+
+    --pillar-development: 160 84% 45%;
+    --pillar-development-foreground: 0 0% 0%;
+    --pillar-development-tint: 160 50% 12%;
+
+    --pillar-product: 217 91% 65%;
+    --pillar-product-foreground: 0 0% 0%;
+    --pillar-product-tint: 217 50% 15%;
+
+    /* Status Colors - Adjusted for dark mode */
+    --status-healthy: 142 71% 50%;
+    --status-warning: 38 92% 55%;
+    --status-critical: 0 84% 60%;
+
+    /* Text hierarchy */
+    --text-primary: 0 0% 95%;
+    --text-secondary: 240 4% 70%;
+    --text-muted: 240 4% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  .font-mono-data {
+    font-family: "JetBrains Mono", monospace;
+  }
+}
+
+@layer utilities {
+  .border-l-pillar-business {
+    border-left-color: hsl(var(--pillar-business));
+  }
+  .border-l-pillar-marketing {
+    border-left-color: hsl(var(--pillar-marketing));
+  }
+  .border-l-pillar-development {
+    border-left-color: hsl(var(--pillar-development));
+  }
+  .border-l-pillar-product {
+    border-left-color: hsl(var(--pillar-product));
+  }
+}
+
+@layer components {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.3);
+  }
+}

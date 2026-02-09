@@ -1,0 +1,60 @@
+import type { EnvironmentType, ProjectSourceType } from "./enums";
+
+export interface Product {
+  id: string;
+  name: string;
+  status: string | null;
+  stage: string | null;
+  pillar: string | null;
+  progress: number | null;
+  health_score: number | null;
+  logo_url: string | null;
+  repository_url: string | null;
+  lovable_url: string | null;
+  source_type: ProjectSourceType | null;
+  pm_id: string | null;
+  engineer_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProductMember {
+  id: string;
+  product_id: string;
+  profile_id: string;
+  role: string | null;
+  created_at: string;
+}
+
+export interface ProductEnvironment {
+  id: string;
+  product_id: string;
+  environment_type: EnvironmentType;
+  url: string | null;
+  branch: string | null;
+  status: string;
+  target_domain: string | null;
+  railway_project_url: string | null;
+  railway_toml_present: boolean | null;
+  last_deployment_at: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProductDocument {
+  id: string;
+  product_id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  file_type: string;
+  category: string | null;
+  description: string | null;
+  ai_summary: string | null;
+  summary_generated_at: string | null;
+  folder_id: string | null;
+  uploaded_by: string;
+  created_at: string;
+  updated_at: string;
+}
