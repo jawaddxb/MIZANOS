@@ -1,5 +1,8 @@
 """Settings service."""
 
+import secrets
+import uuid
+from datetime import datetime, timezone
 from uuid import UUID
 
 from sqlalchemy import select
@@ -14,7 +17,7 @@ from apps.api.models.settings import (
     RolePermission,
     StandardsRepository,
 )
-from apps.api.models.user import Profile, UserPermissionOverride
+from apps.api.models.user import Profile, UserPermissionOverride, UserRole
 from packages.common.utils.error_handlers import not_found
 
 
@@ -186,7 +189,33 @@ class SettingsService:
         return list(result.scalars().all())
 
     async def invite_user(self, data) -> dict:
-        return {"temp_password": "temporary_password_placeholder"}
+        from apps.api.services.auth_service import pwd_context
+
+        temp_password = secrets.token_urlsafe(12)
+        hashed = pwd_context.hash(temp_password)
+
+        profile = Profile(
+            user_id=str(uuid.uuid4()),
+            email=data.email,
+            full_name=data.full_name,
+            role=data.role,
+            office_location=getattr(data, "office_location", None),
+            status="pending",
+            invited_at=datetime.now(timezone.utc),
+            must_reset_password=True,
+            password_hash=hashed,
+            skills=getattr(data, "skills", None),
+            max_projects=getattr(data, "max_projects", None),
+        )
+        self.session.add(profile)
+        await self.session.flush()
+        await self.session.refresh(profile)
+
+        user_role = UserRole(user_id=profile.user_id, role=data.role)
+        self.session.add(user_role)
+        await self.session.flush()
+
+        return {"temp_password": temp_password, "user_id": str(profile.id)}
 
     async def update_user_status(self, user_id: UUID, status: str) -> dict:
         profile = await self.session.get(Profile, user_id)
@@ -199,7 +228,35 @@ class SettingsService:
         return {"message": "Status updated"}
 
     async def reset_user_password(self, user_id: UUID) -> dict:
+        from apps.api.services.auth_service import pwd_context
+
         profile = await self.session.get(Profile, user_id)
         if not profile:
             raise not_found("User")
-        return {"temp_password": "temporary_password_placeholder"}
+
+        temp_password = secrets.token_urlsafe(12)
+        profile.password_hash = pwd_context.hash(temp_password)
+        profile.must_reset_password = True
+        await self.session.flush()
+        await self.session.refresh(profile)
+
+        return {"temp_password": temp_password}
+
+    async def assign_role(self, user_id: UUID, role: str) -> UserRole:
+        user_role = UserRole(user_id=str(user_id), role=role)
+        self.session.add(user_role)
+        await self.session.flush()
+        await self.session.refresh(user_role)
+        return user_role
+
+    async def remove_role(self, user_id: UUID, role: str) -> None:
+        stmt = select(UserRole).where(
+            UserRole.user_id == str(user_id),
+            UserRole.role == role,
+        )
+        result = await self.session.execute(stmt)
+        user_role = result.scalar_one_or_none()
+        if not user_role:
+            raise not_found("UserRole")
+        await self.session.delete(user_role)
+        await self.session.flush()

@@ -14,11 +14,13 @@ export function useProductDetail(productId: string) {
   return useQuery({
     queryKey: ["product-detail", productId],
     queryFn: async (): Promise<ProductDetailResult> => {
-      const [product, members, environments] = await Promise.all([
-        productsRepository.getById(productId),
-        productsRepository.getMembers(productId),
-        productsRepository.getEnvironments(productId),
+      const product = await productsRepository.getById(productId);
+
+      const [members, environments] = await Promise.all([
+        productsRepository.getMembers(productId).catch(() => []),
+        productsRepository.getEnvironments(productId).catch(() => []),
       ]);
+
       return { product, members, environments };
     },
     enabled: !!productId,

@@ -12,7 +12,8 @@ export function useAuditHistory(productId: string) {
         sortBy: "run_at",
         sortOrder: "desc",
       });
-      return result.data;
+      // Backend returns a plain array, not paginated
+      return Array.isArray(result) ? result : result.data ?? [];
     },
     enabled: !!productId,
   });

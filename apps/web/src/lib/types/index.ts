@@ -23,7 +23,14 @@ export type {
   ProductDocument,
 } from "./product";
 
-export type { Task, TaskTemplate, KanbanTask, KanbanColumn } from "./task";
+export type {
+  Task,
+  TaskTemplate,
+  TaskTemplateGroup,
+  TaskTemplateGroupDetail,
+  KanbanTask,
+  KanbanColumn,
+} from "./task";
 export { PILLAR_ORDER } from "./task";
 
 export type {
@@ -75,6 +82,27 @@ export { STAKEHOLDER_ROLE_LABELS } from "./stakeholder";
 export type { DeploymentChecklistItem } from "./deployment";
 
 export type {
+  LovableManifest,
+  ManifestSummary,
+  ExtractedTable,
+  ExtractedQuery,
+  ExtractedEdgeFunction,
+  ExtractedRLSPolicy,
+  ExtractedRoute,
+  ExtractedComponent,
+  ExtractedHook,
+  ExtractedAuth,
+  ColumnDef,
+  GenerateTasksResponse,
+} from "./port-generator";
+
+export type {
+  SystemDocument,
+  SystemDocType,
+  GenerateDocsResponse,
+} from "./system-document";
+
+export type {
   GitHubCommit,
   GitHubPullRequest,
   GitHubFork,
@@ -91,3 +119,20 @@ export type {
   ProfileProject,
   TaskCount,
 } from "./permission";
+
+export type {
+  TechStackInfo,
+  FileStats,
+  StructureInfo,
+  PatternFinding,
+  EvaluationDocument,
+  EvaluationResult,
+  BrowseEntry,
+  BrowseResponse,
+} from "./repo-evaluator";
+
+export type {
+  EngineerEvaluation,
+  EvaluationSummary,
+  ProjectCompletion,
+} from "./evaluation";

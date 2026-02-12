@@ -9,7 +9,9 @@ from apps.api.schemas.team import (
     AvailabilityResponse,
     HolidayCreate,
     HolidayResponse,
+    NationalHolidayCreate,
     NationalHolidayResponse,
+    NationalHolidayUpdate,
     ProfileResponse,
     ProfileUpdate,
 )
@@ -37,6 +39,25 @@ async def update_profile(profile_id: UUID, body: ProfileUpdate, user: CurrentUse
     return await service.update_profile(profile_id, body.model_dump(exclude_unset=True))
 
 
+@router.post("/profiles/{profile_id}/assign", response_model=ProfileResponse)
+async def assign_to_project(
+    profile_id: UUID,
+    body: dict,
+    user: CurrentUser = None,
+    service: TeamService = Depends(get_service),
+):
+    return await service.assign_to_project(profile_id, body["product_id"])
+
+
+@router.post("/profiles/task-counts")
+async def get_task_counts(
+    body: dict,
+    user: CurrentUser = None,
+    service: TeamService = Depends(get_service),
+):
+    return await service.get_task_counts(body["profile_ids"])
+
+
 @router.get("/holidays", response_model=list[HolidayResponse])
 async def list_holidays(user: CurrentUser = None, service: TeamService = Depends(get_service)):
     return await service.get_holidays()
@@ -55,6 +76,26 @@ async def delete_holiday(holiday_id: UUID, user: CurrentUser = None, service: Te
 @router.get("/holidays/national", response_model=list[NationalHolidayResponse])
 async def list_national_holidays(user: CurrentUser = None, service: TeamService = Depends(get_service)):
     return await service.get_national_holidays()
+
+
+@router.post("/holidays/national", response_model=NationalHolidayResponse, status_code=201)
+async def create_national_holiday(body: NationalHolidayCreate, user: CurrentUser = None, service: TeamService = Depends(get_service)):
+    return await service.create_national_holiday(body)
+
+
+@router.patch("/holidays/national/{holiday_id}", response_model=NationalHolidayResponse)
+async def update_national_holiday(holiday_id: UUID, body: NationalHolidayUpdate, user: CurrentUser = None, service: TeamService = Depends(get_service)):
+    return await service.update_national_holiday(holiday_id, body)
+
+
+@router.delete("/holidays/national/{holiday_id}", status_code=204)
+async def delete_national_holiday(holiday_id: UUID, user: CurrentUser = None, service: TeamService = Depends(get_service)):
+    await service.delete_national_holiday(holiday_id)
+
+
+@router.get("/users/{user_id}/roles", response_model=list[str])
+async def get_user_roles(user_id: str, user: CurrentUser = None, service: TeamService = Depends(get_service)):
+    return await service.get_user_roles(user_id)
 
 
 @router.get("/availability/{profile_id}", response_model=AvailabilityResponse)

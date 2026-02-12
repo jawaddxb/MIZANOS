@@ -19,7 +19,9 @@ import {
 } from "lucide-react";
 import { useProductDetail } from "@/hooks/queries/useProductDetail";
 import { useSpecificationSources } from "@/hooks/queries/useSpecificationSources";
+import { useRegenerateSpecification } from "@/hooks/mutations/useSpecificationMutations";
 import { formatDistanceToNow } from "date-fns";
+import { AddSourceDialog } from "./AddSourceDialog";
 
 export interface SourcesTabProps {
   productId: string;
@@ -46,8 +48,10 @@ const SOURCE_ICONS: Record<string, React.ReactNode> = {
 };
 
 export function SourcesTab({ productId }: SourcesTabProps) {
+  const [dialogOpen, setDialogOpen] = useState(false);
   const { data, isLoading: productLoading } = useProductDetail(productId);
   const { data: specSources, isLoading: sourcesLoading } = useSpecificationSources(productId);
+  const regenerate = useRegenerateSpecification(productId);
   const product = data?.product;
 
   const sources: SpecSource[] = (specSources ?? []).map((s) => ({
@@ -81,9 +85,24 @@ export function SourcesTab({ productId }: SourcesTabProps) {
             Documents, websites, audio notes, and repositories used during intake
           </p>
         </div>
-        <Button variant="outline" size="sm">
-          <Plus className="h-4 w-4 mr-1" /> Add Source
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => regenerate.mutate()}
+            disabled={regenerate.isPending}
+          >
+            {regenerate.isPending ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-1" />
+            )}
+            Regenerate Spec
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Add Source
+          </Button>
+        </div>
       </div>
 
       {product?.repository_url && (
@@ -127,6 +146,12 @@ export function SourcesTab({ productId }: SourcesTabProps) {
           </CardContent>
         </Card>
       )}
+
+      <AddSourceDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        productId={productId}
+      />
     </div>
   );
 }

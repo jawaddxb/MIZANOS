@@ -20,7 +20,8 @@ export function useKnowledgeEntries(params?: {
         sortBy: "updated_at",
         sortOrder: "desc",
       });
-      return result.data;
+      // Backend returns a plain array, not paginated
+      return Array.isArray(result) ? result : result.data ?? [];
     },
   });
 }

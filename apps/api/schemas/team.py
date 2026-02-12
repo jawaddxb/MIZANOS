@@ -1,6 +1,8 @@
 """Team schemas."""
 
-from datetime import date, datetime
+from datetime import date as Date
+from datetime import datetime
+from typing import Optional
 from uuid import UUID
 
 from pydantic import field_validator
@@ -43,8 +45,8 @@ class HolidayCreate(BaseSchema):
     """Team holiday creation."""
 
     user_id: UUID
-    start_date: date
-    end_date: date
+    start_date: Date
+    end_date: Date
     reason: str | None = None
 
 
@@ -53,8 +55,8 @@ class HolidayResponse(BaseSchema):
 
     id: UUID
     user_id: UUID
-    start_date: date
-    end_date: date
+    start_date: Date
+    end_date: Date
     reason: str | None = None
     created_at: datetime
 
@@ -64,10 +66,28 @@ class NationalHolidayResponse(BaseSchema):
 
     id: UUID
     name: str
-    date: date
+    date: Date
     location: str
     recurring: bool | None = None
     created_at: datetime
+
+
+class NationalHolidayCreate(BaseSchema):
+    """National holiday creation."""
+
+    name: str
+    date: Date
+    location: str
+    recurring: bool | None = None
+
+
+class NationalHolidayUpdate(BaseSchema):
+    """National holiday update."""
+
+    name: str | None = None
+    date: Optional[Date] = None
+    location: str | None = None
+    recurring: bool | None = None
 
 
 class AvailabilityResponse(BaseSchema):

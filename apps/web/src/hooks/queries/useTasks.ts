@@ -12,7 +12,8 @@ export function useTasks(productId: string) {
         sortBy: "created_at",
         sortOrder: "desc",
       });
-      return result.data;
+      // Backend returns a plain array, not paginated
+      return Array.isArray(result) ? result : result.data ?? [];
     },
     enabled: !!productId,
   });
@@ -23,7 +24,8 @@ export function useTasksByAssignee(assigneeId: string) {
     queryKey: ["tasks", "assignee", assigneeId],
     queryFn: async (): Promise<Task[]> => {
       const result = await tasksRepository.getByAssignee(assigneeId);
-      return result.data;
+      // Backend returns a plain array, not paginated
+      return Array.isArray(result) ? result : result.data ?? [];
     },
     enabled: !!assigneeId,
   });

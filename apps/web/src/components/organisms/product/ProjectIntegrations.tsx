@@ -25,6 +25,7 @@ import { BaseTextarea } from "@/components/atoms/inputs/BaseTextarea";
 import { SelectField } from "@/components/molecules/forms/SelectField";
 import { useProjectIntegrations } from "@/hooks/queries/useProjectIntegrations";
 import { useIntegrationMutations } from "@/hooks/mutations/useProjectIntegrationMutations";
+import { EditProjectIntegrationDialog } from "./EditProjectIntegrationDialog";
 import type { ProjectIntegration } from "@/lib/types";
 
 interface ProjectIntegrationsProps {
@@ -52,6 +53,8 @@ function ProjectIntegrations({ productId }: ProjectIntegrationsProps) {
   const { addIntegration, deleteIntegration } =
     useIntegrationMutations(productId);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedIntegration, setSelectedIntegration] = useState<ProjectIntegration | null>(null);
 
   const handleAdd = (data: Partial<ProjectIntegration>) => {
     addIntegration.mutate(
@@ -111,6 +114,7 @@ function ProjectIntegrations({ productId }: ProjectIntegrationsProps) {
                   key={integration.id}
                   integration={integration}
                   onDelete={() => deleteIntegration.mutate(integration.id)}
+                  onEdit={() => { setSelectedIntegration(integration); setEditDialogOpen(true); }}
                 />
               ))}
             </div>
@@ -124,6 +128,13 @@ function ProjectIntegrations({ productId }: ProjectIntegrationsProps) {
         onSubmit={handleAdd}
         isSubmitting={addIntegration.isPending}
       />
+
+      <EditProjectIntegrationDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        integration={selectedIntegration}
+        productId={productId}
+      />
     </>
   );
 }
@@ -131,13 +142,15 @@ function ProjectIntegrations({ productId }: ProjectIntegrationsProps) {
 function IntegrationCard({
   integration,
   onDelete,
+  onEdit,
 }: {
   integration: ProjectIntegration;
   onDelete: () => void;
+  onEdit: () => void;
 }) {
   return (
     <div className="flex items-start justify-between rounded-lg border p-3">
-      <div className="space-y-1">
+      <div className="space-y-1 cursor-pointer" onClick={onEdit}>
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">{integration.name}</span>
           <Badge
@@ -167,9 +180,14 @@ function IntegrationCard({
           </a>
         )}
       </div>
-      <Button variant="ghost" size="sm" onClick={onDelete}>
-        <Trash2 className="h-3.5 w-3.5 text-destructive" />
-      </Button>
+      <div className="flex items-center gap-1">
+        <Button variant="ghost" size="sm" onClick={onEdit}>
+          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+        </Button>
+        <Button variant="ghost" size="sm" onClick={onDelete}>
+          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+        </Button>
+      </div>
     </div>
   );
 }

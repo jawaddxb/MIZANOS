@@ -12,7 +12,8 @@ export function useProfiles() {
         sortBy: "full_name",
         sortOrder: "asc",
       });
-      return result.data;
+      // Backend returns a plain array, not paginated
+      return Array.isArray(result) ? result : result.data ?? [];
     },
   });
 }

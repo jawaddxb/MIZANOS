@@ -2,7 +2,7 @@ import type { CompanyCredential } from "@/lib/types";
 import { BaseRepository, type PaginatedResponse, type QueryParams } from "./base.repository";
 
 export class VaultRepository extends BaseRepository<CompanyCredential> {
-  protected readonly basePath = "/vault/credentials";
+  protected readonly basePath = "/vault";
 
   async getByCategory(category: string, params?: QueryParams): Promise<PaginatedResponse<CompanyCredential>> {
     return this.getAll({ ...params, category });

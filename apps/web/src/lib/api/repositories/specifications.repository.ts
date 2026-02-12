@@ -4,8 +4,15 @@ import { BaseRepository, type PaginatedResponse, type QueryParams } from "./base
 export class SpecificationsRepository extends BaseRepository<Specification> {
   protected readonly basePath = "/specifications";
 
-  async getByProduct(productId: string, params?: QueryParams): Promise<PaginatedResponse<Specification>> {
-    return this.getAll({ ...params, product_id: productId });
+  async getByProduct(productId: string, params?: QueryParams): Promise<Specification[]> {
+    const response = await this.client.get<Specification[]>(this.basePath, {
+      params: { ...params, product_id: productId },
+    });
+    return response.data;
+  }
+
+  async createSpecification(data: { product_id: string; content: Record<string, unknown> }): Promise<Specification> {
+    return this.create(data as Partial<Specification>);
   }
 
   async getFeatures(productId: string): Promise<SpecificationFeature[]> {
@@ -60,6 +67,28 @@ export class SpecificationsRepository extends BaseRepository<Specification> {
 
   async deleteSource(sourceId: string): Promise<void> {
     await this.client.delete(`/specification-sources/${sourceId}`);
+  }
+
+  async regenerateSpec(productId: string): Promise<Record<string, unknown>> {
+    const response = await this.client.post(`/specifications/generate`, null, {
+      params: { product_id: productId },
+      timeout: 120_000,
+    });
+    return response.data;
+  }
+
+  async queueFeature(featureId: string): Promise<SpecificationFeature> {
+    const response = await this.client.post<SpecificationFeature>(
+      `/specifications/features/${featureId}/queue`,
+    );
+    return response.data;
+  }
+
+  async unqueueFeature(featureId: string): Promise<SpecificationFeature> {
+    const response = await this.client.post<SpecificationFeature>(
+      `/specifications/features/${featureId}/unqueue`,
+    );
+    return response.data;
   }
 }
 

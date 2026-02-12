@@ -11,6 +11,8 @@ import {
   BookOpen,
   Shield,
   Settings,
+  FlaskConical,
+  LayoutTemplate,
   type LucideIcon,
 } from "lucide-react";
 
@@ -26,6 +28,8 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/team", icon: Users, label: "Team" },
   { href: "/knowledge", icon: BookOpen, label: "Knowledge Base" },
   { href: "/vault", icon: Shield, label: "Vault" },
+  { href: "/evaluator", icon: FlaskConical, label: "Evaluator" },
+  { href: "/templates", icon: LayoutTemplate, label: "Templates" },
   { href: "/settings", icon: Settings, label: "Settings" },
 ];
 

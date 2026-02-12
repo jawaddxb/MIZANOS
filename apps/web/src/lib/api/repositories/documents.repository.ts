@@ -15,14 +15,15 @@ export class DocumentsRepository extends BaseRepository<ProductDocument> {
 
   async getFolders(productId: string): Promise<DocumentFolder[]> {
     const response = await this.client.get<DocumentFolder[]>(
-      `/products/${productId}/document-folders`,
+      `${this.basePath}/folders`,
+      { params: { product_id: productId } },
     );
     return response.data;
   }
 
   async createFolder(data: { product_id: string; name: string; parent_id?: string }): Promise<DocumentFolder> {
     const response = await this.client.post<DocumentFolder>(
-      `/products/${data.product_id}/document-folders`,
+      `${this.basePath}/folders`,
       data,
     );
     return response.data;
@@ -37,7 +38,8 @@ export class DocumentsRepository extends BaseRepository<ProductDocument> {
 
   async getAccessLinks(productId: string): Promise<DocumentAccessLink[]> {
     const response = await this.client.get<DocumentAccessLink[]>(
-      `/products/${productId}/document-access-links`,
+      `${this.basePath}/access-links`,
+      { params: { product_id: productId } },
     );
     return response.data;
   }
@@ -48,14 +50,14 @@ export class DocumentsRepository extends BaseRepository<ProductDocument> {
     expires_at?: string;
   }): Promise<DocumentAccessLink> {
     const response = await this.client.post<DocumentAccessLink>(
-      `/products/${data.product_id}/document-access-links`,
+      `${this.basePath}/access-links`,
       data,
     );
     return response.data;
   }
 
   async revokeAccessLink(productId: string, linkId: string): Promise<void> {
-    await this.client.delete(`/products/${productId}/document-access-links/${linkId}`);
+    await this.client.delete(`${this.basePath}/access-links/${linkId}`);
   }
 
   async getSharedDocuments(token: string): Promise<{
@@ -72,7 +74,7 @@ export class DocumentsRepository extends BaseRepository<ProductDocument> {
 
   async upload(productId: string, formData: FormData): Promise<ProductDocument> {
     const response = await this.client.post<ProductDocument>(
-      `/products/${productId}/documents/upload`,
+      `${this.basePath}/upload/${productId}`,
       formData,
       { headers: { "Content-Type": "multipart/form-data" } },
     );

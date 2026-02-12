@@ -3,8 +3,10 @@
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from apps.api.config import settings
 from apps.api.middleware.logging import LoggingMiddleware
@@ -14,6 +16,7 @@ from apps.api.routers import (
     products,
     tasks,
     task_templates,
+    task_template_groups,
     qa,
     documents,
     notifications,
@@ -27,7 +30,16 @@ from apps.api.routers import (
     settings as settings_router,
     specifications,
     scrape,
+    transcription,
+    system_documents,
+    port_generator,
+    repo_evaluator,
+    deployment_checklist,
+    stakeholders,
+    integrations,
+    evaluations,
 )
+from apps.api.routers import external_documents, document_folders
 
 
 @asynccontextmanager
@@ -54,6 +66,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.exception_handler(StarletteHTTPException)
+async def cors_http_exception_handler(
+    request: Request, exc: StarletteHTTPException
+) -> JSONResponse:
+    """Ensure CORS headers are present on error responses."""
+    origin = request.headers.get("origin", "")
+    headers: dict[str, str] = {}
+    if origin in settings.cors_origins:
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=headers,
+    )
+
+
 # Register routers
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(products.router, prefix="/products", tags=["products"])
@@ -71,7 +100,18 @@ app.include_router(team.router, prefix="/team", tags=["team"])
 app.include_router(settings_router.router, prefix="/settings", tags=["settings"])
 app.include_router(specifications.router, prefix="/specifications", tags=["specifications"])
 app.include_router(task_templates.router, prefix="/task-templates", tags=["task-templates"])
+app.include_router(task_template_groups.router, prefix="/task-template-groups", tags=["task-template-groups"])
 app.include_router(scrape.router, prefix="/scrape", tags=["scrape"])
+app.include_router(transcription.router, prefix="/transcription", tags=["transcription"])
+app.include_router(system_documents.router, prefix="/system-documents", tags=["system-documents"])
+app.include_router(port_generator.router, prefix="/port-generator", tags=["port-generator"])
+app.include_router(repo_evaluator.router, prefix="/repo-evaluator", tags=["repo-evaluator"])
+app.include_router(deployment_checklist.router, prefix="/products", tags=["deployment-checklist"])
+app.include_router(stakeholders.router, prefix="/products", tags=["stakeholders"])
+app.include_router(integrations.router, prefix="/products", tags=["integrations"])
+app.include_router(external_documents.router, prefix="/products", tags=["external-documents"])
+app.include_router(document_folders.router, prefix="/products", tags=["document-folders"])
+app.include_router(evaluations.router, prefix="/evaluations", tags=["evaluations"])
 
 
 @app.get("/health")

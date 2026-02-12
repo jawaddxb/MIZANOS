@@ -60,7 +60,8 @@ export function useDashboardMetrics() {
         notificationsRepository.getAll(),
       ]);
 
-      const products = productsResult.data;
+      // Backend returns a plain array, not paginated
+      const products = Array.isArray(productsResult) ? productsResult : productsResult.data ?? [];
 
       const stageMap: Record<string, number> = {};
       for (const p of products) {

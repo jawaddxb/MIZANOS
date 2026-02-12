@@ -17,7 +17,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { useQAChecks } from "@/hooks/queries/useQAChecks";
-import { useToggleQACheck, useCreateQACheck } from "@/hooks/mutations/useQAMutations";
+import { useToggleQACheck, useCreateQACheck, useGenerateQAChecklist } from "@/hooks/mutations/useQAMutations";
 import { CreateQACheckDialog } from "@/components/organisms/qa/CreateQACheckDialog";
 import type { QACheck } from "@/lib/types";
 
@@ -37,6 +37,7 @@ export function QATab({ productId }: QATabProps) {
   const createCheck = useCreateQACheck(productId);
   const [filter, setFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const generateChecklist = useGenerateQAChecklist(productId);
 
   const passedCount = items.filter((i: QACheck) => i.status === "passed").length;
   const failedCount = items.filter((i: QACheck) => i.status === "failed").length;
@@ -70,7 +71,20 @@ export function QATab({ productId }: QATabProps) {
             {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
           </Button>
         ))}
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => generateChecklist.mutate()}
+            disabled={generateChecklist.isPending}
+          >
+            {generateChecklist.isPending ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4 mr-1" />
+            )}
+            Generate Checklist
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-1" /> Add Item
           </Button>
@@ -96,8 +110,23 @@ export function QATab({ productId }: QATabProps) {
       })}
 
       {filtered.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground">
-          {items.length === 0 ? "No QA checks yet. Add one to get started." : "No items match the current filter."}
+        <div className="text-center py-8">
+          <p className="text-muted-foreground mb-4">
+            {items.length === 0 ? "No QA checks yet." : "No items match the current filter."}
+          </p>
+          {items.length === 0 && (
+            <Button
+              onClick={() => generateChecklist.mutate()}
+              disabled={generateChecklist.isPending}
+            >
+              {generateChecklist.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4 mr-2" />
+              )}
+              Generate QA Checklist
+            </Button>
+          )}
         </div>
       )}
 

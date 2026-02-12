@@ -9,11 +9,10 @@ export function useSpecifications(productId: string | undefined) {
     queryKey: ["specifications", productId],
     queryFn: async (): Promise<Specification[]> => {
       if (!productId) return [];
-      const result = await specificationsRepository.getByProduct(productId, {
+      return specificationsRepository.getByProduct(productId, {
         sortBy: "version",
         sortOrder: "desc",
       });
-      return result.data;
     },
     enabled: !!productId,
   });

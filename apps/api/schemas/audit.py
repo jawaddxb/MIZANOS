@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from apps.api.schemas.base import BaseSchema
+from apps.api.schemas.base import BaseSchema, PaginatedResponse
 
 
 class AuditResponse(BaseSchema):
@@ -17,6 +17,12 @@ class AuditResponse(BaseSchema):
     created_by: UUID | None = None
     run_at: datetime
     created_at: datetime
+
+
+class AuditListResponse(PaginatedResponse):
+    """Paginated audit list."""
+
+    data: list[AuditResponse]
 
 
 class RunAuditRequest(BaseSchema):

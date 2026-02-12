@@ -53,6 +53,25 @@ class SocialHandleResponse(SocialHandleBase):
     created_at: datetime
 
 
+class DomainUpdate(BaseSchema):
+    """Domain update."""
+
+    domain_name: str | None = None
+    registrar: str | None = None
+    expiry_date: datetime | None = None
+    ssl_status: str | None = None
+    dns_provider: str | None = None
+
+
+class SocialHandleUpdate(BaseSchema):
+    """Social handle update."""
+
+    platform: str | None = None
+    handle: str | None = None
+    url: str | None = None
+    status: str | None = None
+
+
 class ChecklistItemBase(BaseSchema):
     """Marketing checklist item fields."""
 
@@ -114,3 +133,56 @@ class CredentialDecryptResponse(BaseSchema):
 
     id: UUID
     password: str | None = None
+
+
+class ApplyTemplateRequest(BaseSchema):
+    """Request to apply a checklist template to a product."""
+
+    product_id: UUID
+    source_type: str
+
+
+class ApplyTemplateResponse(BaseSchema):
+    """Result of applying a template."""
+
+    items_created: int
+
+
+class TemplateTypeResponse(BaseSchema):
+    """Available template source type with item count."""
+
+    source_type: str
+    item_count: int
+
+
+class AutoPopulateDomain(BaseSchema):
+    """Domain for auto-populate."""
+
+    domain_name: str
+    ssl_status: str | None = None
+    is_secured: bool | None = None
+
+
+class AutoPopulateSocialHandle(BaseSchema):
+    """Social handle for auto-populate."""
+
+    platform: str
+    handle: str
+    url: str | None = None
+
+
+class AutoPopulateRequest(BaseSchema):
+    """Request to auto-populate marketing records from scraped data."""
+
+    product_id: UUID
+    domains: list[AutoPopulateDomain] = []
+    social_handles: list[AutoPopulateSocialHandle] = []
+    logo_url: str | None = None
+
+
+class AutoPopulateResponse(BaseSchema):
+    """Result of auto-populate operation."""
+
+    domains_created: int = 0
+    social_handles_created: int = 0
+    logo_updated: bool = False

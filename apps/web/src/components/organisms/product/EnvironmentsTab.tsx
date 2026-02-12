@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/display/Card";
 import { Badge } from "@/components/atoms/display/Badge";
 import { Button } from "@/components/molecules/buttons/Button";
@@ -16,6 +17,7 @@ import {
 import { useProductDetail } from "@/hooks/queries/useProductDetail";
 import { useProductEnvironments } from "@/hooks/queries/useProductEnvironments";
 import type { ProductEnvironment } from "@/lib/types";
+import { ConfigureEnvironmentDialog } from "./ConfigureEnvironmentDialog";
 
 export interface EnvironmentsTabProps {
   productId: string;
@@ -59,6 +61,7 @@ export function EnvironmentsTab({ productId }: EnvironmentsTabProps) {
             config={env}
             repositoryUrl={product?.repository_url}
             environment={envData}
+            productId={productId}
           />
         );
       })}
@@ -66,59 +69,51 @@ export function EnvironmentsTab({ productId }: EnvironmentsTabProps) {
   );
 }
 
-function EnvironmentCard({ config, repositoryUrl, environment }: {
+function EnvironmentCard({ config, repositoryUrl, environment, productId }: {
   config: EnvironmentInfo;
   repositoryUrl?: string | null;
   environment?: ProductEnvironment;
+  productId: string;
 }) {
+  const [dialogOpen, setDialogOpen] = useState(false);
   const isConfigured = !!environment;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-3 text-base">
-          <div className={cn("p-2 rounded-lg bg-secondary", config.color)}>
-            {config.icon}
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-3 text-base">
+            <div className={cn("p-2 rounded-lg bg-secondary", config.color)}>
+              {config.icon}
+            </div>
+            {config.label}
+            <Badge variant={isConfigured ? "default" : "outline"} className="ml-auto text-xs">
+              {isConfigured ? environment.status ?? "Active" : "Not configured"}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <InfoRow icon={<Globe className="h-4 w-4" />} label="URL" value={environment?.url ?? "Not set"} isLink={!!environment?.url} />
+            <InfoRow icon={<GitBranch className="h-4 w-4" />} label="Branch" value={environment?.branch ?? (config.type === "development" ? "main" : config.type)} />
+            {repositoryUrl && config.type === "development" && (
+              <InfoRow icon={<ExternalLink className="h-4 w-4" />} label="Repository" value={repositoryUrl} isLink />
+            )}
+            <InfoRow icon={<Calendar className="h-4 w-4" />} label="Last deployed" value={environment?.last_deployment_at ? new Date(environment.last_deployment_at).toLocaleDateString() : "Never"} />
           </div>
-          {config.label}
-          <Badge variant={isConfigured ? "default" : "outline"} className="ml-auto text-xs">
-            {isConfigured ? environment.status ?? "Active" : "Not configured"}
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <InfoRow
-            icon={<Globe className="h-4 w-4" />}
-            label="URL"
-            value={environment?.url ?? "Not set"}
-            isLink={!!environment?.url}
-          />
-          <InfoRow
-            icon={<GitBranch className="h-4 w-4" />}
-            label="Branch"
-            value={environment?.branch ?? (config.type === "development" ? "main" : config.type)}
-          />
-          {repositoryUrl && config.type === "development" && (
-            <InfoRow
-              icon={<ExternalLink className="h-4 w-4" />}
-              label="Repository"
-              value={repositoryUrl}
-              isLink
-            />
-          )}
-          <InfoRow
-            icon={<Calendar className="h-4 w-4" />}
-            label="Last deployed"
-            value={environment?.last_deployment_at ? new Date(environment.last_deployment_at).toLocaleDateString() : "Never"}
-          />
-        </div>
-
-        <div className="mt-4 pt-4 border-t flex items-center gap-2">
-          <Button variant="outline" size="sm">Configure</Button>
-        </div>
-      </CardContent>
-    </Card>
+          <div className="mt-4 pt-4 border-t flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setDialogOpen(true)}>Configure</Button>
+          </div>
+        </CardContent>
+      </Card>
+      <ConfigureEnvironmentDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        productId={productId}
+        environmentType={config.type}
+        existing={environment}
+      />
+    </>
   );
 }
 

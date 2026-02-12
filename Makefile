@@ -1,12 +1,16 @@
-.PHONY: dev build test lint typecheck db-migrate db-makemigration db-seed docker-up docker-down install setup
+.PHONY: dev build test lint typecheck db-migrate db-makemigration db-seed docker-up docker-down install setup kill-ports
 
-dev:
+kill-ports:
+	@lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+	@lsof -ti:8000 | xargs kill -9 2>/dev/null || true
+
+dev: kill-ports
 	npm run dev
 
-dev-web:
+dev-web: kill-ports
 	npm run dev:web
 
-dev-api:
+dev-api: kill-ports
 	npm run dev:api
 
 build:

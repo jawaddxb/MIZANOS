@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     github_client_id: str = ""
     github_client_secret: str = ""
+    github_webhook_secret: str = ""
     firecrawl_api_key: str = ""
 
     # Storage

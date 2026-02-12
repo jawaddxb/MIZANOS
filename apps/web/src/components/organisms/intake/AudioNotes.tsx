@@ -3,7 +3,9 @@
 import * as React from "react";
 
 import { Mic, Square, Play, Pause, Trash2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/molecules/buttons/Button";
+import { transcriptionRepository } from "@/lib/api/repositories";
 import type { AudioNote } from "./types";
 
 interface AudioNotesProps {
@@ -27,6 +29,33 @@ export function AudioNotes({ onNotesChange, className }: AudioNotesProps) {
   const audioChunksRef = React.useRef<Blob[]>([]);
   const timerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
   const audioRefs = React.useRef<Map<string, HTMLAudioElement>>(new Map());
+
+  const updateNote = React.useCallback(
+    (noteId: string, patch: Partial<AudioNote>) => {
+      setNotes((prev) => {
+        const updated = prev.map((n) =>
+          n.id === noteId ? { ...n, ...patch } : n,
+        );
+        onNotesChange(updated);
+        return updated;
+      });
+    },
+    [onNotesChange],
+  );
+
+  const transcribeAudio = React.useCallback(
+    async (noteId: string, blob: Blob) => {
+      try {
+        const text = await transcriptionRepository.transcribe(blob, "recording.webm");
+        updateNote(noteId, { transcription: text || "(No speech detected)", isTranscribing: false });
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : "Transcription failed";
+        updateNote(noteId, { transcription: `(${msg})`, isTranscribing: false });
+        toast.error(msg);
+      }
+    },
+    [updateNote],
+  );
 
   const startRecording = React.useCallback(async () => {
     try {
@@ -57,8 +86,7 @@ export function AudioNotes({ onNotesChange, className }: AudioNotesProps) {
         });
 
         stream.getTracks().forEach((track) => track.stop());
-
-        transcribeAudio(noteId);
+        transcribeAudio(noteId, blob);
       };
 
       mediaRecorder.start();
@@ -69,69 +97,9 @@ export function AudioNotes({ onNotesChange, className }: AudioNotesProps) {
       }, 1000);
     } catch (error) {
       console.error("Error accessing microphone:", error);
+      toast.error("Could not access microphone");
     }
-  }, [onNotesChange]);
-
-  const updateNoteTranscription = React.useCallback(
-    (noteId: string, transcription: string) => {
-      setNotes((prev) => {
-        const updated = prev.map((n) =>
-          n.id === noteId ? { ...n, transcription, isTranscribing: false } : n,
-        );
-        onNotesChange(updated);
-        return updated;
-      });
-    },
-    [onNotesChange],
-  );
-
-  const transcribeAudio = React.useCallback(
-    (noteId: string) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const win = window as any;
-      const SpeechRecognitionCtor = win.SpeechRecognition ?? win.webkitSpeechRecognition;
-
-      if (!SpeechRecognitionCtor) {
-        updateNoteTranscription(noteId, "(Speech recognition not supported in this browser)");
-        return;
-      }
-
-      const recognition = new SpeechRecognitionCtor();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = "en-US";
-
-      const note = notes.find((n) => n.id === noteId);
-      if (!note?.objectUrl) {
-        updateNoteTranscription(noteId, "(No audio available for transcription)");
-        return;
-      }
-
-      const audio = new Audio(note.objectUrl);
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      recognition.onresult = (event: any) => {
-        const results = event.results as { [index: number]: { [index: number]: { transcript: string } }; length: number };
-        let transcript = "";
-        for (let i = 0; i < results.length; i++) {
-          transcript += results[i][0].transcript + " ";
-        }
-        updateNoteTranscription(noteId, transcript.trim() || "(No speech detected)");
-      };
-
-      recognition.onerror = () => {
-        updateNoteTranscription(noteId, "(Transcription failed — try a shorter recording)");
-      };
-
-      recognition.start();
-      audio.play();
-
-      audio.onended = () => {
-        recognition.stop();
-      };
-    },
-    [notes, updateNoteTranscription],
-  );
+  }, [onNotesChange, transcribeAudio]);
 
   const stopRecording = React.useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {

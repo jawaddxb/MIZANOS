@@ -2,16 +2,18 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, UploadFile
 
 from apps.api.dependencies import CurrentUser, DbSession
 from apps.api.schemas.documents import (
     AccessLinkCreate,
     AccessLinkResponse,
     DocumentCreate,
+    DocumentListResponse,
     DocumentResponse,
     FolderCreate,
     FolderResponse,
+    SharedDocumentsResponse,
     VersionCreate,
     VersionResponse,
 )
@@ -24,9 +26,15 @@ def get_service(db: DbSession) -> DocumentService:
     return DocumentService(db)
 
 
-@router.get("", response_model=list[DocumentResponse])
-async def list_documents(product_id: UUID, user: CurrentUser = None, service: DocumentService = Depends(get_service)):
-    return await service.get_by_product(product_id)
+@router.get("", response_model=DocumentListResponse)
+async def list_documents(
+    product_id: UUID,
+    page: int = 1,
+    page_size: int = 50,
+    user: CurrentUser = None,
+    service: DocumentService = Depends(get_service),
+):
+    return await service.get_by_product(product_id, page=page, page_size=page_size)
 
 
 @router.post("", response_model=DocumentResponse, status_code=201)
@@ -49,9 +57,27 @@ async def create_folder(body: FolderCreate, user: CurrentUser = None, service: D
     return await service.create_folder(body)
 
 
+@router.get("/access-links", response_model=list[AccessLinkResponse])
+async def list_access_links(
+    product_id: UUID,
+    user: CurrentUser = None,
+    service: DocumentService = Depends(get_service),
+):
+    return await service.get_access_links(product_id)
+
+
 @router.post("/access-links", response_model=AccessLinkResponse, status_code=201)
 async def create_access_link(body: AccessLinkCreate, user: CurrentUser = None, service: DocumentService = Depends(get_service)):
     return await service.create_access_link(body)
+
+
+@router.delete("/access-links/{link_id}", status_code=204)
+async def revoke_access_link(
+    link_id: UUID,
+    user: CurrentUser = None,
+    service: DocumentService = Depends(get_service),
+):
+    await service.revoke_access_link(link_id)
 
 
 @router.get("/{doc_id}/versions", response_model=list[VersionResponse])
@@ -98,7 +124,18 @@ async def generate_summary(doc_id: UUID, user: CurrentUser = None, service: Docu
     return await service.generate_summary(doc_id)
 
 
-@router.get("/shared/{token}", response_model=list[DocumentResponse])
+@router.post("/upload/{product_id}", response_model=DocumentResponse, status_code=201)
+async def upload_document(
+    product_id: UUID,
+    file: UploadFile = File(...),
+    user: CurrentUser = None,
+    service: DocumentService = Depends(get_service),
+):
+    """Upload a document file."""
+    return await service.upload_document(product_id, file, user["id"] if user else None)
+
+
+@router.get("/shared/{token}", response_model=SharedDocumentsResponse)
 async def get_shared_documents(token: str, service: DocumentService = Depends(get_service)):
     """Public endpoint: get documents by share token."""
     return await service.get_by_share_token(token)

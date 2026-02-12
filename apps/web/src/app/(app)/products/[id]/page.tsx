@@ -1,13 +1,13 @@
 "use client";
 
 import { use, useState } from "react";
-import { Loader2, Pencil, Eye } from "lucide-react";
+import { Loader2, Pencil, Eye, Settings, Github } from "lucide-react";
 
 import { ProductTabs } from "@/components/organisms/product/ProductTabs";
 import { ProductOverview } from "@/components/organisms/product/ProductOverview";
 import { SpecViewer } from "@/components/organisms/product/SpecViewer";
 import { SpecEditor } from "@/components/organisms/product/SpecEditor";
-import { TasksTab } from "@/components/organisms/product/TasksTab";
+import { TasksViewToggle } from "@/components/organisms/product/TasksViewToggle";
 import { DocumentsList } from "@/components/organisms/product/DocumentsList";
 import { DocumentUpload } from "@/components/organisms/product/DocumentUpload";
 import { AuditHistoryList } from "@/components/organisms/product/AuditHistoryList";
@@ -15,11 +15,15 @@ import { DeploymentChecklist } from "@/components/organisms/product/DeploymentCh
 import { GoLiveChecklist } from "@/components/organisms/product/GoLiveChecklist";
 import { ProjectIntegrations } from "@/components/organisms/product/ProjectIntegrations";
 import { CommitHistory } from "@/components/organisms/product/CommitHistory";
+import { PullRequestList } from "@/components/organisms/product/PullRequestList";
 import { QATab } from "@/components/organisms/product/QATab";
 import { EnvironmentsTab } from "@/components/organisms/product/EnvironmentsTab";
 import { FeaturesTab } from "@/components/organisms/product/FeaturesTab";
-import { MarketingTabWrapper } from "@/components/organisms/product/MarketingTabWrapper";
+import { MarketingTab } from "@/components/organisms/marketing/MarketingTab";
 import { SourcesTab } from "@/components/organisms/product/SourcesTab";
+import { SystemDocsTab } from "@/components/organisms/product/SystemDocsTab";
+import { ProductSettingsDialog } from "@/components/organisms/product/ProductSettingsDialog";
+import { LinkGitHubDialog } from "@/components/organisms/product/LinkGitHubDialog";
 import { FloatingAIButton } from "@/components/organisms/ai/FloatingAIButton";
 import { Dialog, DialogContent } from "@/components/atoms/layout/Dialog";
 import { Button } from "@/components/molecules/buttons/Button";
@@ -34,6 +38,9 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const { data: product, isLoading } = useProductDetail(id);
   const [specEditing, setSpecEditing] = useState(false);
   const [docUploadOpen, setDocUploadOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [linkGitHubOpen, setLinkGitHubOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
 
   if (isLoading) {
     return (
@@ -61,7 +68,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
       </div>
       {specEditing
         ? <SpecEditor productId={id} />
-        : <SpecViewer productId={id} productName={product.product?.name ?? "Product"} />}
+        : <SpecViewer productId={id} productName={product.product?.name ?? "Product"} onNavigateToFeatures={() => setActiveTab("features")} />}
     </div>
   );
 
@@ -76,13 +83,29 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     </>
   );
 
+  const productData = product.product;
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-semibold">{productData?.name ?? "Product"}</h1>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setLinkGitHubOpen(true)}>
+            <Github className="h-4 w-4 mr-1" />
+            {productData?.repository_url ? "Update Repo" : "Link GitHub"}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
+            <Settings className="h-4 w-4 mr-1" /> Settings
+          </Button>
+        </div>
+      </div>
       <ProductTabs
         productId={id}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
         overviewContent={<ProductOverview productId={id} />}
         specContent={specContent}
-        tasksContent={<TasksTab productId={id} />}
+        tasksContent={<TasksViewToggle productId={id} />}
         documentsContent={documentsContent}
         auditContent={<AuditHistoryList productId={id} />}
         deploymentContent={
@@ -92,16 +115,36 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
             <ProjectIntegrations productId={id} />
           </div>
         }
-        commitContent={<CommitHistory productId={id} repositoryUrl={product.product?.repository_url} />}
+        commitContent={
+          <div className="space-y-6">
+            <CommitHistory productId={id} repositoryUrl={product.product?.repository_url} onLinkGitHub={() => setLinkGitHubOpen(true)} />
+            <PullRequestList productId={id} repositoryUrl={product.product?.repository_url} />
+          </div>
+        }
         qaContent={<QATab productId={id} />}
         environmentsContent={<EnvironmentsTab productId={id} />}
         featuresContent={<FeaturesTab productId={id} />}
-        marketingContent={<MarketingTabWrapper productId={id} />}
+        marketingContent={<MarketingTab productId={id} />}
         sourcesContent={<SourcesTab productId={id} />}
+        systemDocsContent={<SystemDocsTab productId={id} />}
       />
+      <LinkGitHubDialog
+        open={linkGitHubOpen}
+        onOpenChange={setLinkGitHubOpen}
+        productId={id}
+        currentUrl={productData?.repository_url}
+      />
+      {productData && (
+        <ProductSettingsDialog
+          open={settingsOpen}
+          onOpenChange={setSettingsOpen}
+          product={productData}
+          productId={id}
+        />
+      )}
       <FloatingAIButton
         productId={id}
-        productName={product.product?.name}
+        productName={productData?.name}
       />
     </div>
   );

@@ -4,14 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/dis
 import { Badge } from "@/components/atoms/display/Badge";
 import { Skeleton } from "@/components/atoms/display/Skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/display/Avatar";
-import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/molecules/buttons/Button";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { githubRepository } from "@/lib/api/repositories";
+import { toast } from "sonner";
 import type { RepoScanHistory } from "@/lib/types";
-import { GitCommitHorizontal, GitBranch } from "lucide-react";
+import { GitCommitHorizontal, GitBranch, Github, RefreshCw, Loader2 } from "lucide-react";
 
 interface CommitHistoryProps {
   productId: string;
   repositoryUrl?: string | null;
+  onLinkGitHub?: () => void;
 }
 
 interface CommitData {
@@ -69,12 +72,22 @@ function CommitRow({ commit }: { commit: CommitData }) {
   );
 }
 
-function CommitHistory({ productId, repositoryUrl }: CommitHistoryProps) {
+function CommitHistory({ productId, repositoryUrl, onLinkGitHub }: CommitHistoryProps) {
+  const queryClient = useQueryClient();
   const { data: scanHistory, isLoading } = useQuery({
     queryKey: ["github-scans", productId],
     queryFn: (): Promise<RepoScanHistory[]> =>
       githubRepository.getScanHistory(productId),
     enabled: !!productId,
+  });
+
+  const triggerScan = useMutation({
+    mutationFn: () => githubRepository.triggerScan(productId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["github-scans", productId] });
+      toast.success("Repository scan triggered");
+    },
+    onError: (error: Error) => toast.error("Scan failed: " + error.message),
   });
 
   if (isLoading) {
@@ -97,11 +110,29 @@ function CommitHistory({ productId, repositoryUrl }: CommitHistoryProps) {
           <h3 className="text-lg font-medium text-foreground mb-2">
             No Commit History
           </h3>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground mb-4">
             {repositoryUrl
               ? "No repository scans recorded yet. Scans run daily to track changes."
               : "Link a GitHub repository to start tracking commit history."}
           </p>
+          {repositoryUrl ? (
+            <Button
+              onClick={() => triggerScan.mutate()}
+              disabled={triggerScan.isPending}
+            >
+              {triggerScan.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              Scan Now
+            </Button>
+          ) : onLinkGitHub ? (
+            <Button onClick={onLinkGitHub}>
+              <Github className="h-4 w-4 mr-2" />
+              Link GitHub Repository
+            </Button>
+          ) : null}
         </CardContent>
       </Card>
     );
@@ -154,6 +185,22 @@ function CommitHistory({ productId, repositoryUrl }: CommitHistoryProps) {
           <CardTitle className="text-base flex items-center gap-2">
             <GitCommitHorizontal className="h-4 w-4" />
             Recent Scans ({commits.length})
+            {repositoryUrl && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="ml-auto"
+                onClick={() => triggerScan.mutate()}
+                disabled={triggerScan.isPending}
+              >
+                {triggerScan.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-1" />
+                )}
+                Scan Now
+              </Button>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>

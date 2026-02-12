@@ -9,7 +9,8 @@ export function useQAChecks(productId: string) {
     queryKey: ["qa-checks", productId],
     queryFn: async (): Promise<QACheck[]> => {
       const result = await qaRepository.getByProduct(productId);
-      return result.data;
+      // Backend returns a plain array, not paginated
+      return Array.isArray(result) ? result : result.data ?? [];
     },
     enabled: !!productId,
   });

@@ -14,6 +14,10 @@ import type { ProductMember } from "@/lib/types";
 import { StakeholdersList } from "./StakeholdersList";
 import { ManagementNotes } from "./ManagementNotes";
 import { PartnerNotes } from "./PartnerNotes";
+import { PortTaskGenerator } from "./PortTaskGenerator";
+import { DevelopmentHealthSection } from "./DevelopmentHealthSection";
+import { FunctionalSpecSection } from "./FunctionalSpecSection";
+import { ExternalDocumentsOverview } from "./ExternalDocumentsOverview";
 import { Clock, FileText, Users } from "lucide-react";
 
 interface ProductOverviewProps {
@@ -197,6 +201,8 @@ function ProductOverview({ productId }: ProductOverviewProps) {
         <StageProgress currentStage={product.stage ?? "Intake"} />
       </div>
 
+      <PortTaskGenerator productId={productId} sourceType={product.source_type ?? undefined} />
+
       <TeamCard members={members} />
 
       {canManageStakeholders && <StakeholdersList productId={productId} />}
@@ -217,6 +223,26 @@ function ProductOverview({ productId }: ProductOverviewProps) {
           )}
         </div>
       )}
+
+      {product.repository_url && (
+        <DevelopmentHealthSection
+          productId={productId}
+          repositoryUrl={product.repository_url}
+          specificationId={specification?.id}
+        />
+      )}
+
+      {product.repository_url && (
+        <FunctionalSpecSection
+          productId={productId}
+          repositoryUrl={product.repository_url}
+          specificationId={specification?.id}
+        />
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <ExternalDocumentsOverview productId={productId} />
+      </div>
     </div>
   );
 }

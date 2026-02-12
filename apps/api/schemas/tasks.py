@@ -16,6 +16,10 @@ class TaskBase(BaseSchema):
     pillar: str | None = None
     estimated_hours: float | None = None
     sort_order: int = 0
+    generation_source: str | None = None
+    claude_code_prompt: str | None = None
+    domain_group: str | None = None
+    phase: str | None = None
 
 
 class TaskCreate(TaskBase):
@@ -36,6 +40,10 @@ class TaskUpdate(BaseSchema):
     assignee_id: UUID | None = None
     estimated_hours: float | None = None
     sort_order: int | None = None
+    generation_source: str | None = None
+    claude_code_prompt: str | None = None
+    domain_group: str | None = None
+    phase: str | None = None
 
 
 class TaskResponse(TaskBase):

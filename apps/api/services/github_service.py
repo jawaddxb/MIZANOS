@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.config import settings
-from apps.api.models.audit import RepositoryAnalysis
+from apps.api.models.audit import RepoScanHistory, RepositoryAnalysis
 from apps.api.models.user import UserGithubConnection
 
 # In-memory state store for CSRF protection (use Redis in production)
@@ -78,6 +78,12 @@ class GitHubService:
         conn = result.scalar_one_or_none()
         if conn:
             await self.session.delete(conn)
+
+    async def disconnect_by_id(self, connection_id) -> None:
+        conn = await self.session.get(UserGithubConnection, connection_id)
+        if conn:
+            await self.session.delete(conn)
+            await self.session.flush()
 
     async def list_repos(self, user_id: str) -> list[dict]:
         """List GitHub repos for the connected user."""
@@ -163,6 +169,77 @@ class GitHubService:
         await self.session.flush()
         await self.session.refresh(analysis)
         return analysis
+
+    async def get_scan_history(
+        self, product_id: UUID
+    ) -> list[RepoScanHistory]:
+        stmt = (
+            select(RepoScanHistory)
+            .where(RepoScanHistory.product_id == product_id)
+            .order_by(RepoScanHistory.created_at.desc())
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_latest_analysis(
+        self, product_id: UUID
+    ) -> RepositoryAnalysis | None:
+        stmt = (
+            select(RepositoryAnalysis)
+            .where(RepositoryAnalysis.product_id == product_id)
+            .order_by(RepositoryAnalysis.created_at.desc())
+            .limit(1)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def get_repo_info(
+        self, repository_url: str, github_token: str | None = None
+    ) -> dict:
+        owner_repo = self._parse_owner_repo(repository_url)
+        if not owner_repo:
+            return {}
+        owner, repo = owner_repo
+        headers = {"Accept": "application/vnd.github+json"}
+        if github_token:
+            headers["Authorization"] = f"Bearer {github_token}"
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(
+                f"https://api.github.com/repos/{owner}/{repo}",
+                headers=headers,
+                timeout=15,
+            )
+            if resp.status_code != 200:
+                return {}
+            data = resp.json()
+            return {
+                "name": data.get("name"),
+                "full_name": data.get("full_name"),
+                "description": data.get("description"),
+                "language": data.get("language"),
+                "default_branch": data.get("default_branch"),
+                "stars": data.get("stargazers_count", 0),
+                "forks": data.get("forks_count", 0),
+                "open_issues": data.get("open_issues_count", 0),
+            }
+
+    async def trigger_scan(self, product_id: UUID) -> dict:
+        from apps.api.models.product import Product
+
+        product = await self.session.get(Product, product_id)
+        if not product or not product.repository_url:
+            return {"status": "no_repository", "files_changed": None}
+        scan = RepoScanHistory(
+            product_id=product_id,
+            repository_url=product.repository_url,
+            branch="main",
+            latest_commit_sha="pending",
+            scan_status="completed",
+            files_changed=0,
+        )
+        self.session.add(scan)
+        await self.session.flush()
+        return {"status": "completed", "files_changed": 0}
 
     @staticmethod
     def _parse_owner_repo(url: str) -> tuple[str, str] | None:

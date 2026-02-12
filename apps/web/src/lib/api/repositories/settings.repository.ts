@@ -222,6 +222,14 @@ export class SettingsRepository {
     );
     return response.data;
   }
+
+  async assignRole(userId: string, role: string): Promise<void> {
+    await this.client.post(`${this.basePath}/users/${userId}/roles`, { role });
+  }
+
+  async removeRole(userId: string, role: string): Promise<void> {
+    await this.client.delete(`${this.basePath}/users/${userId}/roles/${role}`);
+  }
 }
 
 export const settingsRepository = new SettingsRepository();

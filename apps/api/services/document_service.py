@@ -31,13 +31,43 @@ class DocumentService(BaseService[ProductDocument]):
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(ProductDocument, session)
 
-    async def get_by_product(self, product_id: UUID) -> list[ProductDocument]:
+    async def get_by_product(
+        self,
+        product_id: UUID,
+        *,
+        page: int = 1,
+        page_size: int = 50,
+    ) -> dict:
         stmt = select(ProductDocument).where(ProductDocument.product_id == product_id)
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = (await self.repo.session.execute(count_stmt)).scalar_one()
+        stmt = stmt.offset((page - 1) * page_size).limit(page_size)
         result = await self.repo.session.execute(stmt)
-        return list(result.scalars().all())
+        return {
+            "data": list(result.scalars().all()),
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+        }
 
     async def create_document(self, data: DocumentCreate) -> ProductDocument:
         doc = ProductDocument(**data.model_dump())
+        return await self.repo.create(doc)
+
+    async def upload_document(
+        self,
+        product_id: UUID,
+        file,
+        uploaded_by: str | None = None,
+    ) -> ProductDocument:
+        content = await file.read()
+        doc = ProductDocument(
+            product_id=product_id,
+            file_name=file.filename or "untitled",
+            file_type=file.content_type,
+            file_size=len(content),
+            uploaded_by=uploaded_by,
+        )
         return await self.repo.create(doc)
 
     async def get_folders(self, product_id: UUID) -> list[DocumentFolder]:
@@ -62,13 +92,46 @@ class DocumentService(BaseService[ProductDocument]):
         await self.repo.session.refresh(link)
         return link
 
-    async def get_by_share_token(self, token: str) -> list[ProductDocument]:
+    async def get_access_links(
+        self, product_id: UUID
+    ) -> list[DocumentAccessLink]:
+        stmt = select(DocumentAccessLink).where(
+            DocumentAccessLink.product_id == product_id,
+        )
+        result = await self.repo.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def revoke_access_link(self, link_id: UUID) -> None:
+        link = await self.repo.session.get(DocumentAccessLink, link_id)
+        if not link:
+            raise not_found("AccessLink")
+        await self.repo.session.delete(link)
+        await self.repo.session.flush()
+
+    async def get_by_share_token(self, token: str) -> dict:
         stmt = select(DocumentAccessLink).where(DocumentAccessLink.token == token)
         result = await self.repo.session.execute(stmt)
         link = result.scalar_one_or_none()
         if not link:
             raise not_found("Share link")
-        return await self.get_by_product(link.product_id)
+
+        from apps.api.models.product import Product
+
+        product = await self.repo.session.get(Product, link.product_id)
+        docs_stmt = select(ProductDocument).where(
+            ProductDocument.product_id == link.product_id,
+        )
+        docs_result = await self.repo.session.execute(docs_stmt)
+        documents = list(docs_result.scalars().all())
+
+        return {
+            "product": {
+                "id": str(product.id) if product else None,
+                "name": product.name if product else None,
+            },
+            "link_name": link.name,
+            "documents": documents,
+        }
 
     async def get_versions(
         self, document_id: UUID

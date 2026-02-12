@@ -21,6 +21,7 @@ import {
   Layers,
   Megaphone,
   FolderGit2,
+  BookOpen,
 } from "lucide-react";
 
 interface ProductTabConfig {
@@ -46,7 +47,10 @@ interface ProductTabsProps {
   featuresContent?: ReactNode;
   marketingContent?: ReactNode;
   sourcesContent?: ReactNode;
+  systemDocsContent?: ReactNode;
   defaultTab?: string;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
   className?: string;
 }
 
@@ -64,10 +68,15 @@ function ProductTabs({
   featuresContent,
   marketingContent,
   sourcesContent,
+  systemDocsContent,
   defaultTab = "overview",
+  activeTab: controlledTab,
+  onTabChange,
   className,
 }: ProductTabsProps) {
-  const [activeTab, setActiveTab] = useState(defaultTab);
+  const [internalTab, setInternalTab] = useState(defaultTab);
+  const activeTab = controlledTab ?? internalTab;
+  const setActiveTab = onTabChange ?? setInternalTab;
 
   const tabs: ProductTabConfig[] = [
     {
@@ -141,6 +150,12 @@ function ProductTabs({
       label: "Sources",
       icon: <FolderGit2 className="h-4 w-4" />,
       content: sourcesContent,
+    },
+    {
+      value: "system-docs",
+      label: "System Docs",
+      icon: <BookOpen className="h-4 w-4" />,
+      content: systemDocsContent,
     },
   ];
 

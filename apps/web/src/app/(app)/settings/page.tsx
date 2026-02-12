@@ -13,6 +13,7 @@ import {
   useUpdateStandardsRepository,
   useDeleteStandardsRepository,
 } from "@/hooks/queries/useStandardsRepositories";
+import type { Profile, Module, StandardsRepository as StandardsRepoType } from "@/lib/types";
 
 const ProfileTab = dynamic(() => import("@/components/organisms/settings/ProfileTab").then((m) => ({ default: m.ProfileTab })), { loading: () => <TabSkeleton /> });
 const UserManagementTab = dynamic(() => import("@/components/organisms/settings/UserManagementTab").then((m) => ({ default: m.UserManagementTab })), { loading: () => <TabSkeleton /> });
@@ -24,6 +25,19 @@ const StandardsTab = dynamic(() => import("@/components/organisms/settings/Stand
 const HolidaysTab = dynamic(() => import("@/components/organisms/settings/HolidaysTab").then((m) => ({ default: m.HolidaysTab })), { loading: () => <TabSkeleton /> });
 const ComponentLibraryTab = dynamic(() => import("@/components/organisms/settings/ComponentLibraryTab").then((m) => ({ default: m.ComponentLibraryTab })), { loading: () => <TabSkeleton /> });
 const WorkflowRulesTab = dynamic(() => import("@/components/organisms/settings/WorkflowRulesTab").then((m) => ({ default: m.WorkflowRulesTab })), { loading: () => <TabSkeleton /> });
+
+const InviteUserDialog = dynamic(() => import("@/components/organisms/settings/InviteUserDialog").then((m) => ({ default: m.InviteUserDialog })));
+const UserPermissionsDialog = dynamic(() => import("@/components/organisms/settings/UserPermissionsDialog").then((m) => ({ default: m.UserPermissionsDialog })));
+const ResetPasswordDialog = dynamic(() => import("@/components/organisms/settings/ResetPasswordDialog").then((m) => ({ default: m.ResetPasswordDialog })));
+const UserOverridesPanel = dynamic(() => import("@/components/organisms/settings/UserOverridesPanel").then((m) => ({ default: m.UserOverridesPanel })));
+const AddOverrideDialog = dynamic(() => import("@/components/organisms/settings/AddOverrideDialog").then((m) => ({ default: m.AddOverrideDialog })));
+const PermissionAuditLog = dynamic(() => import("@/components/organisms/settings/PermissionAuditLog").then((m) => ({ default: m.PermissionAuditLog })));
+const NationalHolidaysManagement = dynamic(() => import("@/components/organisms/settings/NationalHolidaysManagement").then((m) => ({ default: m.NationalHolidaysManagement })));
+const TeamCalendarView = dynamic(() => import("@/components/organisms/settings/TeamCalendarView").then((m) => ({ default: m.TeamCalendarView })));
+const CreateModuleDialog = dynamic(() => import("@/components/organisms/settings/CreateModuleDialog").then((m) => ({ default: m.CreateModuleDialog })));
+const EditModuleDialog = dynamic(() => import("@/components/organisms/settings/EditModuleDialog").then((m) => ({ default: m.EditModuleDialog })));
+const AddGlobalIntegrationDialog = dynamic(() => import("@/components/organisms/settings/AddGlobalIntegrationDialog").then((m) => ({ default: m.AddGlobalIntegrationDialog })));
+const EditStandardsRepositoryDialog = dynamic(() => import("@/components/organisms/settings/EditStandardsRepositoryDialog").then((m) => ({ default: m.EditStandardsRepositoryDialog })));
 
 const ALL_TABS = [
   { id: "profile", label: "Profile", adminOnly: false },
@@ -46,10 +60,6 @@ function TabSkeleton() {
 
 const TAB_COMPONENTS: Partial<Record<TabId, React.ComponentType>> = {
   profile: ProfileTab,
-  users: UserManagementTab,
-  "authority-matrix": PermissionMatrixTab,
-  modules: ModulesTab,
-  integrations: IntegrationsTab,
   notifications: NotificationsTab,
   library: ComponentLibraryTab,
   workflow: WorkflowRulesTab,
@@ -97,6 +107,14 @@ export default function SettingsPage() {
           <StandardsTabWrapper />
         ) : activeTab === "holidays" ? (
           <HolidaysTabWrapper />
+        ) : activeTab === "users" ? (
+          <UserManagementTabWrapper />
+        ) : activeTab === "authority-matrix" ? (
+          <PermissionMatrixTabWrapper />
+        ) : activeTab === "modules" ? (
+          <ModulesTabWrapper />
+        ) : activeTab === "integrations" ? (
+          <IntegrationsTabWrapper />
         ) : (
           <GenericSettingsTab tabId={activeTab} />
         )}
@@ -105,28 +123,127 @@ export default function SettingsPage() {
   );
 }
 
+function UserManagementTabWrapper() {
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [permissionsProfile, setPermissionsProfile] = useState<Profile | null>(null);
+  const [resetProfile, setResetProfile] = useState<Profile | null>(null);
+
+  return (
+    <>
+      <UserManagementTab
+        onInviteUser={() => setInviteOpen(true)}
+        onViewPermissions={(profile) => setPermissionsProfile(profile)}
+        onResetPassword={(profile) => setResetProfile(profile)}
+      />
+      <InviteUserDialog open={inviteOpen} onOpenChange={setInviteOpen} />
+      <UserPermissionsDialog
+        open={!!permissionsProfile}
+        onOpenChange={(open) => !open && setPermissionsProfile(null)}
+        profile={permissionsProfile}
+      />
+      <ResetPasswordDialog
+        open={!!resetProfile}
+        onOpenChange={(open) => !open && setResetProfile(null)}
+        profile={resetProfile}
+      />
+    </>
+  );
+}
+
+function PermissionMatrixTabWrapper() {
+  const [addOverrideOpen, setAddOverrideOpen] = useState(false);
+
+  return (
+    <>
+      <PermissionMatrixTab
+        overridesPanel={
+          <UserOverridesPanel onAddOverride={() => setAddOverrideOpen(true)} />
+        }
+        auditLogPanel={<PermissionAuditLog />}
+      />
+      <AddOverrideDialog open={addOverrideOpen} onOpenChange={setAddOverrideOpen} />
+    </>
+  );
+}
+
+function ModulesTabWrapper() {
+  const { isAdmin } = useRoleVisibility();
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editingModule, setEditingModule] = useState<Module | null>(null);
+
+  return (
+    <>
+      <ModulesTab
+        isAdmin={isAdmin}
+        onCreateModule={() => setCreateOpen(true)}
+        onEditModule={(mod) => setEditingModule(mod)}
+      />
+      <CreateModuleDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <EditModuleDialog
+        open={!!editingModule}
+        onOpenChange={(open) => !open && setEditingModule(null)}
+        module={editingModule}
+      />
+    </>
+  );
+}
+
+function IntegrationsTabWrapper() {
+  const { isAdmin } = useRoleVisibility();
+  const [addOpen, setAddOpen] = useState(false);
+
+  return (
+    <>
+      <IntegrationsTab isAdmin={isAdmin} onAddIntegration={() => setAddOpen(true)} />
+      <AddGlobalIntegrationDialog open={addOpen} onOpenChange={setAddOpen} />
+    </>
+  );
+}
+
 function StandardsTabWrapper() {
   const { data: repositories = [], isLoading } = useStandardsRepositories();
   const createRepo = useCreateStandardsRepository();
   const updateRepo = useUpdateStandardsRepository();
   const deleteRepo = useDeleteStandardsRepository();
+  const [editingRepo, setEditingRepo] = useState<StandardsRepoType | null>(null);
 
   return (
-    <StandardsTab
-      repositories={repositories}
-      isLoading={isLoading}
-      onCreate={async (data) => { createRepo.mutateAsync(data); }}
-      onToggle={(id, isActive) => updateRepo.mutate({ id, updates: { is_active: isActive } })}
-      onDelete={(id) => deleteRepo.mutate(id)}
-    />
+    <>
+      <StandardsTab
+        repositories={repositories}
+        isLoading={isLoading}
+        onCreate={async (data) => { createRepo.mutateAsync(data); }}
+        onToggle={(id, isActive) => updateRepo.mutate({ id, updates: { is_active: isActive } })}
+        onDelete={(id) => deleteRepo.mutate(id)}
+        onEdit={(repo) => setEditingRepo(repo as unknown as StandardsRepoType)}
+      />
+      <EditStandardsRepositoryDialog
+        open={!!editingRepo}
+        onOpenChange={(open) => !open && setEditingRepo(null)}
+        repository={editingRepo}
+      />
+    </>
   );
 }
 
 function HolidaysTabWrapper() {
   const { user } = useAuth();
   const { data: profile } = useProfile(user?.id ?? "");
+  const { isAdmin } = useRoleVisibility();
 
-  return <HolidaysTab currentProfile={profile ?? null} />;
+  return (
+    <HolidaysTab
+      currentProfile={profile ?? null}
+      isAdmin={isAdmin}
+      calendarView={
+        <TeamCalendarView
+          profileId={profile?.id}
+          officeLocation={profile?.office_location ?? undefined}
+        />
+      }
+      nationalManagement={<NationalHolidaysManagement />}
+    />
+  );
 }
 
 function GenericSettingsTab({ tabId }: { tabId: TabId }) {

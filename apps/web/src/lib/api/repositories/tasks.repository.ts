@@ -20,10 +20,9 @@ export class TasksRepository extends BaseRepository<Task> {
     return this.getAll({ ...params, pillar });
   }
 
-  async reorder(taskId: string, newIndex: number, status?: string): Promise<void> {
-    await this.client.patch(`${this.basePath}/${taskId}/reorder`, {
-      order_index: newIndex,
-      status,
+  async reorder(taskId: string, newIndex: number): Promise<void> {
+    await this.client.patch(`${this.basePath}/${taskId}/reorder`, null, {
+      params: { sort_order: newIndex },
     });
   }
 

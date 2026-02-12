@@ -16,7 +16,10 @@ import {
   TrendingDown,
   Minus,
   Filter,
+  Loader2,
+  Play,
 } from "lucide-react";
+import { useRunAudit } from "@/hooks/mutations/useAuditMutations";
 
 interface AuditHistoryListProps {
   productId: string;
@@ -128,6 +131,7 @@ type SeverityFilter = "all" | "critical" | "warning" | "info";
 
 function AuditHistoryList({ productId }: AuditHistoryListProps) {
   const { data: audits, isLoading } = useAuditHistory(productId);
+  const runAudit = useRunAudit(productId);
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("all");
 
   const filteredAudits = useMemo(() => {
@@ -156,9 +160,20 @@ function AuditHistoryList({ productId }: AuditHistoryListProps) {
           <h3 className="text-lg font-medium text-foreground mb-2">
             No Audit History
           </h3>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground mb-4">
             Run your first code audit to see quality scores and trends.
           </p>
+          <Button
+            onClick={() => runAudit.mutate()}
+            disabled={runAudit.isPending}
+          >
+            {runAudit.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Play className="h-4 w-4 mr-2" />
+            )}
+            Run Audit
+          </Button>
         </CardContent>
       </Card>
     );
@@ -192,6 +207,19 @@ function AuditHistoryList({ productId }: AuditHistoryListProps) {
             </Button>
           ))}
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => runAudit.mutate()}
+          disabled={runAudit.isPending}
+        >
+          {runAudit.isPending ? (
+            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+          ) : (
+            <Play className="h-4 w-4 mr-1" />
+          )}
+          Run Audit
+        </Button>
       </div>
 
       <div className="space-y-2">

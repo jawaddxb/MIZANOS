@@ -88,8 +88,16 @@ export class TeamRepository {
 
   async getNationalHolidays(location?: string): Promise<NationalHoliday[]> {
     const response = await this.client.get<NationalHoliday[]>(
-      `${this.basePath}/national-holidays`,
+      `${this.basePath}/holidays/national`,
       { params: location ? { location } : undefined },
+    );
+    return response.data;
+  }
+
+  async assignToProject(profileId: string, productId: string): Promise<Profile> {
+    const response = await this.client.post<Profile>(
+      `${this.basePath}/profiles/${profileId}/assign`,
+      { product_id: productId },
     );
     return response.data;
   }
@@ -99,6 +107,34 @@ export class TeamRepository {
       `${this.basePath}/users/${userId}/roles`,
     );
     return response.data;
+  }
+
+  async createNationalHoliday(data: {
+    name: string;
+    date: string;
+    location: string;
+    recurring: boolean;
+  }): Promise<NationalHoliday> {
+    const response = await this.client.post<NationalHoliday>(
+      `${this.basePath}/holidays/national`,
+      data,
+    );
+    return response.data;
+  }
+
+  async updateNationalHoliday(
+    id: string,
+    data: Partial<NationalHoliday>,
+  ): Promise<NationalHoliday> {
+    const response = await this.client.patch<NationalHoliday>(
+      `${this.basePath}/holidays/national/${id}`,
+      data,
+    );
+    return response.data;
+  }
+
+  async deleteNationalHoliday(id: string): Promise<void> {
+    await this.client.delete(`${this.basePath}/holidays/national/${id}`);
   }
 }
 

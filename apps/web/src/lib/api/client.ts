@@ -22,7 +22,7 @@ function processQueue(error: unknown, token: string | null): void {
 
 function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem("access_token");
+  return localStorage.getItem("access_token") ?? localStorage.getItem("mizan_auth_token");
 }
 
 function getRefreshToken(): string | null {

@@ -2,12 +2,14 @@
 
 from uuid import UUID
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.models.product import (
     Product,
+    ProductEnvironment,
     ProductManagementNote,
+    ProductMember,
     ProductPartnerNote,
 )
 from apps.api.schemas.products import (
@@ -16,6 +18,7 @@ from apps.api.schemas.products import (
     ProductCreate,
 )
 from apps.api.services.base_service import BaseService
+from apps.api.services.product_constants import CHILD_TABLES_BY_PRODUCT_ID
 from packages.common.utils.error_handlers import not_found
 
 
@@ -24,6 +27,29 @@ class ProductService(BaseService[Product]):
 
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(Product, session)
+
+    async def delete(self, entity_id: UUID) -> None:
+        """Delete a product and all child records.
+
+        All 30 FK constraints on `products` use NO ACTION, so we must
+        explicitly remove child rows before deleting the product itself.
+        """
+        product = await self.get_or_404(entity_id)
+        session = self.repo.session
+        pid = {"pid": product.id}
+
+        for table in CHILD_TABLES_BY_PRODUCT_ID:
+            await session.execute(
+                text(f"DELETE FROM {table} WHERE product_id = :pid"), pid
+            )
+
+        # company_credentials uses linked_product_id instead of product_id
+        await session.execute(
+            text("DELETE FROM company_credentials WHERE linked_product_id = :pid"),
+            pid,
+        )
+
+        await self.repo.delete(product)
 
     async def list_products(
         self,
@@ -56,6 +82,28 @@ class ProductService(BaseService[Product]):
             "page": page,
             "page_size": page_size,
         }
+
+    async def get_members(self, product_id: UUID) -> list[ProductMember]:
+        """List members for a product."""
+        stmt = (
+            select(ProductMember)
+            .where(ProductMember.product_id == product_id)
+            .order_by(ProductMember.created_at.desc())
+        )
+        result = await self.repo.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_environments(
+        self, product_id: UUID
+    ) -> list[ProductEnvironment]:
+        """List environments for a product."""
+        stmt = (
+            select(ProductEnvironment)
+            .where(ProductEnvironment.product_id == product_id)
+            .order_by(ProductEnvironment.created_at.desc())
+        )
+        result = await self.repo.session.execute(stmt)
+        return list(result.scalars().all())
 
     async def create_product(self, data: ProductCreate) -> Product:
         """Create a new product."""
@@ -149,4 +197,98 @@ class ProductService(BaseService[Product]):
         if note is None:
             raise not_found("ProductPartnerNote")
         await self.repo.session.delete(note)
+        await self.repo.session.flush()
+
+    # --- Environments ---
+
+    async def upsert_environment(
+        self, product_id: UUID, data
+    ) -> ProductEnvironment:
+        """Find-or-create environment by product_id + environment_type."""
+        stmt = (
+            select(ProductEnvironment)
+            .where(
+                ProductEnvironment.product_id == product_id,
+                ProductEnvironment.environment_type == data.environment_type,
+            )
+        )
+        result = await self.repo.session.execute(stmt)
+        env = result.scalar_one_or_none()
+
+        update_fields = data.model_dump(exclude_unset=True, exclude={"environment_type"})
+
+        if env:
+            for key, value in update_fields.items():
+                setattr(env, key, value)
+        else:
+            env = ProductEnvironment(
+                product_id=product_id,
+                environment_type=data.environment_type,
+                **update_fields,
+            )
+            self.repo.session.add(env)
+
+        await self.repo.session.flush()
+        await self.repo.session.refresh(env)
+        return env
+
+    async def delete_environment(
+        self, product_id: UUID, env_type: str
+    ) -> None:
+        """Delete environment by product_id + environment_type."""
+        stmt = (
+            select(ProductEnvironment)
+            .where(
+                ProductEnvironment.product_id == product_id,
+                ProductEnvironment.environment_type == env_type,
+            )
+        )
+        result = await self.repo.session.execute(stmt)
+        env = result.scalar_one_or_none()
+        if not env:
+            raise not_found("ProductEnvironment")
+        await self.repo.session.delete(env)
+        await self.repo.session.flush()
+
+    # --- Specification Features & Sources ---
+
+    async def get_specification_features(self, product_id: UUID) -> list:
+        from apps.api.models.specification import SpecificationFeature
+        stmt = (
+            select(SpecificationFeature)
+            .where(SpecificationFeature.product_id == product_id)
+            .order_by(SpecificationFeature.sort_order)
+        )
+        result = await self.repo.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_specification_sources(self, product_id: UUID) -> list:
+        from apps.api.models.specification import SpecificationSource
+        stmt = (
+            select(SpecificationSource)
+            .where(SpecificationSource.product_id == product_id)
+            .order_by(SpecificationSource.created_at.desc())
+        )
+        result = await self.repo.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def create_specification_source(self, product_id: UUID, data) -> object:
+        from apps.api.models.specification import SpecificationSource
+        source = SpecificationSource(
+            product_id=product_id,
+            **data.model_dump(exclude_unset=True),
+        )
+        self.repo.session.add(source)
+        await self.repo.session.flush()
+        await self.repo.session.refresh(source)
+        return source
+
+    async def delete_specification_source(self, source_id: UUID) -> None:
+        from apps.api.models.specification import SpecificationSource
+        stmt = select(SpecificationSource).where(SpecificationSource.id == source_id)
+        result = await self.repo.session.execute(stmt)
+        source = result.scalar_one_or_none()
+        if not source:
+            raise not_found("SpecificationSource")
+        await self.repo.session.delete(source)
         await self.repo.session.flush()

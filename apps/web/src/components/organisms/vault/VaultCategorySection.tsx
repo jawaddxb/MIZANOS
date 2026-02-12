@@ -18,9 +18,10 @@ const categoryLabels: Record<CredentialCategory, string> = {
 interface VaultCategorySectionProps {
   category: CredentialCategory;
   credentials: CompanyCredential[];
+  onEditCredential?: (credential: CompanyCredential) => void;
 }
 
-export function VaultCategorySection({ category, credentials }: VaultCategorySectionProps) {
+export function VaultCategorySection({ category, credentials, onEditCredential }: VaultCategorySectionProps) {
   return (
     <div>
       <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
@@ -28,7 +29,7 @@ export function VaultCategorySection({ category, credentials }: VaultCategorySec
       </h2>
       <div className="space-y-3">
         {credentials.map((credential) => (
-          <CredentialCard key={credential.id} credential={credential} />
+          <CredentialCard key={credential.id} credential={credential} onEdit={onEditCredential} />
         ))}
       </div>
     </div>

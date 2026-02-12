@@ -3,19 +3,22 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select
 
 from apps.api.dependencies import CurrentUser, DbSession
-from apps.api.models.specification import SpecificationFeature, SpecificationSource
 from apps.api.schemas.products import (
     ManagementNoteCreate,
     ManagementNoteResponse,
     PartnerNoteCreate,
     PartnerNoteResponse,
     ProductCreate,
+    ProductEnvironmentResponse,
+    ProductEnvironmentUpsert,
     ProductListResponse,
+    ProductMemberResponse,
     ProductResponse,
     ProductUpdate,
+    SpecificationSourceCreate,
+    SpecificationSourceResponse,
 )
 from apps.api.services.product_service import ProductService
 
@@ -49,6 +52,60 @@ async def get_product(
 ):
     """Get a product by ID."""
     return await service.get_or_404(product_id)
+
+
+@router.get(
+    "/{product_id}/members",
+    response_model=list[ProductMemberResponse],
+)
+async def list_product_members(
+    product_id: UUID,
+    user: CurrentUser = None,
+    service: ProductService = Depends(get_service),
+):
+    """List members for a product."""
+    return await service.get_members(product_id)
+
+
+@router.get(
+    "/{product_id}/environments",
+    response_model=list[ProductEnvironmentResponse],
+)
+async def list_product_environments(
+    product_id: UUID,
+    user: CurrentUser = None,
+    service: ProductService = Depends(get_service),
+):
+    """List environments for a product."""
+    return await service.get_environments(product_id)
+
+
+@router.put(
+    "/{product_id}/environments",
+    response_model=ProductEnvironmentResponse,
+)
+async def upsert_product_environment(
+    product_id: UUID,
+    body: ProductEnvironmentUpsert,
+    user: CurrentUser = None,
+    service: ProductService = Depends(get_service),
+):
+    """Create or update an environment for a product."""
+    return await service.upsert_environment(product_id, body)
+
+
+@router.delete(
+    "/{product_id}/environments/{env_type}",
+    status_code=204,
+)
+async def delete_product_environment(
+    product_id: UUID,
+    env_type: str,
+    user: CurrentUser = None,
+    service: ProductService = Depends(get_service),
+):
+    """Delete an environment by type."""
+    await service.delete_environment(product_id, env_type)
 
 
 @router.post("", response_model=ProductResponse, status_code=201)
@@ -175,29 +232,45 @@ async def delete_partner_note(
 async def list_product_features(
     product_id: UUID,
     user: CurrentUser = None,
-    db: DbSession = None,
+    service: ProductService = Depends(get_service),
 ):
     """Get all specification features for a product."""
-    stmt = (
-        select(SpecificationFeature)
-        .where(SpecificationFeature.product_id == product_id)
-        .order_by(SpecificationFeature.sort_order)
-    )
-    result = await db.execute(stmt)
-    return list(result.scalars().all())
+    return await service.get_specification_features(product_id)
 
 
-@router.get("/{product_id}/specification-sources")
+@router.get(
+    "/{product_id}/specification-sources",
+    response_model=list[SpecificationSourceResponse],
+)
 async def list_product_sources(
     product_id: UUID,
     user: CurrentUser = None,
-    db: DbSession = None,
+    service: ProductService = Depends(get_service),
 ):
     """Get all specification sources for a product."""
-    stmt = (
-        select(SpecificationSource)
-        .where(SpecificationSource.product_id == product_id)
-        .order_by(SpecificationSource.created_at.desc())
-    )
-    result = await db.execute(stmt)
-    return list(result.scalars().all())
+    return await service.get_specification_sources(product_id)
+
+
+@router.post(
+    "/{product_id}/specification-sources",
+    response_model=SpecificationSourceResponse,
+    status_code=201,
+)
+async def create_product_source(
+    product_id: UUID,
+    body: SpecificationSourceCreate,
+    user: CurrentUser = None,
+    service: ProductService = Depends(get_service),
+):
+    """Create a specification source for a product."""
+    return await service.create_specification_source(product_id, body)
+
+
+@router.delete("/specification-sources/{source_id}", status_code=204)
+async def delete_product_source(
+    source_id: UUID,
+    user: CurrentUser = None,
+    service: ProductService = Depends(get_service),
+):
+    """Delete a specification source."""
+    await service.delete_specification_source(source_id)

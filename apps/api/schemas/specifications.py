@@ -9,11 +9,7 @@ from apps.api.schemas.base import BaseSchema
 class SpecificationBase(BaseSchema):
     """Shared specification fields."""
 
-    overview: str | None = None
-    goals: str | None = None
-    user_stories: str | None = None
-    technical_requirements: str | None = None
-    design_notes: str | None = None
+    content: dict | None = None
     version: int = 1
 
 
@@ -26,11 +22,7 @@ class SpecificationCreate(SpecificationBase):
 class SpecificationUpdate(BaseSchema):
     """Specification update schema."""
 
-    overview: str | None = None
-    goals: str | None = None
-    user_stories: str | None = None
-    technical_requirements: str | None = None
-    design_notes: str | None = None
+    content: dict | None = None
 
 
 class SpecificationResponse(SpecificationBase):
@@ -38,6 +30,7 @@ class SpecificationResponse(SpecificationBase):
 
     id: UUID
     product_id: UUID
+    created_by: UUID | None = None
     created_at: datetime
     updated_at: datetime
 

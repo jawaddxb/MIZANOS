@@ -157,3 +157,13 @@ async def update_user_status(user_id: UUID, body: UserStatusUpdate, user: Curren
 @router.post("/users/{user_id}/reset-password")
 async def reset_user_password(user_id: UUID, user: CurrentUser = None, service: SettingsService = Depends(get_service)):
     return await service.reset_user_password(user_id)
+
+
+@router.post("/users/{user_id}/roles", status_code=201)
+async def assign_role(user_id: UUID, body: dict, user: CurrentUser = None, service: SettingsService = Depends(get_service)):
+    return await service.assign_role(user_id, body["role"])
+
+
+@router.delete("/users/{user_id}/roles/{role}", status_code=204)
+async def remove_role(user_id: UUID, role: str, user: CurrentUser = None, service: SettingsService = Depends(get_service)):
+    await service.remove_role(user_id, role)

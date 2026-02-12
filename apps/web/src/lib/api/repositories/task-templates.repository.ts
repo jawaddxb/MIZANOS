@@ -7,6 +7,13 @@ export class TaskTemplatesRepository extends BaseRepository<
   Partial<TaskTemplate>
 > {
   protected readonly basePath = "/task-templates";
+
+  async reorder(sourceType: string, orderedIds: string[]): Promise<void> {
+    await this.client.put(`${this.basePath}/reorder`, {
+      source_type: sourceType,
+      ordered_ids: orderedIds,
+    });
+  }
 }
 
 export const taskTemplatesRepository = new TaskTemplatesRepository();

@@ -38,13 +38,14 @@ const COUNT_VARIANT: Record<TaskStatus, "secondary" | "default" | "outline"> = {
 interface KanbanColumnProps {
   column: KanbanColumnType;
   onAddTask?: (columnId: TaskStatus) => void;
+  onTaskClick?: (task: KanbanColumnType["tasks"][number]) => void;
 }
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export function KanbanColumn({ column, onAddTask }: KanbanColumnProps) {
+export function KanbanColumn({ column, onAddTask, onTaskClick }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
 
   const taskIds = column.tasks.map((t) => t.id);
@@ -91,7 +92,7 @@ export function KanbanColumn({ column, onAddTask }: KanbanColumnProps) {
           strategy={verticalListSortingStrategy}
         >
           {column.tasks.map((task) => (
-            <KanbanCard key={task.id} task={task} />
+            <KanbanCard key={task.id} task={task} onClick={() => onTaskClick?.(task)} />
           ))}
         </SortableContext>
 

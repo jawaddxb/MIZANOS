@@ -2,6 +2,8 @@ import type { AxiosInstance } from "axios";
 import type { AIChatSession, AIChatMessage } from "@/lib/types";
 import { apiClient } from "../client";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
 export class AIRepository {
   private readonly client: AxiosInstance;
   private readonly basePath = "/ai/chat";
@@ -47,6 +49,41 @@ export class AIRepository {
       { content, role: "user" },
     );
     return response.data;
+  }
+
+  async streamChat(
+    sessionId: string,
+    messages: { role: string; content: string }[],
+    signal?: AbortSignal,
+  ): Promise<Response> {
+    const token = typeof window !== "undefined"
+      ? localStorage.getItem("access_token")
+      : null;
+
+    const lastMessage = messages[messages.length - 1];
+    const response = await fetch(
+      `${API_BASE_URL}/ai/chat`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ session_id: sessionId, content: lastMessage?.content ?? "" }),
+        signal,
+      },
+    );
+
+    if (!response.ok) {
+      if (response.status === 429) {
+        throw new Error("Rate limit exceeded. Please wait a moment.");
+      }
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+
+    if (!response.body) throw new Error("No response body");
+
+    return response;
   }
 }
 

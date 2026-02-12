@@ -20,6 +20,15 @@ export class QARepository extends BaseRepository<QACheck> {
     return response.data;
   }
 
+  async generateChecklist(productId: string): Promise<QACheck[]> {
+    const response = await this.client.post<QACheck[]>(
+      `${this.basePath}/generate`,
+      null,
+      { params: { product_id: productId } },
+    );
+    return response.data;
+  }
+
   async updateNotes(checkId: string, notes: string): Promise<QACheck> {
     const response = await this.client.patch<QACheck>(
       `${this.basePath}/${checkId}`,

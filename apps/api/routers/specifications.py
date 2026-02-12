@@ -135,3 +135,13 @@ async def unqueue_feature(
 async def generate_spec(product_id: UUID, user: CurrentUser = None, service: SpecificationService = Depends(get_service)):
     """AI-generate specification from product context."""
     return await service.generate_specification(product_id)
+
+
+@router.post("/{product_id}/generate-tasks")
+async def generate_tasks_from_spec(
+    product_id: UUID,
+    user: CurrentUser = None,
+    service: SpecificationService = Depends(get_service),
+):
+    """Generate tasks from specification features."""
+    return await service.generate_tasks_from_spec(product_id)

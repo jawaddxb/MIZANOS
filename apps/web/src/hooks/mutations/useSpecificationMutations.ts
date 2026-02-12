@@ -32,6 +32,19 @@ export function useUpdateSpecFeature(productId: string) {
   });
 }
 
+export function useRegenerateSpecification(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => specificationsRepository.regenerateSpec(productId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["specifications", productId] });
+      toast.success("Specification regenerated from sources");
+    },
+    onError: (e: Error) => toast.error("Failed to regenerate: " + e.message),
+  });
+}
+
 export function useDeleteSpecFeature(productId: string) {
   const queryClient = useQueryClient();
 

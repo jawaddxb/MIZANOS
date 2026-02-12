@@ -58,6 +58,44 @@ export function useUpdateSpecFeature(productId: string) {
   });
 }
 
+export function useQueueFeature(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (featureId: string) =>
+      specificationsRepository.queueFeature(featureId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["specification-features", productId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["tasks", productId] });
+      toast.success("Feature queued — task created");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to queue feature");
+    },
+  });
+}
+
+export function useUnqueueFeature(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (featureId: string) =>
+      specificationsRepository.unqueueFeature(featureId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["specification-features", productId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["tasks", productId] });
+      toast.success("Feature unqueued");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to unqueue feature");
+    },
+  });
+}
+
 export function useDeleteSpecFeature(productId: string) {
   const queryClient = useQueryClient();
 

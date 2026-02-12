@@ -7,15 +7,17 @@ import { toast } from "sonner";
 
 const QUERY_KEY = ["task-templates"];
 
-export function useTaskTemplates(sourceType?: string) {
+export function useTaskTemplates(sourceType?: string | null) {
   return useQuery({
-    queryKey: [...QUERY_KEY, sourceType],
-    queryFn: async () => {
+    queryKey: [...QUERY_KEY, sourceType ?? undefined],
+    queryFn: async (): Promise<TaskTemplate[]> => {
       const result = await taskTemplatesRepository.getAll(
         sourceType ? { source_type: sourceType } : undefined,
       );
-      return result.data;
+      // Backend returns a plain array, not a paginated response
+      return Array.isArray(result) ? result : result.data ?? [];
     },
+    enabled: sourceType !== null,
   });
 }
 
@@ -59,6 +61,25 @@ export function useDeleteTaskTemplate() {
     },
     onError: () => {
       toast.error("Failed to delete task template");
+    },
+  });
+}
+
+export function useReorderTaskTemplates() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      sourceType,
+      orderedIds,
+    }: {
+      sourceType: string;
+      orderedIds: string[];
+    }) => taskTemplatesRepository.reorder(sourceType, orderedIds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+    },
+    onError: () => {
+      toast.error("Failed to reorder templates");
     },
   });
 }

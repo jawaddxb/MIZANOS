@@ -32,7 +32,16 @@ function buildSourceSummary(sources: IntakeFormData["sources"]): string {
     parts.push(`Markdown notes:\n${sources.markdownContent.slice(0, 2000)}`);
   }
   for (const site of sources.scrapedWebsites) {
-    parts.push(`Website (${site.url}):\n${site.markdown?.slice(0, 1000) || site.aiSummary || "(no content)"}`);
+    let siteInfo = `Website (${site.url}):\n`;
+    if (site.analysis) {
+      siteInfo += `Product: ${site.analysis.productName}\n`;
+      siteInfo += `Description: ${site.analysis.description}\n`;
+      if (site.analysis.features.length > 0) siteInfo += `Features: ${site.analysis.features.join("; ")}\n`;
+      if (site.analysis.targetAudience) siteInfo += `Target Audience: ${site.analysis.targetAudience}\n`;
+      if (site.analysis.techIndicators.length > 0) siteInfo += `Tech: ${site.analysis.techIndicators.join(", ")}\n`;
+    }
+    siteInfo += site.markdown?.slice(0, 1000) || site.aiSummary || "(no content)";
+    parts.push(siteInfo);
   }
   for (const note of sources.audioNotes) {
     if (note.transcription) {
@@ -116,11 +125,27 @@ export function IntakeForm() {
     try {
       const sourceSummary = buildSourceSummary(formData.sources);
       const prompt = [
-        `Generate a product specification for "${formData.projectName}".`,
+        `Generate a detailed product specification for "${formData.projectName}".`,
         formData.description ? `Description: ${formData.description}` : "",
         sourceSummary ? `\nSource material:\n${sourceSummary}` : "",
-        "\nRespond ONLY with valid JSON in this exact format (no markdown, no code fences):",
-        '{"summary":"...","features":["..."],"techStack":["..."],"qaChecklist":["..."]}',
+        "\nRespond ONLY with valid JSON (no markdown, no code fences) in this exact format:",
+        JSON.stringify({
+          summary: "High-level product summary",
+          functionalSpec: {
+            userStories: ["As a [user], I want [goal] so that [benefit]"],
+            businessRules: ["Rule describing business logic"],
+            acceptanceCriteria: ["Testable acceptance criterion"],
+          },
+          technicalSpec: {
+            architecture: "Description of system architecture",
+            dataModels: ["Model/entity description"],
+            integrations: ["External service or API integration"],
+            nonFunctionalRequirements: ["Performance, security, or scalability requirement"],
+          },
+          features: ["Feature name or description"],
+          techStack: ["Technology name"],
+          qaChecklist: ["QA test or check item"],
+        }),
       ]
         .filter(Boolean)
         .join("\n");
@@ -131,10 +156,20 @@ export function IntakeForm() {
 
       let parsed: GeneratedSpec;
       try {
-        parsed = JSON.parse(content);
+        const raw = JSON.parse(content);
+        parsed = {
+          summary: raw.summary ?? content.slice(0, 500),
+          functionalSpec: raw.functionalSpec ?? { userStories: [], businessRules: [], acceptanceCriteria: [] },
+          technicalSpec: raw.technicalSpec ?? { architecture: "", dataModels: [], integrations: [], nonFunctionalRequirements: [] },
+          features: raw.features ?? [],
+          techStack: raw.techStack ?? [],
+          qaChecklist: raw.qaChecklist ?? [],
+        };
       } catch {
         parsed = {
           summary: content.slice(0, 500),
+          functionalSpec: { userStories: [], businessRules: [], acceptanceCriteria: [] },
+          technicalSpec: { architecture: "", dataModels: [], integrations: [], nonFunctionalRequirements: [] },
           features: ["(AI response could not be parsed — review raw output above)"],
           techStack: [],
           qaChecklist: [],

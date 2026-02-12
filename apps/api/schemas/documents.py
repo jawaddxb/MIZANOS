@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from apps.api.schemas.base import BaseSchema
+from apps.api.schemas.base import BaseSchema, PaginatedResponse
 
 
 class DocumentBase(BaseSchema):
@@ -32,6 +32,13 @@ class DocumentResponse(DocumentBase):
     uploaded_by: UUID
     folder_id: UUID | None = None
     created_at: datetime
+
+
+class FolderUpdate(BaseSchema):
+    """Folder update schema (rename/move)."""
+
+    name: str | None = None
+    parent_id: UUID | None = None
 
 
 class FolderCreate(BaseSchema):
@@ -75,6 +82,27 @@ class VersionResponse(BaseSchema):
     is_current: bool
     change_notes: str | None = None
     created_at: datetime
+
+
+class DocumentListResponse(PaginatedResponse):
+    """Paginated document list."""
+
+    data: list[DocumentResponse]
+
+
+class SharedProductInfo(BaseSchema):
+    """Product info in shared response."""
+
+    id: UUID
+    name: str
+
+
+class SharedDocumentsResponse(BaseSchema):
+    """Response for shared documents endpoint."""
+
+    product: SharedProductInfo
+    link_name: str
+    documents: list[DocumentResponse]
 
 
 class AccessLinkCreate(BaseSchema):

@@ -171,6 +171,20 @@ export function IntakeConfirmation({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {generatedSpec.functionalSpec && (
+              <SummaryRow label="Functional Spec">
+                {generatedSpec.functionalSpec.userStories.length} user stories,{" "}
+                {generatedSpec.functionalSpec.businessRules.length} business rules,{" "}
+                {generatedSpec.functionalSpec.acceptanceCriteria.length} acceptance criteria
+              </SummaryRow>
+            )}
+            {generatedSpec.technicalSpec && (
+              <SummaryRow label="Technical Spec">
+                {generatedSpec.technicalSpec.dataModels.length} data models,{" "}
+                {generatedSpec.technicalSpec.integrations.length} integrations,{" "}
+                {generatedSpec.technicalSpec.nonFunctionalRequirements.length} NFRs
+              </SummaryRow>
+            )}
             <SummaryRow label="Features">
               {generatedSpec.features.length} feature{generatedSpec.features.length !== 1 ? "s" : ""}
             </SummaryRow>

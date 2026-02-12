@@ -1,27 +1,39 @@
 "use client";
 
+import { useState, useMemo, useCallback } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  closestCorners,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragStartEvent,
+  type DragEndEvent,
+} from "@dnd-kit/core";
 import { Card, CardContent } from "@/components/atoms/display/Card";
 import { Badge } from "@/components/atoms/display/Badge";
 import { Button } from "@/components/molecules/buttons/Button";
 import { cn } from "@/lib/utils/cn";
-import { Plus, Loader2, Layers } from "lucide-react";
+import { Plus, Loader2, Layers, Library } from "lucide-react";
 import { useSpecificationFeatures } from "@/hooks/queries/useSpecificationFeatures";
+import {
+  useUpdateSpecFeature,
+  useQueueFeature,
+  useUnqueueFeature,
+} from "@/hooks/mutations/useSpecificationFeatureMutations";
+import { FeatureBoardColumn } from "./FeatureBoardColumn";
+import { AddFeatureDialog } from "./AddFeatureDialog";
+import { EditFeatureDialog } from "./EditFeatureDialog";
+import { ImportFromLibraryDialog } from "./ImportFromLibraryDialog";
+import { MarkReusableDialog } from "./MarkReusableDialog";
+import type { SpecificationFeature } from "@/lib/types";
 
 export interface FeaturesTabProps {
   productId: string;
 }
 
 type FeatureStatus = "proposed" | "approved" | "queued" | "in_progress" | "done";
-type FeaturePriority = "low" | "medium" | "high" | "critical";
-
-interface Feature {
-  id: string;
-  name: string;
-  description?: string;
-  status: FeatureStatus;
-  priority: FeaturePriority;
-  github_path?: string;
-}
 
 const COLUMNS: { id: FeatureStatus; title: string; color: string }[] = [
   { id: "proposed", title: "Proposed", color: "border-muted-foreground/30" },
@@ -31,7 +43,7 @@ const COLUMNS: { id: FeatureStatus; title: string; color: string }[] = [
   { id: "done", title: "Done", color: "border-status-healthy/30" },
 ];
 
-const PRIORITY_STYLES: Record<FeaturePriority, string> = {
+const PRIORITY_STYLES: Record<string, string> = {
   low: "bg-secondary text-muted-foreground",
   medium: "bg-status-warning/10 text-status-warning",
   high: "bg-status-warning/10 text-status-warning",
@@ -40,15 +52,90 @@ const PRIORITY_STYLES: Record<FeaturePriority, string> = {
 
 export function FeaturesTab({ productId }: FeaturesTabProps) {
   const { data: specFeatures, isLoading } = useSpecificationFeatures(productId);
+  const updateFeature = useUpdateSpecFeature(productId);
+  const queueFeature = useQueueFeature(productId);
+  const unqueueFeature = useUnqueueFeature(productId);
 
-  const features: Feature[] = (specFeatures ?? []).map((sf) => ({
-    id: sf.id,
-    name: sf.name,
-    description: sf.description ?? undefined,
-    status: (sf.status as FeatureStatus) || "proposed",
-    priority: (sf.priority as FeaturePriority) || "medium",
-    github_path: sf.github_path ?? undefined,
-  }));
+  const [addOpen, setAddOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [reusableOpen, setReusableOpen] = useState(false);
+  const [selectedFeature, setSelectedFeature] = useState<SpecificationFeature | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const rawFeatures = specFeatures ?? [];
+
+  const featuresByColumn = useMemo(() => {
+    const map: Record<FeatureStatus, SpecificationFeature[]> = {
+      proposed: [],
+      approved: [],
+      queued: [],
+      in_progress: [],
+      done: [],
+    };
+    for (const f of rawFeatures) {
+      const status = (f.status as FeatureStatus) || "proposed";
+      if (map[status]) map[status].push(f);
+      else map.proposed.push(f);
+    }
+    return map;
+  }, [rawFeatures]);
+
+  const activeFeature = activeId
+    ? rawFeatures.find((f) => f.id === activeId) ?? null
+    : null;
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+  );
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  }, []);
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      setActiveId(null);
+      const { active, over } = event;
+      if (!over) return;
+
+      const featureId = active.id as string;
+      const feature = rawFeatures.find((f) => f.id === featureId);
+      if (!feature) return;
+
+      const overId = over.id as string;
+      const targetColumn = COLUMNS.find((c) => c.id === overId);
+      const currentStatus = (feature.status as FeatureStatus) || "proposed";
+
+      if (!targetColumn || currentStatus === targetColumn.id) return;
+
+      if (targetColumn.id === "queued" && currentStatus !== "queued") {
+        queueFeature.mutate(featureId);
+      } else if (currentStatus === "queued" && targetColumn.id !== "queued") {
+        unqueueFeature.mutate(featureId);
+        updateFeature.mutate({ id: featureId, status: targetColumn.id });
+      } else {
+        updateFeature.mutate({ id: featureId, status: targetColumn.id });
+      }
+    },
+    [rawFeatures, updateFeature, queueFeature, unqueueFeature],
+  );
+
+  const handleFeatureClick = useCallback(
+    (feature: SpecificationFeature) => {
+      setSelectedFeature(feature);
+      setEditOpen(true);
+    },
+    [],
+  );
+
+  const handleMarkReusable = useCallback(
+    (feature: SpecificationFeature) => {
+      setSelectedFeature(feature);
+      setReusableOpen(true);
+    },
+    [],
+  );
 
   if (isLoading) {
     return (
@@ -63,36 +150,47 @@ export function FeaturesTab({ productId }: FeaturesTabProps) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold">Feature Board</h2>
-          <p className="text-sm text-muted-foreground">Track features from proposal to completion</p>
+          <p className="text-sm text-muted-foreground">
+            Drag features between columns to update their status
+          </p>
         </div>
-        <Button size="sm">
-          <Plus className="h-4 w-4 mr-1" /> Add Feature
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+            <Library className="h-4 w-4 mr-1" /> Import from Library
+          </Button>
+          <Button size="sm" onClick={() => setAddOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Add Feature
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-5 gap-3 min-h-[400px]">
-        {COLUMNS.map((col) => {
-          const colFeatures = features.filter((f) => f.status === col.id);
-          return (
-            <div key={col.id} className={cn("rounded-lg border-2 border-dashed p-3", col.color)}>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-medium">{col.title}</h3>
-                <Badge variant="secondary" className="text-xs">{colFeatures.length}</Badge>
-              </div>
-              <div className="space-y-2">
-                {colFeatures.map((feature) => (
-                  <FeatureCard key={feature.id} feature={feature} />
-                ))}
-                {colFeatures.length === 0 && (
-                  <p className="text-xs text-muted-foreground text-center py-6">No features</p>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="grid grid-cols-5 gap-3 min-h-[400px]">
+          {COLUMNS.map((col) => (
+            <FeatureBoardColumn
+              key={col.id}
+              id={col.id}
+              title={col.title}
+              color={col.color}
+              features={featuresByColumn[col.id]}
+              onFeatureClick={handleFeatureClick}
+              onMarkReusable={handleMarkReusable}
+            />
+          ))}
+        </div>
+        <DragOverlay>
+          {activeFeature && (
+            <DragOverlayCard feature={activeFeature} />
+          )}
+        </DragOverlay>
+      </DndContext>
 
-      {features.length === 0 && (
+      {rawFeatures.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Layers className="h-10 w-10 text-muted-foreground/50 mb-3" />
@@ -103,27 +201,34 @@ export function FeaturesTab({ productId }: FeaturesTabProps) {
           </CardContent>
         </Card>
       )}
+
+      <AddFeatureDialog open={addOpen} onOpenChange={setAddOpen} productId={productId} />
+      <EditFeatureDialog open={editOpen} onOpenChange={setEditOpen} feature={selectedFeature} productId={productId} />
+      <ImportFromLibraryDialog open={importOpen} onOpenChange={setImportOpen} productId={productId} />
+      <MarkReusableDialog open={reusableOpen} onOpenChange={setReusableOpen} feature={selectedFeature} productId={productId} />
     </div>
   );
 }
 
-function FeatureCard({ feature }: { feature: Feature }) {
+function DragOverlayCard({ feature }: { feature: SpecificationFeature }) {
   return (
-    <Card className="cursor-pointer hover:shadow-md transition-shadow">
+    <Card className="shadow-lg rotate-2 w-[200px]">
       <CardContent className="p-3">
         <p className="text-sm font-medium truncate">{feature.name}</p>
         {feature.description && (
-          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{feature.description}</p>
+          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+            {feature.description}
+          </p>
         )}
         <div className="flex items-center gap-2 mt-2">
-          <Badge className={cn("text-[10px]", PRIORITY_STYLES[feature.priority])}>
+          <Badge
+            className={cn(
+              "text-[10px]",
+              PRIORITY_STYLES[feature.priority] ?? PRIORITY_STYLES.medium,
+            )}
+          >
             {feature.priority}
           </Badge>
-          {feature.github_path && (
-            <span className="text-[10px] text-muted-foreground font-mono truncate">
-              {feature.github_path}
-            </span>
-          )}
         </div>
       </CardContent>
     </Card>

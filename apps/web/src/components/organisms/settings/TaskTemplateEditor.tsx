@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/atoms/inputs/BaseSelect";
 import { BaseInput } from "@/components/atoms/inputs/BaseInput";
+import { BaseTextarea } from "@/components/atoms/inputs/BaseTextarea";
 import { BaseSwitch } from "@/components/atoms/inputs/BaseSwitch";
 import type { TaskTemplate } from "@/lib/types";
 import type { ProjectSourceType } from "@/lib/types/enums";
@@ -42,6 +43,7 @@ interface TaskTemplateEditorProps {
   template: TaskTemplate | null;
   onSave: (data: Partial<TaskTemplate>) => void;
   isSaving: boolean;
+  groupId?: string;
 }
 
 export function TaskTemplateEditor({
@@ -50,6 +52,7 @@ export function TaskTemplateEditor({
   template,
   onSave,
   isSaving,
+  groupId,
 }: TaskTemplateEditorProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -116,10 +119,11 @@ export function TaskTemplateEditor({
 
           <div className="space-y-1.5">
             <label className="text-sm font-medium">Description</label>
-            <BaseInput
+            <BaseTextarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Optional description"
+              rows={3}
             />
           </div>
 
@@ -145,23 +149,27 @@ export function TaskTemplateEditor({
               onValueChange={setDefaultStatus}
               options={STATUSES}
             />
-            <FormSelect
-              label="Source Type"
-              value={sourceType}
-              onValueChange={setSourceType}
-              options={SOURCE_TYPES}
-            />
+            {!groupId && (
+              <FormSelect
+                label="Source Type"
+                value={sourceType}
+                onValueChange={setSourceType}
+                options={SOURCE_TYPES}
+              />
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Order Index</label>
-              <BaseInput
-                type="number"
-                value={orderIndex}
-                onChange={(e) => setOrderIndex(e.target.value)}
-              />
-            </div>
+            {!groupId && (
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Order Index</label>
+                <BaseInput
+                  type="number"
+                  value={orderIndex}
+                  onChange={(e) => setOrderIndex(e.target.value)}
+                />
+              </div>
+            )}
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Active</label>
               <div className="pt-2">

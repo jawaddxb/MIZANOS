@@ -34,6 +34,51 @@ class RepoAnalysisResponse(BaseSchema):
     created_at: datetime
 
 
+class RepoInfoRequest(BaseSchema):
+    """Request to get repository info."""
+
+    repository_url: str
+    github_token: str | None = None
+
+
+class RepoInfoResponse(BaseSchema):
+    """Repository info response."""
+
+    name: str | None = None
+    full_name: str | None = None
+    description: str | None = None
+    language: str | None = None
+    default_branch: str | None = None
+    stars: int = 0
+    forks: int = 0
+    open_issues: int = 0
+
+
+class ScanRequest(BaseSchema):
+    """Request to trigger a repo scan."""
+
+    product_id: UUID
+
+
+class ScanResponse(BaseSchema):
+    """Scan result."""
+
+    status: str
+    files_changed: int | None = None
+
+
+class RepoScanHistoryResponse(BaseSchema):
+    """Repo scan history response."""
+
+    id: UUID
+    product_id: UUID
+    repository_url: str
+    branch: str
+    scan_status: str
+    files_changed: int
+    created_at: datetime
+
+
 class GitHubOAuthCallback(BaseSchema):
     """GitHub OAuth callback data."""
 

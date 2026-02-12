@@ -16,7 +16,9 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { KanbanColumn } from "./KanbanColumn";
 import { KanbanCard } from "./KanbanCard";
 import { KanbanFilters } from "./KanbanFilters";
+import { COLUMN_DEFINITIONS, toKanbanTask } from "./kanban-utils";
 import { AddTaskDialog } from "./AddTaskDialog";
+import { EditTaskDialog } from "@/components/organisms/product/EditTaskDialog";
 import { useTasks } from "@/hooks/queries/useTasks";
 import {
   useCreateTask,
@@ -25,40 +27,8 @@ import {
 import type {
   KanbanTask,
   KanbanColumn as KanbanColumnType,
-  Task,
 } from "@/lib/types";
 import type { TaskStatus, PillarType, TaskPriority } from "@/lib/types";
-import { PILLAR_ORDER } from "@/lib/types";
-
-/* ------------------------------------------------------------------ */
-/*  Constants                                                          */
-/* ------------------------------------------------------------------ */
-
-const COLUMN_DEFINITIONS: { id: TaskStatus; title: string }[] = [
-  { id: "backlog", title: "Backlog" },
-  { id: "in_progress", title: "In Progress" },
-  { id: "review", title: "Review" },
-  { id: "done", title: "Done" },
-];
-
-/* ------------------------------------------------------------------ */
-/*  Helpers                                                            */
-/* ------------------------------------------------------------------ */
-
-function toKanbanTask(task: Task): KanbanTask {
-  return {
-    id: task.id,
-    title: task.title,
-    description: task.description ?? undefined,
-    pillar: (task.pillar ?? "development") as PillarType,
-    priority: (task.priority ?? "medium") as TaskPriority,
-    status: (task.status ?? "backlog") as TaskStatus,
-    assignee: undefined,
-    assigneeId: task.assignee_id ?? undefined,
-    dueDate: task.due_date ?? undefined,
-    createdAt: task.created_at,
-  };
-}
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -82,6 +52,8 @@ export function KanbanBoard({ productId }: KanbanBoardProps) {
   const [activeTask, setActiveTask] = useState<KanbanTask | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogStatus, setDialogStatus] = useState<TaskStatus>("backlog");
+  const [editTask, setEditTask] = useState<KanbanTask | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   /* Filters */
   const [search, setSearch] = useState("");
@@ -267,6 +239,10 @@ export function KanbanBoard({ productId }: KanbanBoardProps) {
               key={column.id}
               column={column}
               onAddTask={handleOpenAdd}
+              onTaskClick={(task) => {
+                setEditTask(task);
+                setEditDialogOpen(true);
+              }}
             />
           ))}
         </div>
@@ -282,6 +258,13 @@ export function KanbanBoard({ productId }: KanbanBoardProps) {
         onSubmit={handleCreate}
         defaultStatus={dialogStatus}
         isLoading={createTask.isPending}
+        productId={productId}
+      />
+
+      <EditTaskDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        task={editTask}
         productId={productId}
       />
     </div>

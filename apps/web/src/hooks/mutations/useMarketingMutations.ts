@@ -74,3 +74,17 @@ export function useChecklistMutations(productId: string) {
 
   return { toggleItem };
 }
+
+export function useApplyTemplate(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (sourceType: string) =>
+      marketingRepository.applyTemplate(productId, sourceType),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["marketing-checklist", productId] });
+      toast.success(`Applied ${data.items_created} checklist items`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}

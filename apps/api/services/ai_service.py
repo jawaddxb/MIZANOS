@@ -16,6 +16,27 @@ class AIService:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
+    @staticmethod
+    def _get_llm_config() -> tuple[str, str | None, str]:
+        """Return (api_key, base_url, model) or raise with actionable message."""
+        api_key = settings.openrouter_api_key or settings.openai_api_key
+        if not api_key:
+            raise ValueError(
+                "No LLM API key configured. Set OPENROUTER_API_KEY or "
+                "OPENAI_API_KEY in your environment to enable AI features."
+            )
+        base_url = (
+            "https://openrouter.ai/api/v1"
+            if settings.openrouter_api_key
+            else None
+        )
+        model = (
+            "anthropic/claude-sonnet-4"
+            if settings.openrouter_api_key
+            else "gpt-4o"
+        )
+        return api_key, base_url, model
+
     async def get_sessions(self, user_id: str) -> list[AIChatSession]:
         stmt = (
             select(AIChatSession)
@@ -80,18 +101,7 @@ class AIService:
         try:
             import openai
 
-            api_key = settings.openrouter_api_key or settings.openai_api_key
-            base_url = (
-                "https://openrouter.ai/api/v1"
-                if settings.openrouter_api_key
-                else None
-            )
-            model = (
-                "anthropic/claude-sonnet-4"
-                if settings.openrouter_api_key
-                else "gpt-4o"
-            )
-
+            api_key, base_url, model = self._get_llm_config()
             client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
 
             messages: list[dict[str, str]] = [
@@ -112,6 +122,8 @@ class AIService:
             )
             full_response = response.choices[0].message.content or ""
 
+        except ValueError as e:
+            full_response = str(e)
         except Exception:
             logger.exception("LLM response error")
             full_response = "Sorry, an error occurred while generating a response."
@@ -152,17 +164,7 @@ class AIService:
         try:
             import openai
 
-            api_key = settings.openrouter_api_key or settings.openai_api_key
-            base_url = (
-                "https://openrouter.ai/api/v1"
-                if settings.openrouter_api_key
-                else None
-            )
-            model = (
-                "anthropic/claude-sonnet-4"
-                if settings.openrouter_api_key
-                else "gpt-4o"
-            )
+            api_key, base_url, model = self._get_llm_config()
 
             messages: list[dict[str, str]] = [
                 {
@@ -189,7 +191,10 @@ class AIService:
                     full_response += delta
                     yield f"data: {delta}\n\n"
 
-        except Exception as e:
+        except ValueError as e:
+            full_response = str(e)
+            yield f"data: {full_response}\n\n"
+        except Exception:
             import logging
             logging.getLogger(__name__).exception("LLM streaming error")
             full_response = "Sorry, an error occurred while generating a response."

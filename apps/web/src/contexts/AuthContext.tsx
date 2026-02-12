@@ -53,6 +53,7 @@ function AuthProvider({ children, apiBaseUrl = "/api" }: AuthProviderProps) {
         .then((userData) => {
           setToken(storedToken);
           setUser(userData);
+          localStorage.setItem("access_token", storedToken);
           document.cookie = `access_token=${storedToken}; path=/; max-age=86400; SameSite=Lax`;
         })
         .catch(() => {
@@ -86,6 +87,10 @@ function AuthProvider({ children, apiBaseUrl = "/api" }: AuthProviderProps) {
 
       const data = await res.json();
       localStorage.setItem(TOKEN_KEY, data.access_token);
+      localStorage.setItem("access_token", data.access_token);
+      if (data.refresh_token) {
+        localStorage.setItem("refresh_token", data.refresh_token);
+      }
       localStorage.setItem(USER_KEY, JSON.stringify(data.user));
       document.cookie = `access_token=${data.access_token}; path=/; max-age=86400; SameSite=Lax`;
       setToken(data.access_token);
@@ -99,6 +104,8 @@ function AuthProvider({ children, apiBaseUrl = "/api" }: AuthProviderProps) {
 
   const logout = async () => {
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
     localStorage.removeItem(USER_KEY);
     document.cookie = "access_token=; path=/; max-age=0";
     setToken(null);

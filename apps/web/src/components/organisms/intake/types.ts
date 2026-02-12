@@ -31,6 +31,36 @@ export interface AudioNote {
   isTranscribing: boolean;
 }
 
+export interface ScrapedAnalysis {
+  productName: string;
+  description: string;
+  features: string[];
+  targetAudience: string;
+  pricingModel: string;
+  techIndicators: string[];
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  socialHandles?: Array<{ platform: string; handle: string }>;
+}
+
+export interface ExtractedDomainInfo {
+  domain: string;
+  ssl_status: string;
+  is_secured: boolean;
+}
+
+export interface ExtractedSocialHandle {
+  platform: string;
+  handle: string;
+  url?: string | null;
+}
+
+export interface ExtractedMarketingData {
+  domain: ExtractedDomainInfo;
+  socialHandles: ExtractedSocialHandle[];
+  contactEmails: string[];
+}
+
 export interface ScrapedWebsite {
   url: string;
   markdown: string;
@@ -39,6 +69,8 @@ export interface ScrapedWebsite {
   branding: Record<string, JsonValue> | null;
   metadata: { title: string | null } | null;
   aiSummary: string | null;
+  analysis: ScrapedAnalysis | null;
+  marketing: ExtractedMarketingData | null;
 }
 
 export interface GitHubData {
@@ -61,8 +93,23 @@ export interface IntakeSourceData {
 // ---------------------------------------------------------------------------
 // Generated specification (AI output)
 // ---------------------------------------------------------------------------
+export interface FunctionalSpec {
+  userStories: string[];
+  businessRules: string[];
+  acceptanceCriteria: string[];
+}
+
+export interface TechnicalSpec {
+  architecture: string;
+  dataModels: string[];
+  integrations: string[];
+  nonFunctionalRequirements: string[];
+}
+
 export interface GeneratedSpec {
   summary: string;
+  functionalSpec: FunctionalSpec;
+  technicalSpec: TechnicalSpec;
   features: string[];
   techStack: string[];
   qaChecklist: string[];

@@ -18,6 +18,11 @@ from apps.api.schemas.specifications import (
     SpecificationCreate,
 )
 from apps.api.services.base_service import BaseService
+from apps.api.services.spec_source_context import (
+    build_source_context,
+    build_spec_prompt,
+    parse_spec_response,
+)
 from packages.common.utils.error_handlers import not_found
 
 logger = logging.getLogger(__name__)
@@ -192,13 +197,81 @@ class SpecificationService(BaseService[Specification]):
             raise not_found("SpecificationFeature")
         return result
 
-    async def generate_specification(self, product_id: UUID) -> dict:
-        """Generate specification using AI."""
-        prompt = (
-            "Generate a product specification. "
-            "Return ONLY valid JSON with keys: summary (string), features (array of strings), "
-            "techStack (array of strings), qaChecklist (array of strings). No markdown."
+    async def generate_tasks_from_spec(self, product_id: UUID) -> list:
+        """Create tasks from the latest specification's features."""
+        from apps.api.models.task import Task
+
+        # Get latest spec
+        specs = await self.get_by_product(product_id)
+        if not specs:
+            raise HTTPException(
+                status_code=400,
+                detail="No specification found. Generate a spec first.",
+            )
+
+        latest_spec = specs[0]
+        features_stmt = (
+            select(SpecificationFeature)
+            .where(SpecificationFeature.specification_id == latest_spec.id)
+            .order_by(SpecificationFeature.sort_order)
         )
+        features_result = await self.repo.session.execute(features_stmt)
+        features = list(features_result.scalars().all())
+
+        if not features:
+            raise HTTPException(
+                status_code=400,
+                detail="No features found in specification.",
+            )
+
+        tasks: list[Task] = []
+        for feature in features:
+            task = Task(
+                product_id=product_id,
+                title=feature.name,
+                description=feature.description or "",
+                status="backlog",
+                priority=feature.priority or "medium",
+                pillar="development",
+                generation_source="specification",
+            )
+            self.repo.session.add(task)
+            tasks.append(task)
+
+            # Link feature to task
+            feature.task_id = None  # Will set after flush
+
+        await self.repo.session.flush()
+        for i, task in enumerate(tasks):
+            await self.repo.session.refresh(task)
+            if i < len(features):
+                features[i].task_id = task.id
+
+        await self.repo.session.flush()
+        return tasks
+
+    async def generate_specification(self, product_id: UUID) -> dict:
+        """Generate specification using AI, incorporating saved sources."""
+        from apps.api.models.specification import SpecificationSource
+
+        # Fetch product info
+        product_result = await self.repo.session.execute(
+            select(Product).where(Product.id == product_id)
+        )
+        product = product_result.scalar_one_or_none()
+        product_name = product.name if product else "Untitled Project"
+        pillar = getattr(product, "pillar", None)
+
+        # Fetch all saved sources
+        sources_result = await self.repo.session.execute(
+            select(SpecificationSource).where(
+                SpecificationSource.product_id == product_id
+            )
+        )
+        sources = list(sources_result.scalars().all())
+
+        context = build_source_context(sources, product_name, pillar)
+        prompt = build_spec_prompt(product_name, context)
 
         try:
             import openai
@@ -220,7 +293,7 @@ class SpecificationService(BaseService[Specification]):
             )
 
             content = response.choices[0].message.content or "{}"
-            spec_data = json.loads(content)
+            spec_data = parse_spec_response(content)
 
             # Determine next version
             existing = await self.get_by_product(product_id)

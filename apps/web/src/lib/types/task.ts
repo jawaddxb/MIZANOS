@@ -10,6 +10,12 @@ export interface Task {
   priority: string | null;
   pillar: string | null;
   due_date: string | null;
+  sort_order: number | null;
+  estimated_hours: number | null;
+  generation_source: string | null;
+  claude_code_prompt: string | null;
+  domain_group: string | null;
+  phase: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -24,8 +30,25 @@ export interface TaskTemplate {
   source_type: ProjectSourceType;
   order_index: number | null;
   is_active: boolean | null;
+  group_id: string | null;
   created_at: string | null;
   updated_at: string | null;
+}
+
+export interface TaskTemplateGroup {
+  id: string;
+  name: string;
+  description: string | null;
+  source_type: ProjectSourceType;
+  is_active: boolean | null;
+  order_index: number | null;
+  item_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TaskTemplateGroupDetail extends TaskTemplateGroup {
+  items: TaskTemplate[];
 }
 
 export interface KanbanTask {

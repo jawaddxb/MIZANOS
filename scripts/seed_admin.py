@@ -4,7 +4,7 @@ import asyncio
 import uuid
 
 from packages.common.db.session import async_session_factory
-from apps.api.models.user import Profile
+from apps.api.models.user import Profile, UserRole
 from apps.api.services.auth_service import pwd_context
 
 
@@ -12,7 +12,7 @@ async def seed_admin() -> None:
     async with async_session_factory() as session:
         from sqlalchemy import select
 
-        stmt = select(Profile).where(Profile.email == "jawad@vanarchain.com")
+        stmt = select(Profile).where(Profile.email == "jawad@vanerchain.com")
         result = await session.execute(stmt)
         if result.scalar_one_or_none():
             print("Admin user already exists.")
@@ -22,13 +22,20 @@ async def seed_admin() -> None:
         profile = Profile(
             id=admin_id,
             user_id=str(admin_id),
-            email="jawad@vanarchain.com",
+            email="jawad@vanerchain.com",
             full_name="Jawaad Ashraf",
             password_hash=pwd_context.hash("Jaajaa10!p"),
             role="admin",
             status="active",
         )
         session.add(profile)
+
+        user_role = UserRole(
+            user_id=str(admin_id),
+            role="admin",
+        )
+        session.add(user_role)
+
         await session.commit()
         print(f"Admin user created: {admin_id}")
 

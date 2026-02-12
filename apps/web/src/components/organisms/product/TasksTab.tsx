@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/atoms/display/Skeleton";
 import { Button } from "@/components/molecules/buttons/Button";
 import { PillarBadge } from "@/components/molecules/indicators/PillarBadge";
 import { useTasks } from "@/hooks/queries/useTasks";
+import { ClaudeCodePrompt } from "@/components/molecules/tasks/ClaudeCodePrompt";
 import type { Task, TaskStatus, TaskPriority } from "@/lib/types";
 import {
   CheckCircle2,
@@ -45,37 +46,49 @@ function TaskRow({ task }: { task: Task }) {
   const StatusIcon = statusConfig.icon;
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
-      <StatusIcon className={`h-5 w-5 shrink-0 ${statusConfig.color}`} />
+    <div className="rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+      <div className="flex items-center gap-3 p-3">
+        <StatusIcon className={`h-5 w-5 shrink-0 ${statusConfig.color}`} />
 
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{task.title}</p>
-        {task.description && (
-          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-            {task.description}
-          </p>
-        )}
-        <div className="flex items-center gap-2 mt-1.5">
-          {task.pillar && <PillarBadge pillar={task.pillar} className="text-[10px]" />}
-          {task.priority && (
-            <Badge
-              variant="secondary"
-              className={`text-[10px] ${PRIORITY_COLORS[task.priority] ?? ""}`}
-            >
-              {task.priority}
-            </Badge>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">{task.title}</p>
+          {task.description && (
+            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+              {task.description}
+            </p>
           )}
-          {task.due_date && (
-            <span className="text-xs text-muted-foreground tabular-nums">
-              Due {new Date(task.due_date).toLocaleDateString()}
-            </span>
-          )}
+          <div className="flex items-center gap-2 mt-1.5">
+            {task.pillar && <PillarBadge pillar={task.pillar} className="text-[10px]" />}
+            {task.priority && (
+              <Badge
+                variant="secondary"
+                className={`text-[10px] ${PRIORITY_COLORS[task.priority] ?? ""}`}
+              >
+                {task.priority}
+              </Badge>
+            )}
+            {task.domain_group && (
+              <Badge variant="secondary" className="text-[10px] font-mono">
+                {task.domain_group}
+              </Badge>
+            )}
+            {task.due_date && (
+              <span className="text-xs text-muted-foreground tabular-nums">
+                Due {new Date(task.due_date).toLocaleDateString()}
+              </span>
+            )}
+          </div>
         </div>
-      </div>
 
-      <Badge variant="outline" className="shrink-0 text-xs">
-        {statusConfig.label}
-      </Badge>
+        <Badge variant="outline" className="shrink-0 text-xs">
+          {statusConfig.label}
+        </Badge>
+      </div>
+      {task.claude_code_prompt && (
+        <div className="px-3 pb-3">
+          <ClaudeCodePrompt prompt={task.claude_code_prompt} />
+        </div>
+      )}
     </div>
   );
 }

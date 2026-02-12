@@ -10,6 +10,7 @@ from .document import (
     ExternalDocumentLink,
 )
 from .enums import AppRole, EnvironmentType, NotificationType, ProjectSourceType
+from .evaluation import EngineerEvaluation
 from .knowledge import KnowledgeEntry
 from .marketing import (
     MarketingChecklistItem,
@@ -42,7 +43,8 @@ from .settings import (
     TeamHoliday,
 )
 from .specification import Specification, SpecificationFeature, SpecificationSource
-from .task import Task, TaskTemplate
+from .system_document import SystemDocument
+from .task import Task, TaskTemplate, TaskTemplateGroup
 from .user import (
     Profile,
     UserGithubConnection,
@@ -67,6 +69,8 @@ __all__ = [
     "RepositoryAnalysis",
     # Deployment
     "DeploymentChecklistItem",
+    # Evaluation
+    "EngineerEvaluation",
     # Document
     "DocumentFolder",
     "DocumentVersion",
@@ -109,9 +113,12 @@ __all__ = [
     "Specification",
     "SpecificationFeature",
     "SpecificationSource",
+    # System Document
+    "SystemDocument",
     # Task
     "Task",
     "TaskTemplate",
+    "TaskTemplateGroup",
     # User
     "Profile",
     "UserRole",

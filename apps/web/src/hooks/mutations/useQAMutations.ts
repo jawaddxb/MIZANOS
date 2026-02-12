@@ -45,6 +45,21 @@ export function useCreateQACheck(productId: string) {
   });
 }
 
+export function useGenerateQAChecklist(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (): Promise<QACheck[]> => qaRepository.generateChecklist(productId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["qa-checks", productId] });
+      toast.success("QA checklist generated");
+    },
+    onError: (error: Error) => {
+      toast.error("Failed to generate QA checklist: " + error.message);
+    },
+  });
+}
+
 export function useUpdateQANotes(productId: string) {
   const queryClient = useQueryClient();
 

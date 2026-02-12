@@ -7,7 +7,7 @@ from uuid import UUID
 
 from jose import jwt
 from passlib.context import CryptContext
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.config import settings
@@ -26,7 +26,7 @@ class AuthService:
         """Authenticate user and return tokens."""
         from apps.api.models.user import Profile
 
-        stmt = select(Profile).where(Profile.email == email)
+        stmt = select(Profile).where(func.lower(Profile.email) == email.lower())
         result = await self.session.execute(stmt)
         profile = result.scalar_one_or_none()
 
@@ -58,7 +58,7 @@ class AuthService:
         from apps.api.models.user import Profile
 
         # Check existing
-        stmt = select(Profile).where(Profile.email == email)
+        stmt = select(Profile).where(func.lower(Profile.email) == email.lower())
         result = await self.session.execute(stmt)
         if result.scalar_one_or_none():
             raise bad_request("Email already registered")

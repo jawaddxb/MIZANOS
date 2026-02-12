@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import type { AIChatMessage } from "@/lib/types";
+import { aiRepository } from "@/lib/api/repositories";
 
 interface UseAIChatStreamOptions {
   onChunk: (content: string, messageId: string) => void;
@@ -23,30 +24,19 @@ export function useAIChatStream({ onChunk, onError }: UseAIChatStreamOptions) {
 
       try {
         abortRef.current = new AbortController();
-        const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || "/api"}/ai/chat/sessions/${sessionId}/stream`;
 
-        const response = await fetch(apiUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: contextMessages.slice(-20).map((m) => ({
-              role: m.role,
-              content: m.content,
-            })),
-          }),
-          signal: abortRef.current.signal,
-        });
+        const messages = contextMessages.slice(-20).map((m) => ({
+          role: m.role,
+          content: m.content,
+        }));
 
-        if (!response.ok) {
-          if (response.status === 429) {
-            throw new Error("Rate limit exceeded. Please wait a moment.");
-          }
-          throw new Error(`Request failed with status ${response.status}`);
-        }
+        const response = await aiRepository.streamChat(
+          sessionId,
+          messages,
+          abortRef.current.signal,
+        );
 
-        if (!response.body) throw new Error("No response body");
-
-        const reader = response.body.getReader();
+        const reader = response.body!.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
 

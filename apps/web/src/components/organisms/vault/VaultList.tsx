@@ -6,6 +6,7 @@ import { Button } from "@/components/molecules/buttons/Button";
 import { VaultSearch } from "./VaultSearch";
 import { VaultCategorySection } from "./VaultCategorySection";
 import { AddCredentialDialog } from "./AddCredentialDialog";
+import { EditCredentialDialog } from "./EditCredentialDialog";
 import { useVaultCredentials } from "@/hooks/queries/useVaultCredentials";
 import type { CompanyCredential, CredentialCategory } from "@/lib/types/vault";
 
@@ -27,6 +28,7 @@ export function VaultList() {
   const [categoryFilter, setCategoryFilter] = useState<CredentialCategory | "all">("all");
   const [tagFilter, setTagFilter] = useState("all");
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editCredential, setEditCredential] = useState<CompanyCredential | null>(null);
 
   const availableTags = useMemo(() => {
     const tagSet = new Set<string>();
@@ -107,12 +109,17 @@ export function VaultList() {
       ) : (
         <div className="space-y-6">
           {groupedByCategory.map(({ category, credentials: catCreds }) => (
-            <VaultCategorySection key={category} category={category} credentials={catCreds} />
+            <VaultCategorySection key={category} category={category} credentials={catCreds} onEditCredential={setEditCredential} />
           ))}
         </div>
       )}
 
       <AddCredentialDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
+      <EditCredentialDialog
+        open={editCredential !== null}
+        onOpenChange={(open) => { if (!open) setEditCredential(null); }}
+        credential={editCredential}
+      />
     </div>
   );
 }

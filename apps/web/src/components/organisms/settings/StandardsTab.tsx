@@ -12,6 +12,7 @@ import { Button } from "@/components/molecules/buttons/Button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/atoms/layout/Dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/atoms/layout/Collapsible";
 import { Plus, Trash2, ExternalLink, FileText, ChevronDown, ChevronRight, Eye, Pencil } from "lucide-react";
+import { EnhancedMarkdownViewer } from "@/components/molecules/display/EnhancedMarkdownViewer";
 import { toast } from "sonner";
 
 interface StandardsRepository {
@@ -122,7 +123,7 @@ function RepoItem({ repo, onToggle, onDelete, onView, onEdit }: {
         </div>
         <CollapsibleContent>
           <div className="border-t px-4 py-4 bg-muted/30">
-            {repo.markdown_content ? <pre className="text-sm whitespace-pre-wrap font-mono">{repo.markdown_content}</pre> : <p className="text-sm text-muted-foreground">No documentation content.</p>}
+            {repo.markdown_content ? <EnhancedMarkdownViewer content={repo.markdown_content} showToc={false} /> : <p className="text-sm text-muted-foreground">No documentation content.</p>}
           </div>
         </CollapsibleContent>
       </div>

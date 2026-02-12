@@ -94,6 +94,35 @@ export class MarketingRepository {
     );
     return response.data;
   }
+
+  async getTemplateTypes(): Promise<Array<{ source_type: string; item_count: number }>> {
+    const response = await this.client.get<Array<{ source_type: string; item_count: number }>>(
+      `${this.basePath}/checklist/templates`,
+    );
+    return response.data;
+  }
+
+  async applyTemplate(productId: string, sourceType: string): Promise<{ items_created: number }> {
+    const response = await this.client.post<{ items_created: number }>(
+      `${this.basePath}/checklist/apply-template`,
+      { product_id: productId, source_type: sourceType },
+    );
+    return response.data;
+  }
+
+  async autoPopulate(data: {
+    product_id: string;
+    domains: Array<{ domain_name: string; ssl_status?: string; is_secured?: boolean }>;
+    social_handles: Array<{ platform: string; handle: string; url?: string }>;
+    logo_url?: string | null;
+  }): Promise<{ domains_created: number; social_handles_created: number; logo_updated: boolean }> {
+    const response = await this.client.post<{
+      domains_created: number;
+      social_handles_created: number;
+      logo_updated: boolean;
+    }>(`${this.basePath}/auto-populate`, data);
+    return response.data;
+  }
 }
 
 export const marketingRepository = new MarketingRepository();

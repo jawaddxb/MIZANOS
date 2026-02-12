@@ -40,8 +40,5 @@ export type { EnvironmentsTabProps } from "./EnvironmentsTab";
 export { FeaturesTab } from "./FeaturesTab";
 export type { FeaturesTabProps } from "./FeaturesTab";
 
-export { MarketingTabWrapper } from "./MarketingTabWrapper";
-export type { MarketingTabWrapperProps } from "./MarketingTabWrapper";
-
 export { SourcesTab } from "./SourcesTab";
 export type { SourcesTabProps } from "./SourcesTab";

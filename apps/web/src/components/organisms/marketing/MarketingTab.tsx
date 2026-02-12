@@ -9,6 +9,10 @@ import {
   useMarketingCredentials,
   useMarketingChecklist,
 } from "@/hooks/queries/useMarketingAssets";
+import { DomainsSection } from "./DomainsSection";
+import { SocialHandlesSection } from "./SocialHandlesSection";
+import { CredentialsSection } from "./CredentialsSection";
+import { ChecklistSection } from "./ChecklistSection";
 
 interface MarketingTabProps {
   productId: string;
@@ -41,7 +45,6 @@ export function MarketingTab({ productId, canViewCredentials = false }: Marketin
         </p>
       </div>
 
-      {/* Tab Navigation */}
       <div className="flex gap-1 border-b">
         {TABS.map((tab) => {
           if (tab.id === "credentials" && !canViewCredentials) return null;
@@ -63,98 +66,24 @@ export function MarketingTab({ productId, canViewCredentials = false }: Marketin
         })}
       </div>
 
-      {/* Tab Content */}
       {isLoading ? (
         <div className="text-center py-8 text-muted-foreground">Loading marketing assets...</div>
       ) : (
         <div className="min-h-[200px]">
           {activeTab === "domains" && (
-            <DomainsContent domains={domains ?? []} productId={productId} />
+            <DomainsSection domains={domains ?? []} productId={productId} />
           )}
           {activeTab === "social" && (
-            <SocialHandlesContent handles={socialHandles ?? []} productId={productId} />
+            <SocialHandlesSection handles={socialHandles ?? []} productId={productId} />
           )}
           {activeTab === "credentials" && canViewCredentials && (
-            <CredentialsContent credentials={credentials ?? []} productId={productId} />
+            <CredentialsSection credentials={credentials ?? []} productId={productId} />
           )}
           {activeTab === "checklist" && (
-            <ChecklistContent items={checklistItems ?? []} productId={productId} />
+            <ChecklistSection items={checklistItems ?? []} productId={productId} />
           )}
         </div>
       )}
     </div>
-  );
-}
-
-function DomainsContent({ domains, productId }: { domains: MarketingDomain[]; productId: string }) {
-  if (domains.length === 0) {
-    return <EmptyState message="No domains configured" />;
-  }
-  return (
-    <div className="space-y-3">
-      {domains.map((d) => (
-        <div key={d.id} className="flex items-center justify-between rounded-lg border p-3">
-          <div className="flex items-center gap-2">
-            <Globe className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium">{d.domain_name}</span>
-          </div>
-          <span className="text-xs text-muted-foreground capitalize">{d.ssl_status ?? "unknown"}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function SocialHandlesContent({ handles, productId }: { handles: MarketingSocialHandle[]; productId: string }) {
-  if (handles.length === 0) {
-    return <EmptyState message="No social handles added" />;
-  }
-  return (
-    <div className="space-y-3">
-      {handles.map((h) => (
-        <div key={h.id} className="flex items-center justify-between rounded-lg border p-3">
-          <span className="text-sm capitalize">{h.platform}</span>
-          <span className="text-sm font-mono">{h.handle}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function CredentialsContent({ credentials, productId }: { credentials: MarketingCredential[]; productId: string }) {
-  if (credentials.length === 0) {
-    return <EmptyState message="No marketing credentials" />;
-  }
-  return (
-    <div className="space-y-3">
-      {credentials.map((c) => (
-        <div key={c.id} className="flex items-center justify-between rounded-lg border p-3">
-          <span className="font-medium">{c.label}</span>
-          <span className="text-xs text-muted-foreground capitalize">{c.credential_type}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function ChecklistContent({ items, productId }: { items: MarketingChecklistItem[]; productId: string }) {
-  if (items.length === 0) {
-    return <EmptyState message="No checklist items" />;
-  }
-  return (
-    <div className="space-y-2">
-      {items.map((item) => (
-        <div key={item.id} className="flex items-center gap-3 rounded-lg border p-3">
-          <div className={`h-4 w-4 rounded border ${item.is_completed ? "bg-primary border-primary" : "border-muted-foreground"}`} />
-          <span className={item.is_completed ? "line-through text-muted-foreground" : ""}>{item.title}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="text-center py-8 text-muted-foreground">{message}</div>
   );
 }
