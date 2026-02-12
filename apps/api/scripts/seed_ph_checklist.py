@@ -1,17 +1,25 @@
-"""Seed Product Hunt launch checklist template (56 items, 7 phases).
+"""Seed Product Hunt launch checklist template (56 items, 7 phases)
+and GTM knowledge base entries (10 playbook articles).
 
 Usage:
     python -m apps.api.scripts.seed_ph_checklist
+    python -m apps.api.scripts.seed_ph_checklist --force   # re-seed knowledge entries
 """
 
+import argparse
 import asyncio
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
+from apps.api.models.knowledge import KnowledgeEntry
 from apps.api.models.marketing import MarketingChecklistTemplate
+from apps.api.models.user import Profile
+from apps.api.scripts.ph_knowledge_entries import PH_KNOWLEDGE_ENTRIES
 from packages.common.db.session import async_session_factory
 
 SOURCE_TYPE = "product_hunt"
+ADMIN_EMAIL = "jawad@vanarchain.com"
+KNOWLEDGE_CATEGORY = "gtm"
 
 # fmt: off
 TEMPLATE_ITEMS: list[tuple[str, str, str]] = [
@@ -144,21 +152,20 @@ TEMPLATE_ITEMS: list[tuple[str, str, str]] = [
 # fmt: on
 
 
-async def main() -> None:
-    async with async_session_factory() as session:
-        # Check if template already seeded
-        existing = await session.execute(
-            select(MarketingChecklistTemplate).where(
-                MarketingChecklistTemplate.source_type == SOURCE_TYPE
-            )
+async def seed_checklist_template(session) -> None:  # noqa: ANN001
+    """Seed 56 checklist template items (idempotent)."""
+    existing = await session.execute(
+        select(MarketingChecklistTemplate).where(
+            MarketingChecklistTemplate.source_type == SOURCE_TYPE
         )
-        count = len(list(existing.scalars().all()))
-        if count > 0:
-            print(f"Template already seeded ({count} items). Delete existing rows to re-seed.")
-            return
+    )
+    if list(existing.scalars().all()):
+        print("Checklist template already seeded — skipping.")
+        return
 
-        for idx, (category, title, description) in enumerate(TEMPLATE_ITEMS):
-            template = MarketingChecklistTemplate(
+    for idx, (category, title, description) in enumerate(TEMPLATE_ITEMS):
+        session.add(
+            MarketingChecklistTemplate(
                 title=title,
                 category=category,
                 description=description,
@@ -166,11 +173,66 @@ async def main() -> None:
                 order_index=idx,
                 is_active=True,
             )
-            session.add(template)
+        )
+    await session.flush()
+    print(f"Seeded {len(TEMPLATE_ITEMS)} checklist template items.")
 
+
+async def seed_knowledge_entries(session, *, force: bool = False) -> None:  # noqa: ANN001
+    """Seed 10 GTM playbook knowledge entries (idempotent unless --force)."""
+    existing = await session.execute(
+        select(KnowledgeEntry).where(KnowledgeEntry.category == KNOWLEDGE_CATEGORY)
+    )
+    existing_entries = list(existing.scalars().all())
+
+    if existing_entries and not force:
+        print("Knowledge entries already seeded — skipping. Use --force to replace.")
+        return
+
+    if existing_entries and force:
+        await session.execute(
+            delete(KnowledgeEntry).where(KnowledgeEntry.category == KNOWLEDGE_CATEGORY)
+        )
+        await session.flush()
+        print(f"Deleted {len(existing_entries)} existing GTM knowledge entries.")
+
+    # Look up admin profile for created_by
+    result = await session.execute(
+        select(Profile).where(Profile.email == ADMIN_EMAIL)
+    )
+    admin = result.scalar_one_or_none()
+    if not admin:
+        print(f"Admin user ({ADMIN_EMAIL}) not found. Run `make db-seed` first.")
+        return
+
+    for title, content in PH_KNOWLEDGE_ENTRIES:
+        session.add(
+            KnowledgeEntry(
+                title=title,
+                content=content,
+                category=KNOWLEDGE_CATEGORY,
+                entry_type="text",
+                created_by=admin.id,
+                product_id=None,
+            )
+        )
+    await session.flush()
+    print(f"Seeded {len(PH_KNOWLEDGE_ENTRIES)} GTM knowledge entries.")
+
+
+async def main(force: bool = False) -> None:
+    async with async_session_factory() as session:
+        await seed_checklist_template(session)
+        await seed_knowledge_entries(session, force=force)
         await session.commit()
-        print(f"Seeded {len(TEMPLATE_ITEMS)} Product Hunt checklist template items.")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    parser = argparse.ArgumentParser(description="Seed PH checklist and knowledge entries")
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Delete and re-seed GTM knowledge entries (replaces plain text with markdown)",
+    )
+    args = parser.parse_args()
+    asyncio.run(main(force=args.force))

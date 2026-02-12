@@ -1,26 +1,31 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Search, BookOpen, Loader2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Plus, Search, BookOpen } from "lucide-react";
 import { Button } from "@/components/molecules/buttons/Button";
+import { Badge } from "@/components/atoms/display/Badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/atoms/inputs/BaseSelect";
 import { KnowledgeEntryCard } from "./KnowledgeEntryCard";
+import { KnowledgeCardSkeleton } from "./KnowledgeCardSkeleton";
 import { CreateKnowledgeEntryDialog } from "./CreateKnowledgeEntryDialog";
 import { useKnowledgeEntries } from "@/hooks/queries/useKnowledgeEntries";
 import { useProducts } from "@/hooks/queries/useProducts";
-
-const CATEGORIES = [
-  { value: "all", label: "All Categories" },
-  { value: "bizdev", label: "BizDev" },
-  { value: "product", label: "Product Features" },
-  { value: "dev_knowledge", label: "Dev Knowledge" },
-  { value: "general", label: "General" },
-];
+import { KNOWLEDGE_CATEGORIES } from "@/lib/constants/knowledge";
+import { cn } from "@/lib/utils/cn";
 
 export function KnowledgeList() {
+  const searchParams = useSearchParams();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState(searchParams.get("category") ?? "all");
   const [projectFilter, setProjectFilter] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("search") ?? "");
 
   const { data: entries, isLoading } = useKnowledgeEntries({
     category: categoryFilter === "all" ? undefined : categoryFilter,
@@ -43,7 +48,14 @@ export function KnowledgeList() {
             <BookOpen className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Knowledge Base</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold">Knowledge Base</h1>
+              {filteredEntries && (
+                <Badge variant="secondary" className="text-xs">
+                  {filteredEntries.length}
+                </Badge>
+              )}
+            </div>
             <p className="text-sm text-muted-foreground">
               Centralized knowledge for the team
             </p>
@@ -55,7 +67,36 @@ export function KnowledgeList() {
         </Button>
       </div>
 
-      {/* Filters */}
+      {/* Category chip filters */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => setCategoryFilter("all")}
+          className={cn(
+            "px-3 py-1.5 rounded-full text-sm font-medium transition-colors",
+            categoryFilter === "all"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted/50 text-muted-foreground hover:bg-muted",
+          )}
+        >
+          All
+        </button>
+        {KNOWLEDGE_CATEGORIES.map((cat) => (
+          <button
+            key={cat.value}
+            onClick={() => setCategoryFilter(cat.value)}
+            className={cn(
+              "px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+              categoryFilter === cat.value
+                ? cat.colorClasses
+                : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted",
+            )}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Search + project filter */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -66,37 +107,25 @@ export function KnowledgeList() {
             className="w-full h-9 rounded-md border bg-background pl-9 pr-3 text-sm"
           />
         </div>
-        <select
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-          className="h-9 rounded-md border bg-background px-3 text-sm w-full sm:w-[180px]"
-        >
-          {CATEGORIES.map((cat) => (
-            <option key={cat.value} value={cat.value}>
-              {cat.label}
-            </option>
-          ))}
-        </select>
-        <select
-          value={projectFilter}
-          onChange={(e) => setProjectFilter(e.target.value)}
-          className="h-9 rounded-md border bg-background px-3 text-sm w-full sm:w-[200px]"
-        >
-          <option value="all">All Projects</option>
-          <option value="general">General Only</option>
-          {products?.map((product) => (
-            <option key={product.id} value={product.id}>
-              {product.name}
-            </option>
-          ))}
-        </select>
+        <Select value={projectFilter} onValueChange={setProjectFilter}>
+          <SelectTrigger className="h-9 w-full sm:w-[200px]">
+            <SelectValue placeholder="All Projects" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Projects</SelectItem>
+            <SelectItem value="general">General Only</SelectItem>
+            {products?.map((product) => (
+              <SelectItem key={product.id} value={product.id}>
+                {product.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Entries List */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
+        <KnowledgeCardSkeleton />
       ) : filteredEntries?.length === 0 ? (
         <div className="text-center py-12">
           <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -115,8 +144,12 @@ export function KnowledgeList() {
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredEntries?.map((entry) => (
-            <KnowledgeEntryCard key={entry.id} entry={entry} />
+          {filteredEntries?.map((entry, index) => (
+            <KnowledgeEntryCard
+              key={entry.id}
+              entry={entry}
+              style={{ animationDelay: `${index * 50}ms` }}
+            />
           ))}
         </div>
       )}

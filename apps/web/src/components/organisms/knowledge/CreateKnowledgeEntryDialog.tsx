@@ -2,15 +2,24 @@
 
 import { useState } from "react";
 import { Button } from "@/components/molecules/buttons/Button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/atoms/layout/Dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/atoms/inputs/BaseSelect";
 import { knowledgeRepository } from "@/lib/api/repositories";
 import { useQueryClient } from "@tanstack/react-query";
-
-const CATEGORIES = [
-  { value: "bizdev", label: "BizDev" },
-  { value: "product", label: "Product Features" },
-  { value: "dev_knowledge", label: "Dev Knowledge" },
-  { value: "general", label: "General" },
-];
+import { KNOWLEDGE_CATEGORIES } from "@/lib/constants/knowledge";
 
 interface CreateKnowledgeEntryDialogProps {
   open: boolean;
@@ -26,8 +35,6 @@ export function CreateKnowledgeEntryDialog({
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("general");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  if (!open) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,10 +58,14 @@ export function CreateKnowledgeEntryDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" onClick={() => onOpenChange(false)} />
-      <div className="relative z-50 w-full max-w-md rounded-lg border bg-background p-6 shadow-lg">
-        <h2 className="text-lg font-semibold mb-4">Add Knowledge Entry</h2>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add Knowledge Entry</DialogTitle>
+          <DialogDescription>
+            Add a new entry to the team knowledge base.
+          </DialogDescription>
+        </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-sm font-medium">Title</label>
@@ -69,17 +80,18 @@ export function CreateKnowledgeEntryDialog({
 
           <div className="space-y-1.5">
             <label className="text-sm font-medium">Category</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full h-9 rounded-md border bg-background px-3 text-sm"
-            >
-              {CATEGORIES.map((cat) => (
-                <option key={cat.value} value={cat.value}>
-                  {cat.label}
-                </option>
-              ))}
-            </select>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {KNOWLEDGE_CATEGORIES.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-1.5">
@@ -90,18 +102,21 @@ export function CreateKnowledgeEntryDialog({
               placeholder="Write your knowledge entry..."
               className="w-full min-h-[120px] rounded-md border bg-background px-3 py-2 text-sm resize-none"
             />
+            <p className="text-xs text-muted-foreground">
+              Supports markdown: **bold**, ## headings, - lists, &gt; quotes
+            </p>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
+          <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Adding..." : "Add Entry"}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
