@@ -6,7 +6,8 @@ import type { FeatureKey } from "@/lib/types";
 export function useRoleVisibility() {
   const { hasPermission, isLoading, userRoles } = useMyPermissions();
 
-  const isAdmin = userRoles.includes("admin");
+  const isSuperAdmin = userRoles.includes("superadmin");
+  const isAdmin = isSuperAdmin || userRoles.includes("admin");
   const isPM = userRoles.includes("pm");
   const isMarketing = userRoles.includes("marketing");
   const isEngineer = userRoles.includes("engineer");
@@ -42,9 +43,11 @@ export function useRoleVisibility() {
   const canManageRoles = hasPermission("role_management");
   const canManageWorkflow = hasPermission("workflow_rules");
 
-  const primaryRole = isAdmin
-    ? "admin"
-    : isPM
+  const primaryRole = isSuperAdmin
+    ? "superadmin"
+    : isAdmin
+      ? "admin"
+      : isPM
       ? "pm"
       : isMarketing
         ? "marketing"
@@ -58,6 +61,7 @@ export function useRoleVisibility() {
     isLoading,
     roles: userRoles,
     userRoles,
+    isSuperAdmin,
     isAdmin,
     isPM,
     isMarketing,

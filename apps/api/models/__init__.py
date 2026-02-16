@@ -46,6 +46,8 @@ from .specification import Specification, SpecificationFeature, SpecificationSou
 from .system_document import SystemDocument
 from .task import Task, TaskTemplate, TaskTemplateGroup
 from .user import (
+    InvitationToken,
+    PasswordResetToken,
     Profile,
     UserGithubConnection,
     UserNotificationPreference,
@@ -125,6 +127,8 @@ __all__ = [
     "UserPermissionOverride",
     "UserNotificationPreference",
     "UserGithubConnection",
+    "InvitationToken",
+    "PasswordResetToken",
     # Vault
     "CompanyCredential",
 ]

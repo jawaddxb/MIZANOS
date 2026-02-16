@@ -151,7 +151,7 @@ async def invite_user(body: InviteUserRequest, user: CurrentUser = None, service
 
 @router.patch("/users/{user_id}/status")
 async def update_user_status(user_id: UUID, body: UserStatusUpdate, user: CurrentUser = None, service: SettingsService = Depends(get_service)):
-    return await service.update_user_status(user_id, body.status)
+    return await service.update_user_status(user_id, body.status, user["id"])
 
 
 @router.post("/users/{user_id}/reset-password")

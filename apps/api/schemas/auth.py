@@ -33,6 +33,7 @@ class UserResponse(BaseModel):
     id: str
     email: str
     full_name: str | None = None
+    role: str | None = None
 
 
 class LoginResponse(BaseModel):
@@ -63,3 +64,29 @@ class InviteUserRequest(BaseModel):
     email: EmailStr
     full_name: str
     role: str = "engineer"
+
+
+class GoogleLoginRequest(BaseModel):
+    """Google Sign-In request body."""
+
+    id_token: str
+
+
+class ActivateAccountRequest(BaseModel):
+    """Activate account with invitation token."""
+
+    token: str
+    password: str = Field(..., min_length=8)
+
+
+class ForgotPasswordRequest(BaseModel):
+    """Request a password reset email."""
+
+    email: EmailStr
+
+
+class ConfirmResetRequest(BaseModel):
+    """Confirm password reset with token."""
+
+    token: str
+    new_password: str = Field(..., min_length=8)

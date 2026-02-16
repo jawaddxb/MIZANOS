@@ -5,6 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.dependencies import DbSession, CurrentUser
 from apps.api.schemas.auth import (
+    ActivateAccountRequest,
+    ConfirmResetRequest,
+    ForgotPasswordRequest,
+    GoogleLoginRequest,
     InviteUserRequest,
     LoginRequest,
     LoginResponse,
@@ -27,6 +31,12 @@ def get_auth_service(db: DbSession) -> AuthService:
 async def login(body: LoginRequest, service: AuthService = Depends(get_auth_service)):
     """Authenticate user and return JWT tokens."""
     return await service.login(body.email, body.password)
+
+
+@router.post("/google", response_model=LoginResponse)
+async def google_login(body: GoogleLoginRequest, service: AuthService = Depends(get_auth_service)):
+    """Authenticate existing user via Google Sign-In."""
+    return await service.google_login(body.id_token)
 
 
 @router.get("/me")
@@ -76,3 +86,33 @@ async def invite_user(
     """Invite a new user to the platform."""
     await service.invite_user(body.email, body.full_name, body.role)
     return MessageResponse(message="Invitation sent")
+
+
+@router.post("/activate", response_model=MessageResponse)
+async def activate_account(
+    body: ActivateAccountRequest,
+    service: AuthService = Depends(get_auth_service),
+):
+    """Activate an invited account using an invitation token."""
+    result = await service.activate_account(body.token, body.password)
+    return MessageResponse(message=result["message"])
+
+
+@router.post("/forgot-password", response_model=MessageResponse)
+async def forgot_password(
+    body: ForgotPasswordRequest,
+    service: AuthService = Depends(get_auth_service),
+):
+    """Request a password reset email."""
+    result = await service.forgot_password(body.email)
+    return MessageResponse(message=result["message"])
+
+
+@router.post("/confirm-reset", response_model=MessageResponse)
+async def confirm_reset(
+    body: ConfirmResetRequest,
+    service: AuthService = Depends(get_auth_service),
+):
+    """Reset password using a reset token."""
+    result = await service.confirm_reset(body.token, body.new_password)
+    return MessageResponse(message=result["message"])

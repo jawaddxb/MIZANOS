@@ -71,8 +71,8 @@ export class AuthRepository {
     }
   }
 
-  async resetPassword(data: ResetPasswordRequest): Promise<void> {
-    await this.client.post("/auth/reset-password", data);
+  async forgotPassword(data: ResetPasswordRequest): Promise<void> {
+    await this.client.post("/auth/forgot-password", data);
   }
 
   async confirmReset(data: ConfirmResetRequest): Promise<void> {

@@ -2,7 +2,7 @@ import type { AxiosInstance } from "axios";
 import type { AIChatSession, AIChatMessage } from "@/lib/types";
 import { apiClient } from "../client";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4006";
 
 export class AIRepository {
   private readonly client: AxiosInstance;

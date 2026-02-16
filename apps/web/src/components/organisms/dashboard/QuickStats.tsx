@@ -22,51 +22,42 @@ interface QuickStatsProps {
   deploymentStageCount?: number;
 }
 
+
 interface StatItemProps {
   label: string;
   value: number;
   suffix?: string;
-  subtitle?: string;
   Icon: LucideIcon;
   iconColor: string;
   iconBg: string;
   accent?: "success" | "warning" | "critical";
 }
 
-function StatItem({ label, value, suffix, subtitle, Icon, iconColor, iconBg, accent }: StatItemProps) {
+function StatItem({ label, value, suffix, Icon, iconColor, iconBg, accent }: StatItemProps) {
   return (
     <div
       className={cn(
-        "group relative overflow-hidden bg-card rounded-xl border p-4",
-        "transition-all duration-300 ease-out hover:shadow-md hover:-translate-y-0.5",
+        "group relative overflow-hidden bg-card rounded-lg border p-3",
+        "transition-all duration-200 ease-out hover:shadow-sm",
         accent === "warning" && "border-status-warning/30 hover:border-status-warning/50",
         accent === "critical" && "border-status-critical/30 hover:border-status-critical/50",
       )}
     >
-      <div
-        className={cn(
-          "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300",
-          accent === "warning" && "bg-gradient-to-br from-status-warning/5 to-transparent",
-          accent === "critical" && "bg-gradient-to-br from-status-critical/5 to-transparent",
-          !accent && "bg-gradient-to-br from-secondary/50 to-transparent",
-        )}
-      />
-      <div className="relative flex items-center gap-4">
+      <div className="relative flex items-center gap-3">
         <div
           className={cn(
-            "h-12 w-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-110",
+            "h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0",
             iconBg,
           )}
         >
-          <Icon className={cn("h-6 w-6", iconColor)} />
+          <Icon className={cn("h-4.5 w-4.5", iconColor)} />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-1">
-            <p className="text-2xl font-bold font-mono text-foreground tabular-nums">{value}</p>
-            {suffix && <span className="text-sm text-muted-foreground">{suffix}</span>}
+            <p className="text-lg font-bold font-mono text-foreground tabular-nums">{value}</p>
+            {suffix && <span className="text-xs text-muted-foreground">{suffix}</span>}
           </div>
-          <p className="text-sm font-medium text-muted-foreground truncate">{label}</p>
-          {subtitle && <p className="text-xs text-muted-foreground/70 mt-0.5">{subtitle}</p>}
+          <p className="text-xs font-medium text-muted-foreground truncate">{label}</p>
         </div>
       </div>
     </div>
@@ -95,7 +86,7 @@ export function QuickStats(props: QuickStatsProps) {
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-      <StatItem label="Total Projects" value={totalProducts} subtitle={`${inProgressCount} active`} Icon={FolderKanban} iconColor="text-foreground" iconBg="bg-secondary" />
+      <StatItem label="Total Projects" value={totalProducts} Icon={FolderKanban} iconColor="text-foreground" iconBg="bg-secondary" />
       <StatItem label="Healthy" value={healthyCount} Icon={CheckCircle2} iconColor="text-status-healthy" iconBg="bg-status-healthy/10" accent="success" />
       <StatItem label="Needs Attention" value={warningCount} Icon={Clock} iconColor="text-status-warning" iconBg="bg-status-warning/10" accent="warning" />
       <StatItem label="At Risk" value={criticalCount} Icon={AlertTriangle} iconColor="text-status-critical" iconBg="bg-status-critical/10" accent="critical" />

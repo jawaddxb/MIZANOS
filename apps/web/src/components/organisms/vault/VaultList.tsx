@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { Shield, Plus, Lock } from "lucide-react";
 import { Button } from "@/components/molecules/buttons/Button";
+import { PageHeader } from "@/components/molecules/layout/PageHeader";
 import { VaultSearch } from "./VaultSearch";
 import { VaultCategorySection } from "./VaultCategorySection";
 import { AddCredentialDialog } from "./AddCredentialDialog";
@@ -62,22 +63,16 @@ export function VaultList() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground flex items-center gap-2">
-            <Shield className="h-6 w-6" />
-            Credential Vault
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Encrypted repository for company-wide credentials and API keys
-          </p>
-        </div>
+      <PageHeader
+        title="Credential Vault"
+        subtitle="Encrypted repository for company-wide credentials and API keys"
+        icon={<Shield className="h-5 w-5 text-primary" />}
+      >
         <Button onClick={() => setAddDialogOpen(true)} className="gap-2">
           <Plus className="h-4 w-4" />
           Add Credential
         </Button>
-      </div>
+      </PageHeader>
 
       {/* Search & Filter */}
       <VaultSearch

@@ -25,16 +25,10 @@ export function useInviteUser() {
       max_projects?: number;
       office_location?: string;
     }) => settingsRepository.inviteUser(data),
-    onSuccess: (data) => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["users-management"] });
       queryClient.invalidateQueries({ queryKey: ["profiles"] });
-      if (data.temp_password) {
-        toast.info(`User invited. Temporary password: ${data.temp_password}`, {
-          duration: 30000,
-        });
-      } else {
-        toast.success("User invited successfully");
-      }
+      toast.success(`Invitation email sent to ${variables.email}`);
     },
     onError: (error: Error) => {
       toast.error("Failed to invite user: " + error.message);

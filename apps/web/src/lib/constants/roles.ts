@@ -7,6 +7,11 @@ export interface RoleConfig {
 }
 
 export const ROLE_CONFIG: Record<AppRole, RoleConfig> = {
+  superadmin: {
+    label: "Super Admin",
+    description: "Full platform control including user management",
+    color: "var(--role-admin)",
+  },
   admin: {
     label: "Admin",
     description: "Full access to all features and settings",
@@ -35,6 +40,7 @@ export const ROLE_CONFIG: Record<AppRole, RoleConfig> = {
 } as const;
 
 export const APP_ROLES: AppRole[] = [
+  "superadmin",
   "admin",
   "pm",
   "engineer",
@@ -43,6 +49,7 @@ export const APP_ROLES: AppRole[] = [
 ];
 
 export const DEFAULT_ROLE_PERMISSIONS: Record<AppRole, string[]> = {
+  superadmin: ["*"],
   admin: ["*"],
   pm: [
     "products.view",

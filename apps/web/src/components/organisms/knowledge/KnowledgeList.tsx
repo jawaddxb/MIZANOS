@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Plus, Search, BookOpen } from "lucide-react";
 import { Button } from "@/components/molecules/buttons/Button";
 import { Badge } from "@/components/atoms/display/Badge";
+import { PageHeader } from "@/components/molecules/layout/PageHeader";
 import {
   Select,
   SelectContent,
@@ -41,31 +42,23 @@ export function KnowledgeList() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <BookOpen className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold">Knowledge Base</h1>
-              {filteredEntries && (
-                <Badge variant="secondary" className="text-xs">
-                  {filteredEntries.length}
-                </Badge>
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Centralized knowledge for the team
-            </p>
-          </div>
-        </div>
+      <PageHeader
+        title="Knowledge Base"
+        subtitle="Centralized knowledge for the team"
+        icon={<BookOpen className="h-5 w-5 text-primary" />}
+        badge={
+          filteredEntries ? (
+            <Badge variant="secondary" className="text-xs">
+              {filteredEntries.length}
+            </Badge>
+          ) : undefined
+        }
+      >
         <Button onClick={() => setCreateDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Entry
         </Button>
-      </div>
+      </PageHeader>
 
       {/* Category chip filters */}
       <div className="flex flex-wrap items-center gap-2">

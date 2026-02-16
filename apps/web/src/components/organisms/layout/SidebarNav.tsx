@@ -4,34 +4,14 @@ import Link from "next/link";
 import type { Route } from "next";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
+import { Separator } from "@/components/atoms/layout/Separator";
+import { NavGroup } from "@/components/molecules/navigation/NavGroup";
 import {
-  LayoutDashboard,
-  FileInput,
-  Users,
-  BookOpen,
-  Shield,
-  Settings,
-  FlaskConical,
-  LayoutTemplate,
-  type LucideIcon,
-} from "lucide-react";
-
-interface NavItem {
-  href: string;
-  icon: LucideIcon;
-  label: string;
-}
-
-const NAV_ITEMS: NavItem[] = [
-  { href: "/", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/intake", icon: FileInput, label: "New Intake" },
-  { href: "/team", icon: Users, label: "Team" },
-  { href: "/knowledge", icon: BookOpen, label: "Knowledge Base" },
-  { href: "/vault", icon: Shield, label: "Vault" },
-  { href: "/evaluator", icon: FlaskConical, label: "Evaluator" },
-  { href: "/templates", icon: LayoutTemplate, label: "Templates" },
-  { href: "/settings", icon: Settings, label: "Settings" },
-];
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/atoms/feedback/Tooltip";
+import { NAV_GROUPS, SETTINGS_NAV_ITEM } from "@/lib/constants";
 
 interface SidebarNavProps {
   collapsed: boolean;
@@ -39,31 +19,55 @@ interface SidebarNavProps {
 
 export function SidebarNav({ collapsed }: SidebarNavProps) {
   const pathname = usePathname();
+  const settingsActive =
+    pathname === SETTINGS_NAV_ITEM.href ||
+    pathname.startsWith(SETTINGS_NAV_ITEM.href);
+
+  const settingsLink = (
+    <Link
+      href={SETTINGS_NAV_ITEM.href as Route}
+      className={cn(
+        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 relative",
+        collapsed && "justify-center px-2",
+        settingsActive
+          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm"
+          : "text-sidebar-foreground font-normal hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
+      )}
+    >
+      {settingsActive && (
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-white rounded-r" />
+      )}
+      <SETTINGS_NAV_ITEM.icon className="h-4 w-4 shrink-0" />
+      {!collapsed && SETTINGS_NAV_ITEM.label}
+    </Link>
+  );
 
   return (
-    <nav className={cn("px-3 py-2 relative z-10", collapsed && "px-2")}>
-      <ul className="space-y-0.5">
-        {NAV_ITEMS.map((item) => {
-          const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
-          return (
-            <li key={item.href}>
-              <Link
-                href={item.href as Route}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
-                  collapsed && "justify-center px-2",
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
-                )}
-              >
-                <item.icon className="h-4 w-4 shrink-0" />
-                {!collapsed && item.label}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+    <nav
+      className={cn(
+        "flex flex-col flex-1 px-3 py-2 relative z-10",
+        collapsed && "px-2",
+      )}
+    >
+      <div className="space-y-5">
+        {NAV_GROUPS.map((group) => (
+          <NavGroup key={group.label} group={group} collapsed={collapsed} />
+        ))}
+      </div>
+
+      <div className="mt-auto pt-4">
+        <Separator className="mb-3 bg-sidebar-border" />
+        {collapsed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>{settingsLink}</TooltipTrigger>
+            <TooltipContent side="right">
+              {SETTINGS_NAV_ITEM.label}
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          settingsLink
+        )}
+      </div>
     </nav>
   );
 }

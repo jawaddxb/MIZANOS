@@ -107,7 +107,7 @@ export function ResetPasswordForm({
 
     setIsSubmitting(true);
     try {
-      await authRepository.resetPassword({ email: email.trim() });
+      await authRepository.forgotPassword({ email: email.trim() });
       setSuccess(true);
     } catch (err: unknown) {
       setError(
@@ -174,16 +174,9 @@ export function ResetPasswordForm({
     return (
       <form
         onSubmit={handleConfirmReset}
-        className={cn("space-y-6 w-full max-w-sm", className)}
+        className={cn("space-y-5 w-full", className)}
         noValidate
       >
-        <div className="space-y-2 text-center">
-          <h3 className="font-semibold text-lg">Set a new password</h3>
-          <p className="text-sm text-muted-foreground">
-            Enter your new password below.
-          </p>
-        </div>
-
         <div className="space-y-4">
           <TextField
             label="New password"
@@ -208,14 +201,16 @@ export function ResetPasswordForm({
         </div>
 
         {error && (
-          <p className="text-sm text-destructive" role="alert">
-            {error}
-          </p>
+          <div className="rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2">
+            <p className="text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          </div>
         )}
 
         <Button
           type="submit"
-          className="w-full"
+          className="w-full h-10"
           loading={isSubmitting}
           leftIcon={<KeyRound className="h-4 w-4" />}
         >
@@ -231,16 +226,9 @@ export function ResetPasswordForm({
   return (
     <form
       onSubmit={handleRequestReset}
-      className={cn("space-y-6 w-full max-w-sm", className)}
+      className={cn("space-y-5 w-full", className)}
       noValidate
     >
-      <div className="space-y-2 text-center">
-        <h3 className="font-semibold text-lg">Reset your password</h3>
-        <p className="text-sm text-muted-foreground">
-          Enter your email and we will send you a reset link.
-        </p>
-      </div>
-
       <TextField
         label="Email"
         type="email"
@@ -253,14 +241,16 @@ export function ResetPasswordForm({
       />
 
       {error && (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
+        <div className="rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2">
+          <p className="text-sm text-destructive" role="alert">
+            {error}
+          </p>
+        </div>
       )}
 
       <Button
         type="submit"
-        className="w-full"
+        className="w-full h-10"
         loading={isSubmitting}
         leftIcon={<Mail className="h-4 w-4" />}
       >

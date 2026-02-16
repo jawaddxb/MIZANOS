@@ -3,6 +3,8 @@
 import { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Settings } from "lucide-react";
+import { cn } from "@/lib/utils/cn";
+import { PageHeader } from "@/components/molecules/layout/PageHeader";
 import { Skeleton } from "@/components/atoms/display/Skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/queries/useProfiles";
@@ -74,50 +76,77 @@ export default function SettingsPage() {
     [isAdmin],
   );
 
+  const generalTabs = visibleTabs.filter((t) => !t.adminOnly);
+  const adminTabs = visibleTabs.filter((t) => t.adminOnly);
+
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center gap-3">
-        <Settings className="h-6 w-6" />
-        <div>
-          <h1 className="text-2xl font-semibold">Settings</h1>
-          <p className="text-sm text-muted-foreground">
-            Configure system preferences, standards, and integrations
-          </p>
+    <div className="p-6 space-y-6">
+      <PageHeader
+        title="Settings"
+        subtitle="Configure system preferences, standards, and integrations"
+        icon={<Settings className="h-5 w-5 text-primary" />}
+      />
+
+      <div className="flex gap-6">
+        {/* Vertical tab sidebar */}
+        <div className="w-[200px] shrink-0">
+          <nav className="space-y-1">
+            {generalTabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
+                  activeTab === tab.id
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted",
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+            {adminTabs.length > 0 && (
+              <>
+                <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                  Admin
+                </p>
+                {adminTabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={cn(
+                      "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
+                      activeTab === tab.id
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted",
+                    )}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </>
+            )}
+          </nav>
         </div>
-      </div>
 
-      <div className="flex gap-1 border-b overflow-x-auto">
-        {visibleTabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === tab.id
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="min-h-[400px]">
-        {activeTab === "standards" ? (
-          <StandardsTabWrapper />
-        ) : activeTab === "holidays" ? (
-          <HolidaysTabWrapper />
-        ) : activeTab === "users" ? (
-          <UserManagementTabWrapper />
-        ) : activeTab === "authority-matrix" ? (
-          <PermissionMatrixTabWrapper />
-        ) : activeTab === "modules" ? (
-          <ModulesTabWrapper />
-        ) : activeTab === "integrations" ? (
-          <IntegrationsTabWrapper />
-        ) : (
-          <GenericSettingsTab tabId={activeTab} />
-        )}
+        {/* Tab content */}
+        <div className="flex-1 min-w-0 min-h-[400px]">
+          {activeTab === "standards" ? (
+            <StandardsTabWrapper />
+          ) : activeTab === "holidays" ? (
+            <HolidaysTabWrapper />
+          ) : activeTab === "users" ? (
+            <UserManagementTabWrapper />
+          ) : activeTab === "authority-matrix" ? (
+            <PermissionMatrixTabWrapper />
+          ) : activeTab === "modules" ? (
+            <ModulesTabWrapper />
+          ) : activeTab === "integrations" ? (
+            <IntegrationsTabWrapper />
+          ) : (
+            <GenericSettingsTab tabId={activeTab} />
+          )}
+        </div>
       </div>
     </div>
   );

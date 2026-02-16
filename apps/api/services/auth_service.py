@@ -5,6 +5,8 @@ import uuid as uuid_mod
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token as google_id_token
 from jose import jwt
 from passlib.context import CryptContext
 from sqlalchemy import func, select
@@ -50,6 +52,7 @@ class AuthService:
                 "id": str(profile.user_id),
                 "email": profile.email,
                 "full_name": profile.full_name,
+                "role": profile.role,
             },
         }
 
@@ -128,33 +131,156 @@ class AuthService:
             "role": profile.role,
         }
 
-    async def invite_user(self, email: str, full_name: str, role: str) -> None:
-        """Create an invited user with a temporary password."""
-        temp_password = secrets.token_urlsafe(16)
-        await self.register(email, temp_password, full_name)
-        # TODO: Send invitation email with temp_password
+    async def activate_account(self, token: str, password: str) -> dict:
+        """Activate account using an invitation token."""
+        from apps.api.models.user import InvitationToken, Profile
+
+        stmt = select(InvitationToken).where(InvitationToken.token == token)
+        result = await self.session.execute(stmt)
+        inv = result.scalar_one_or_none()
+
+        if not inv:
+            raise bad_request("Invalid activation token")
+        if inv.used_at is not None:
+            raise bad_request("This activation link has already been used")
+        if inv.expires_at < datetime.now(timezone.utc):
+            raise bad_request("This activation link has expired")
+
+        inv.used_at = datetime.now(timezone.utc)
+
+        profile = await self.session.get(Profile, inv.profile_id)
+        if not profile:
+            raise bad_request("User account not found")
+
+        profile.password_hash = self._hash_password(password)
+        profile.status = "active"
+        profile.must_reset_password = False
+        await self.session.flush()
+
+        return {"message": "Account activated successfully. You can now log in."}
+
+    async def forgot_password(self, email: str) -> dict:
+        """Send a password reset email. Always returns success to avoid leaking info."""
+        from apps.api.models.user import PasswordResetToken, Profile
+        from apps.api.services.email_service import EmailService
+
+        stmt = select(Profile).where(func.lower(Profile.email) == email.lower())
+        result = await self.session.execute(stmt)
+        profile = result.scalar_one_or_none()
+
+        if profile and profile.status == "active":
+            token_value = secrets.token_urlsafe(48)
+            reset_token = PasswordResetToken(
+                profile_id=profile.id,
+                token=token_value,
+                expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+            )
+            self.session.add(reset_token)
+            await self.session.flush()
+
+            link = f"{settings.app_base_url}/reset-password?token={token_value}"
+            await EmailService.send_password_reset_email(
+                to_email=email,
+                full_name=profile.full_name or "User",
+                reset_link=link,
+            )
+
+        return {"message": "If an account with that email exists, a reset link has been sent."}
+
+    async def confirm_reset(self, token: str, new_password: str) -> dict:
+        """Reset password using a password reset token."""
+        from apps.api.models.user import PasswordResetToken, Profile
+
+        stmt = select(PasswordResetToken).where(PasswordResetToken.token == token)
+        result = await self.session.execute(stmt)
+        reset = result.scalar_one_or_none()
+
+        if not reset:
+            raise bad_request("Invalid reset token")
+        if reset.used_at is not None:
+            raise bad_request("This reset link has already been used")
+        if reset.expires_at < datetime.now(timezone.utc):
+            raise bad_request("This reset link has expired")
+
+        reset.used_at = datetime.now(timezone.utc)
+
+        profile = await self.session.get(Profile, reset.profile_id)
+        if not profile:
+            raise bad_request("User account not found")
+
+        profile.password_hash = self._hash_password(new_password)
+        profile.must_reset_password = False
+        await self.session.flush()
+
+        return {"message": "Password reset successfully. You can now log in."}
+
+    async def google_login(self, id_token_str: str) -> dict:
+        """Authenticate an existing user via Google ID token."""
+        from apps.api.models.user import Profile
+
+        email = self._verify_google_id_token(id_token_str)
+
+        stmt = select(Profile).where(func.lower(Profile.email) == email.lower())
+        result = await self.session.execute(stmt)
+        profile = result.scalar_one_or_none()
+
+        if not profile:
+            raise bad_request("No account found for this Google email. Please sign up first.")
+
+        if profile.status == "suspended":
+            raise forbidden("Your account has been suspended. Contact your administrator.")
+
+        if profile.status != "active":
+            raise bad_request("Your account is not yet active. Please check your email for an activation link.")
+
+        profile.last_login = datetime.now(timezone.utc)
+        await self.session.flush()
+
+        tokens = self._create_tokens(str(profile.user_id), profile.email)
+        return {
+            **tokens,
+            "must_reset_password": False,
+            "user": {
+                "id": str(profile.user_id),
+                "email": profile.email,
+                "full_name": profile.full_name,
+                "role": profile.role,
+            },
+        }
+
+    @staticmethod
+    def _verify_google_id_token(id_token_str: str) -> str:
+        """Verify a Google ID token and return the email address."""
+        if not settings.google_oauth_client_id:
+            raise bad_request("Google Sign-In is not configured on this server.")
+
+        try:
+            id_info = google_id_token.verify_oauth2_token(
+                id_token_str,
+                google_requests.Request(),
+                settings.google_oauth_client_id,
+            )
+        except ValueError as e:
+            raise bad_request(f"Invalid Google token: {e}")
+
+        if not id_info.get("email_verified"):
+            raise bad_request("Google email is not verified.")
+
+        email = id_info.get("email")
+        if not email:
+            raise bad_request("No email found in Google token.")
+
+        return email
 
     def _create_tokens(self, user_id: str, email: str) -> dict:
         """Generate JWT access and refresh tokens."""
         now = datetime.now(timezone.utc)
-        access_payload = {
-            "sub": user_id,
-            "email": email,
-            "exp": now + timedelta(minutes=settings.jwt_access_token_expire_minutes),
-            "iat": now,
-        }
-        refresh_payload = {
-            "sub": user_id,
-            "email": email,
-            "exp": now + timedelta(days=settings.jwt_refresh_token_expire_days),
-            "iat": now,
-            "type": "refresh",
-        }
-        access_token = jwt.encode(access_payload, settings.jwt_secret_key, settings.jwt_algorithm)
-        refresh_token = jwt.encode(refresh_payload, settings.jwt_secret_key, settings.jwt_algorithm)
+        base = {"sub": user_id, "email": email, "iat": now}
+        access_payload = {**base, "exp": now + timedelta(minutes=settings.jwt_access_token_expire_minutes)}
+        refresh_payload = {**base, "exp": now + timedelta(days=settings.jwt_refresh_token_expire_days), "type": "refresh"}
         return {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
+            "access_token": jwt.encode(access_payload, settings.jwt_secret_key, settings.jwt_algorithm),
+            "refresh_token": jwt.encode(refresh_payload, settings.jwt_secret_key, settings.jwt_algorithm),
             "token_type": "bearer",
         }
 

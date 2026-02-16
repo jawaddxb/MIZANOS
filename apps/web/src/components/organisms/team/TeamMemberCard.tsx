@@ -5,8 +5,10 @@ import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
 import { Badge } from "@/components/atoms/display/Badge";
 import { Avatar } from "@/components/atoms/display/Avatar";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Ban, ShieldCheck } from "lucide-react";
 import { RecordCompletionDialog } from "./RecordCompletionDialog";
+import { useUpdateUserStatus } from "@/hooks/queries/useUserManagement";
+import { useAuth } from "@/contexts/AuthContext";
 import type { Profile } from "@/lib/types/user";
 import type { EvaluationSummary } from "@/lib/types/evaluation";
 
@@ -16,6 +18,7 @@ interface TeamMemberCardProps {
 }
 
 const roleLabels: Record<string, string> = {
+  superadmin: "Super Admin",
   engineer: "AI Engineer",
   pm: "Project Manager",
   marketing: "Marketing",
@@ -35,15 +38,28 @@ function scoreBadgeColor(score: number): string {
   return "bg-status-critical text-white";
 }
 
+function canBanUser(actorRole: string | undefined, targetRole: string | null): boolean {
+  if (actorRole === "superadmin") return true;
+  if (actorRole === "admin" && targetRole !== "admin" && targetRole !== "superadmin") return true;
+  return false;
+}
+
 export function TeamMemberCard({ profile, evaluationSummary }: TeamMemberCardProps) {
   const [completionOpen, setCompletionOpen] = useState(false);
+  const { user } = useAuth();
+  const updateStatus = useUpdateUserStatus();
+  const isSuspended = profile.status === "suspended";
+  const showBanAction = canBanUser(user?.role, profile.role) && profile.user_id !== user?.id;
   const availability =
     availabilityConfig[profile.availability as keyof typeof availabilityConfig] ??
     availabilityConfig.available;
 
   return (
     <Link href={`/team/${profile.id}`} className="block">
-      <div className="rounded-lg border bg-card p-4 hover:shadow-md transition-shadow cursor-pointer">
+      <div className={cn(
+        "rounded-lg border bg-card p-4 hover:shadow-md transition-shadow cursor-pointer",
+        isSuspended && "opacity-60 border-destructive/30",
+      )}>
         <div className="flex items-start gap-3">
           <div className="relative">
             <Avatar className="h-10 w-10">
@@ -68,6 +84,11 @@ export function TeamMemberCard({ profile, evaluationSummary }: TeamMemberCardPro
               <h3 className="font-medium text-foreground truncate">
                 {profile.full_name ?? "Unknown"}
               </h3>
+              {isSuspended && (
+                <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                  Suspended
+                </Badge>
+              )}
               {evaluationSummary && (
                 <span
                   className={cn(
@@ -132,17 +153,49 @@ export function TeamMemberCard({ profile, evaluationSummary }: TeamMemberCardPro
               )}
             </div>
           )}
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setCompletionOpen(true);
-            }}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors pt-1"
-          >
-            <CheckCircle2 className="h-3 w-3" />
-            Record Completion
-          </button>
+          <div className="flex items-center gap-3 pt-1">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setCompletionOpen(true);
+              }}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <CheckCircle2 className="h-3 w-3" />
+              Record Completion
+            </button>
+            {showBanAction && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  updateStatus.mutate({
+                    userId: profile.id,
+                    status: isSuspended ? "active" : "suspended",
+                  });
+                }}
+                className={cn(
+                  "flex items-center gap-1 text-xs transition-colors",
+                  isSuspended
+                    ? "text-green-600 hover:text-green-700"
+                    : "text-destructive hover:text-destructive/80",
+                )}
+              >
+                {isSuspended ? (
+                  <>
+                    <ShieldCheck className="h-3 w-3" />
+                    Restore
+                  </>
+                ) : (
+                  <>
+                    <Ban className="h-3 w-3" />
+                    Suspend
+                  </>
+                )}
+              </button>
+            )}
+          </div>
         </div>
 
         <RecordCompletionDialog

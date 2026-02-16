@@ -78,7 +78,7 @@ export default function GroupDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6 max-w-6xl mx-auto space-y-6">
+      <div className="p-6 space-y-6">
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-4 w-96" />
         <Skeleton className="h-64 w-full" />
@@ -88,14 +88,14 @@ export default function GroupDetailPage() {
 
   if (!group) {
     return (
-      <div className="p-6 max-w-6xl mx-auto">
+      <div className="p-6">
         <p className="text-muted-foreground">Group not found.</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className="p-6 space-y-6">
       <nav className="flex items-center gap-1 text-sm text-muted-foreground">
         <Link href="/templates" className="hover:text-foreground transition-colors">
           Templates

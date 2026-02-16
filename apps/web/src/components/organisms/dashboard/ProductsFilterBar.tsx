@@ -40,8 +40,8 @@ export function ProductsFilterBar({
   onClearFilters,
 }: ProductsFilterBarProps) {
   return (
-    <div className="flex items-center gap-3 flex-wrap">
-      <div className="relative flex-1 min-w-[200px] max-w-sm">
+    <div className="flex items-center gap-2 flex-wrap">
+      <div className="relative flex-1 min-w-[160px] max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <BaseInput
           placeholder="Search projects..."
@@ -63,7 +63,7 @@ export function ProductsFilterBar({
       <Select value={statusFilter} onValueChange={onStatusChange}>
         <SelectTrigger
           className={cn(
-            "w-36 bg-card",
+            "w-[130px] shrink-0 bg-card",
             statusFilter !== "all" && "border-primary/30",
           )}
         >
@@ -80,7 +80,7 @@ export function ProductsFilterBar({
       <Select value={pillarFilter} onValueChange={onPillarChange}>
         <SelectTrigger
           className={cn(
-            "w-40 bg-card",
+            "w-[130px] shrink-0 bg-card",
             pillarFilter !== "all" && "border-primary/30",
           )}
         >
@@ -97,7 +97,7 @@ export function ProductsFilterBar({
       <Select value={stageFilter} onValueChange={onStageChange}>
         <SelectTrigger
           className={cn(
-            "w-36 bg-card",
+            "w-[130px] shrink-0 bg-card",
             stageFilter !== "all" && "border-primary/30",
           )}
         >

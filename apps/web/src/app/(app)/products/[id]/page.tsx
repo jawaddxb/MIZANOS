@@ -86,7 +86,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const productData = product.product;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold">{productData?.name ?? "Product"}</h1>
         <div className="flex items-center gap-2">

@@ -56,7 +56,7 @@ export function ProductsSection() {
 
   return (
     <div
-      className="space-y-4 animate-fade-in"
+      className="space-y-3 animate-fade-in"
       style={{ animationDelay: "250ms" }}
     >
       <SectionHeader
@@ -81,9 +81,9 @@ export function ProductsSection() {
       />
 
       {isLoading && (
-        <div className="flex flex-col items-center justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-3" />
-          <p className="text-sm text-muted-foreground">Loading projects...</p>
+        <div className="flex flex-col items-center justify-center py-10">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mb-2" />
+          <p className="text-xs text-muted-foreground">Loading projects...</p>
         </div>
       )}
 
@@ -91,8 +91,8 @@ export function ProductsSection() {
         <div
           className={cn(
             viewMode === "grid"
-              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
-              : "flex flex-col gap-2",
+              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"
+              : "flex flex-col gap-1.5",
           )}
         >
           {filteredProducts.map((product, index) => (
@@ -100,24 +100,24 @@ export function ProductsSection() {
               key={product.id}
               href={`/products/${product.id}`}
               className={cn(
-                "group block relative overflow-hidden bg-card rounded-lg border border-l-[3px] p-4",
-                "transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-0.5",
+                "group block relative overflow-hidden bg-card rounded-lg border border-l-[3px] p-3",
+                "transition-all duration-200 ease-out hover:shadow-md hover:-translate-y-0.5",
               )}
               style={{
                 opacity: 0,
                 animation: `fade-in 0.3s ease-out ${Math.min(index * 50, 400)}ms forwards`,
               }}
             >
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <h3 className="font-semibold text-foreground truncate group-hover:text-foreground/90 transition-colors">
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <h3 className="text-sm font-semibold text-foreground truncate group-hover:text-foreground/90 transition-colors">
                   {product.name}
                 </h3>
-                <span className="text-lg font-mono font-bold text-foreground tabular-nums flex-shrink-0">
+                <span className="text-sm font-mono font-bold text-foreground tabular-nums flex-shrink-0">
                   {product.health_score ?? 0}
                 </span>
               </div>
-              <div className="mb-3">
-                <div className="flex items-center justify-between text-xs mb-1.5">
+              <div>
+                <div className="flex items-center justify-between text-xs mb-1">
                   <span className="text-muted-foreground font-medium">
                     {product.stage || "Unknown"}
                   </span>
@@ -125,7 +125,7 @@ export function ProductsSection() {
                     {product.progress ?? 0}%
                   </span>
                 </div>
-                <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                <div className="h-1 bg-secondary rounded-full overflow-hidden">
                   <div
                     className="h-full bg-primary rounded-full transition-all duration-300"
                     style={{ width: `${product.progress ?? 0}%` }}
@@ -203,14 +203,14 @@ function EmptyState({
   onClearFilters: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="h-16 w-16 rounded-2xl bg-secondary flex items-center justify-center mb-4">
-        <FolderKanban className="h-8 w-8 text-muted-foreground" />
+    <div className="flex flex-col items-center justify-center py-10 text-center">
+      <div className="h-12 w-12 rounded-xl bg-secondary flex items-center justify-center mb-3">
+        <FolderKanban className="h-6 w-6 text-muted-foreground" />
       </div>
-      <h3 className="text-lg font-semibold text-foreground mb-1">
+      <h3 className="text-sm font-semibold text-foreground mb-1">
         {hasProducts ? "No matching projects" : "No projects yet"}
       </h3>
-      <p className="text-sm text-muted-foreground mb-4 max-w-sm">
+      <p className="text-xs text-muted-foreground mb-3 max-w-sm">
         {hasProducts
           ? "Try adjusting your search or filter criteria"
           : "Create your first project to get started with lifecycle management"}

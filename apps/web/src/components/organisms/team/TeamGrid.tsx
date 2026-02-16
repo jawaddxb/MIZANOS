@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { Search, Plus, Users, UserCheck, UserX, Briefcase, Crown, Megaphone } from "lucide-react";
 import { Button } from "@/components/molecules/buttons/Button";
+import { PageHeader } from "@/components/molecules/layout/PageHeader";
 import { Skeleton } from "@/components/atoms/display/Skeleton";
 import { TeamMemberCard } from "./TeamMemberCard";
 import { TeamCapacityOverview } from "./TeamCapacityOverview";
@@ -88,16 +89,16 @@ export function TeamGrid() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">Team</h1>
-          <p className="text-sm text-muted-foreground">Manage your team members</p>
-        </div>
+      <PageHeader
+        title="Team"
+        subtitle="Manage your team members"
+        icon={<Users className="h-5 w-5 text-primary" />}
+      >
         <Button onClick={() => setAddMemberOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Team Member
         </Button>
-      </div>
+      </PageHeader>
 
       {!isLoading && profiles.length > 0 && (
         <TeamCapacityOverview profiles={profiles} />

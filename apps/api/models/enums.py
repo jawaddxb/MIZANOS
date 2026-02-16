@@ -4,6 +4,7 @@ import enum
 
 
 class AppRole(str, enum.Enum):
+    SUPERADMIN = "superadmin"
     ADMIN = "admin"
     PM = "pm"
     ENGINEER = "engineer"
