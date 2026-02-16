@@ -87,50 +87,53 @@ export default function SettingsPage() {
         icon={<Settings className="h-5 w-5 text-primary" />}
       />
 
-      <div className="flex gap-6">
-        {/* Vertical tab sidebar */}
-        <div className="w-[200px] shrink-0">
-          <nav className="space-y-1">
-            {generalTabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
-                  activeTab === tab.id
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted",
-                )}
-              >
-                {tab.label}
-              </button>
-            ))}
-            {adminTabs.length > 0 && (
-              <>
-                <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
-                  Admin
-                </p>
-                {adminTabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={cn(
-                      "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
-                      activeTab === tab.id
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted",
-                    )}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </>
-            )}
-          </nav>
-        </div>
+      {/* Horizontal tab bar */}
+      <div className="border-b border-border -mx-6 px-6 overflow-x-auto scrollbar-none">
+        <nav className="flex items-center gap-1">
+          {generalTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "relative px-3 py-2.5 text-sm whitespace-nowrap transition-colors",
+                activeTab === tab.id
+                  ? "text-foreground font-medium"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {tab.label}
+              {activeTab === tab.id && (
+                <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-t" />
+              )}
+            </button>
+          ))}
+          {adminTabs.length > 0 && (
+            <>
+              <span className="mx-1 h-4 w-px bg-border" />
+              {adminTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    "relative px-3 py-2.5 text-sm whitespace-nowrap transition-colors",
+                    activeTab === tab.id
+                      ? "text-foreground font-medium"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {tab.label}
+                  {activeTab === tab.id && (
+                    <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-t" />
+                  )}
+                </button>
+              ))}
+            </>
+          )}
+        </nav>
+      </div>
 
-        {/* Tab content */}
-        <div className="flex-1 min-w-0 min-h-[400px]">
+      {/* Tab content */}
+      <div className="min-h-[400px]">
           {activeTab === "standards" ? (
             <StandardsTabWrapper />
           ) : activeTab === "holidays" ? (
@@ -146,7 +149,6 @@ export default function SettingsPage() {
           ) : (
             <GenericSettingsTab tabId={activeTab} />
           )}
-        </div>
       </div>
     </div>
   );

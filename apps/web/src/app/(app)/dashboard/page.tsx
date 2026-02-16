@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { LayoutDashboard, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
+import { MizanLogo } from "@/components/atoms/brand/MizanLogo";
 import { Button } from "@/components/molecules/buttons/Button";
 import { PageHeader } from "@/components/molecules/layout/PageHeader";
 import { QuickStats } from "@/components/organisms/dashboard/QuickStats";
@@ -17,7 +18,7 @@ export default function DashboardPage() {
       <PageHeader
         title="Dashboard"
         subtitle="Project health overview and key action points"
-        icon={<LayoutDashboard className="h-5 w-5 text-primary" />}
+        icon={<MizanLogo size={22} className="text-primary" />}
       >
         <Link href="/intake">
           <Button className="shadow-sm hover:shadow-md transition-shadow">

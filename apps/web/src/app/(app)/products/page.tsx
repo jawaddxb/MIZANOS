@@ -23,7 +23,7 @@ export default function ProductsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [pillarFilter, setPillarFilter] = useState("all");
   const [stageFilter, setStageFilter] = useState("all");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
 
   const { data: products = [], isLoading } = useProducts();
 

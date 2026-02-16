@@ -30,12 +30,12 @@ export function SidebarNav({ collapsed }: SidebarNavProps) {
         "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 relative",
         collapsed && "justify-center px-2",
         settingsActive
-          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm"
-          : "text-sidebar-foreground font-normal hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
+          ? "bg-accent text-accent-foreground font-medium"
+          : "text-muted-foreground font-normal hover:bg-accent/50 hover:text-foreground",
       )}
     >
       {settingsActive && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-white rounded-r" />
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-r" />
       )}
       <SETTINGS_NAV_ITEM.icon className="h-4 w-4 shrink-0" />
       {!collapsed && SETTINGS_NAV_ITEM.label}
@@ -56,7 +56,7 @@ export function SidebarNav({ collapsed }: SidebarNavProps) {
       </div>
 
       <div className="mt-auto pt-4">
-        <Separator className="mb-3 bg-sidebar-border" />
+        <Separator className="mb-3 bg-border" />
         {collapsed ? (
           <Tooltip>
             <TooltipTrigger asChild>{settingsLink}</TooltipTrigger>

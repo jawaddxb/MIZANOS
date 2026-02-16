@@ -29,12 +29,12 @@ function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
         "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 relative",
         collapsed && "justify-center px-2",
         isActive
-          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm"
-          : "text-sidebar-foreground font-normal hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
+          ? "bg-accent text-accent-foreground font-medium"
+          : "text-muted-foreground font-normal hover:bg-accent/50 hover:text-foreground",
       )}
     >
       {isActive && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-white rounded-r" />
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-r" />
       )}
       <item.icon className="h-4 w-4 shrink-0" />
       {!collapsed && item.label}
@@ -57,7 +57,7 @@ export function NavGroup({ group, collapsed }: NavGroupProps) {
   return (
     <div>
       {!collapsed && (
-        <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">
+        <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
           {group.label}
         </p>
       )}
