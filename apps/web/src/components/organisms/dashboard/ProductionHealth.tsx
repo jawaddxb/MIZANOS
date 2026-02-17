@@ -132,8 +132,8 @@ export function ProductionHealth() {
         {projects.length === 0 ? (
           <EmptyState />
         ) : (
-          <ScrollArea className="h-[300px] pr-2">
-            <div className="space-y-2">
+          <ScrollArea className="h-[260px] pr-2">
+            <div className="space-y-1.5">
               {projects.map((project, index) => (
                 <ProjectRow key={project.id} project={project} index={index} />
               ))}
@@ -147,12 +147,12 @@ export function ProductionHealth() {
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center py-8 text-center">
-      <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center mb-3">
-        <Zap className="h-6 w-6 text-muted-foreground" />
+    <div className="flex flex-col items-center justify-center py-6 text-center">
+      <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center mb-2">
+        <Zap className="h-5 w-5 text-muted-foreground" />
       </div>
-      <p className="font-medium text-foreground">Pipeline Clear</p>
-      <p className="text-sm text-muted-foreground mt-1">
+      <p className="text-sm font-medium text-foreground">Pipeline Clear</p>
+      <p className="text-xs text-muted-foreground mt-0.5">
         No projects in QA, Security, or Deployment
       </p>
     </div>
@@ -167,18 +167,17 @@ function ProjectRow({ project, index }: { project: Product; index: number }) {
   return (
     <Link
       href={`/products/${project.id}`}
-      className="block p-3 rounded-lg border hover:border-border transition-all duration-200 group hover:bg-accent/30"
+      className="block p-2.5 rounded-lg border hover:border-border transition-all duration-200 group hover:bg-accent/30"
       style={{
         opacity: 0,
         animation: `fade-in 0.3s ease-out ${index * 50}ms forwards`,
       }}
     >
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2.5 min-w-0">
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2 min-w-0">
           <div
             className={cn(
-              "h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0",
-              "transition-transform duration-200 group-hover:scale-110",
+              "h-7 w-7 rounded-md flex items-center justify-center flex-shrink-0",
               config.bg,
               config.color,
             )}
@@ -186,7 +185,7 @@ function ProjectRow({ project, index }: { project: Product; index: number }) {
             {config.icon}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-foreground truncate group-hover:text-foreground/90">
+            <p className="text-sm font-medium text-foreground truncate">
               {project.name}
             </p>
             <p className="text-xs text-muted-foreground">
@@ -194,15 +193,15 @@ function ProjectRow({ project, index }: { project: Product; index: number }) {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           {getStatusBadge(project.status)}
-          <ChevronRight className="h-4 w-4 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-all duration-200 group-hover:translate-x-0.5" />
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-all" />
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <div className="flex-1">
-          <div className="flex items-center justify-between text-xs mb-1.5">
+          <div className="flex items-center justify-between text-xs mb-1">
             <span className="text-muted-foreground">Progress</span>
             <span className="font-mono tabular-nums">{progress}%</span>
           </div>
@@ -210,19 +209,19 @@ function ProjectRow({ project, index }: { project: Product; index: number }) {
         </div>
         <div
           className={cn(
-            "flex-shrink-0 w-16 text-right p-2 rounded-lg",
+            "flex-shrink-0 w-14 text-right px-1.5 py-1 rounded-md",
             getHealthBg(healthScore),
           )}
         >
           <p
             className={cn(
-              "text-lg font-bold font-mono tabular-nums",
+              "text-sm font-bold font-mono tabular-nums",
               getHealthColor(healthScore),
             )}
           >
             {healthScore}%
           </p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">
             Health
           </p>
         </div>

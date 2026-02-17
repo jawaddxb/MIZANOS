@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils/cn";
 import { Button } from "@/components/molecules/buttons/Button";
 import { TextField } from "@/components/molecules/forms/TextField";
 import { authRepository } from "@/lib/api/repositories";
+import { validatePassword, PASSWORD_RULES } from "@/lib/utils/password";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -107,7 +108,7 @@ export function ResetPasswordForm({
 
     setIsSubmitting(true);
     try {
-      await authRepository.resetPassword({ email: email.trim() });
+      await authRepository.forgotPassword({ email: email.trim() });
       setSuccess(true);
     } catch (err: unknown) {
       setError(
@@ -123,12 +124,9 @@ export function ResetPasswordForm({
     e.preventDefault();
     setError(null);
 
-    if (!newPassword.trim()) {
-      setError("Please enter a new password.");
-      return;
-    }
-    if (newPassword.length < 8) {
-      setError("Password must be at least 8 characters.");
+    const pwError = validatePassword(newPassword);
+    if (pwError) {
+      setError(pwError);
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -174,27 +172,23 @@ export function ResetPasswordForm({
     return (
       <form
         onSubmit={handleConfirmReset}
-        className={cn("space-y-6 w-full max-w-sm", className)}
+        className={cn("space-y-5 w-full", className)}
         noValidate
       >
-        <div className="space-y-2 text-center">
-          <h3 className="font-semibold text-lg">Set a new password</h3>
-          <p className="text-sm text-muted-foreground">
-            Enter your new password below.
-          </p>
-        </div>
-
         <div className="space-y-4">
-          <TextField
-            label="New password"
-            type="password"
-            placeholder="At least 8 characters"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            autoComplete="new-password"
-            required
-            disabled={isSubmitting}
-          />
+          <div>
+            <TextField
+              label="New password"
+              type="password"
+              placeholder="Min 8 chars, upper, lower, number, special"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              autoComplete="new-password"
+              required
+              disabled={isSubmitting}
+            />
+            <p className="text-xs text-muted-foreground mt-1">{PASSWORD_RULES}</p>
+          </div>
           <TextField
             label="Confirm password"
             type="password"
@@ -208,14 +202,16 @@ export function ResetPasswordForm({
         </div>
 
         {error && (
-          <p className="text-sm text-destructive" role="alert">
-            {error}
-          </p>
+          <div className="rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2">
+            <p className="text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          </div>
         )}
 
         <Button
           type="submit"
-          className="w-full"
+          className="w-full h-10"
           loading={isSubmitting}
           leftIcon={<KeyRound className="h-4 w-4" />}
         >
@@ -231,16 +227,9 @@ export function ResetPasswordForm({
   return (
     <form
       onSubmit={handleRequestReset}
-      className={cn("space-y-6 w-full max-w-sm", className)}
+      className={cn("space-y-5 w-full", className)}
       noValidate
     >
-      <div className="space-y-2 text-center">
-        <h3 className="font-semibold text-lg">Reset your password</h3>
-        <p className="text-sm text-muted-foreground">
-          Enter your email and we will send you a reset link.
-        </p>
-      </div>
-
       <TextField
         label="Email"
         type="email"
@@ -253,14 +242,16 @@ export function ResetPasswordForm({
       />
 
       {error && (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
+        <div className="rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2">
+          <p className="text-sm text-destructive" role="alert">
+            {error}
+          </p>
+        </div>
       )}
 
       <Button
         type="submit"
-        className="w-full"
+        className="w-full h-10"
         loading={isSubmitting}
         leftIcon={<Mail className="h-4 w-4" />}
       >

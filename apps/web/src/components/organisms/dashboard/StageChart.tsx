@@ -49,8 +49,8 @@ export function StageChart({ data: dataProp }: StageChartProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[180px] flex items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <div className="h-[130px] flex items-center justify-center">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         </CardContent>
       </Card>
@@ -67,7 +67,7 @@ export function StageChart({ data: dataProp }: StageChartProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[180px] flex items-center justify-center text-muted-foreground text-sm">
+          <div className="h-[130px] flex items-center justify-center text-muted-foreground text-sm">
             No data available
           </div>
         </CardContent>
@@ -85,7 +85,7 @@ export function StageChart({ data: dataProp }: StageChartProps) {
       </CardHeader>
       <CardContent>
         <div className="flex items-center gap-4">
-          <div className="h-[140px] w-[140px] relative flex-shrink-0 flex items-center justify-center">
+          <div className="h-[110px] w-[110px] relative flex-shrink-0 flex items-center justify-center">
             <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
               {data.reduce(
                 (acc, item) => {
@@ -113,8 +113,8 @@ export function StageChart({ data: dataProp }: StageChartProps) {
               ).elements}
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <p className="text-2xl font-bold font-mono">{total}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Total</p>
+              <p className="text-lg font-bold font-mono">{total}</p>
+              <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Total</p>
             </div>
           </div>
 

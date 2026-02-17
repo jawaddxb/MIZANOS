@@ -7,6 +7,11 @@ export interface RoleConfig {
 }
 
 export const ROLE_CONFIG: Record<AppRole, RoleConfig> = {
+  superadmin: {
+    label: "Super Admin",
+    description: "Full platform control including user management",
+    color: "var(--role-admin)",
+  },
   admin: {
     label: "Admin",
     description: "Full access to all features and settings",
@@ -32,17 +37,25 @@ export const ROLE_CONFIG: Record<AppRole, RoleConfig> = {
     description: "Marketing campaigns, domains, and social media",
     color: "var(--role-marketing)",
   },
+  product_manager: {
+    label: "Product Manager",
+    description: "Product intake and overview access only",
+    color: "var(--role-pm)",
+  },
 } as const;
 
 export const APP_ROLES: AppRole[] = [
+  "superadmin",
   "admin",
   "pm",
   "engineer",
   "bizdev",
   "marketing",
+  "product_manager",
 ];
 
 export const DEFAULT_ROLE_PERMISSIONS: Record<AppRole, string[]> = {
+  superadmin: ["*"],
   admin: ["*"],
   pm: [
     "products.view",
@@ -86,5 +99,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AppRole, string[]> = {
     "marketing.edit",
     "documents.view",
     "knowledge.view",
+  ],
+  product_manager: [
+    "products.view",
+    "intake.access",
   ],
 } as const;

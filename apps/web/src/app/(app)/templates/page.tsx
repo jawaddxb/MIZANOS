@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { LayoutTemplate, Plus } from "lucide-react";
 import { BaseButton } from "@/components/atoms/buttons/BaseButton";
+import { PageHeader } from "@/components/molecules/layout/PageHeader";
 import { TemplateGroupList } from "@/components/organisms/templates/TemplateGroupList";
 import { TemplateGroupEditor } from "@/components/organisms/templates/TemplateGroupEditor";
 import { DeleteTemplateDialog } from "@/components/organisms/templates/DeleteTemplateDialog";
@@ -70,22 +71,17 @@ export default function TemplatesPage() {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <LayoutTemplate className="h-6 w-6" />
-          <div>
-            <h1 className="text-2xl font-semibold">Workflow Templates</h1>
-            <p className="text-sm text-muted-foreground">
-              Multi-step workflow templates for each project source type
-            </p>
-          </div>
-        </div>
+    <div className="p-6 space-y-6">
+      <PageHeader
+        title="Workflow Templates"
+        subtitle="Multi-step workflow templates for each project source type"
+        icon={<LayoutTemplate className="h-5 w-5 text-primary" />}
+      >
         <BaseButton onClick={handleAdd} size="sm">
           <Plus className="h-4 w-4 mr-1.5" />
           Add Template
         </BaseButton>
-      </div>
+      </PageHeader>
 
       <div className="flex gap-1 border-b overflow-x-auto">
         {SOURCE_TABS.map((tab) => (

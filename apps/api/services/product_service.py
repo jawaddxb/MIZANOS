@@ -2,7 +2,9 @@
 
 from uuid import UUID
 
-from sqlalchemy import select, func, text
+from datetime import datetime, timezone
+
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.models.product import (
@@ -18,7 +20,7 @@ from apps.api.schemas.products import (
     ProductCreate,
 )
 from apps.api.services.base_service import BaseService
-from apps.api.services.product_constants import CHILD_TABLES_BY_PRODUCT_ID
+from apps.api.services.product_member_service import ProductMemberService
 from packages.common.utils.error_handlers import not_found
 
 
@@ -28,28 +30,21 @@ class ProductService(BaseService[Product]):
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(Product, session)
 
-    async def delete(self, entity_id: UUID) -> None:
-        """Delete a product and all child records.
-
-        All 30 FK constraints on `products` use NO ACTION, so we must
-        explicitly remove child rows before deleting the product itself.
-        """
+    async def archive(self, entity_id: UUID) -> Product:
+        """Soft-archive a product by setting archived_at."""
         product = await self.get_or_404(entity_id)
-        session = self.repo.session
-        pid = {"pid": product.id}
+        product.archived_at = datetime.now(timezone.utc)
+        await self.repo.session.flush()
+        await self.repo.session.refresh(product)
+        return product
 
-        for table in CHILD_TABLES_BY_PRODUCT_ID:
-            await session.execute(
-                text(f"DELETE FROM {table} WHERE product_id = :pid"), pid
-            )
-
-        # company_credentials uses linked_product_id instead of product_id
-        await session.execute(
-            text("DELETE FROM company_credentials WHERE linked_product_id = :pid"),
-            pid,
-        )
-
-        await self.repo.delete(product)
+    async def unarchive(self, entity_id: UUID) -> Product:
+        """Restore an archived product."""
+        product = await self.get_or_404(entity_id)
+        product.archived_at = None
+        await self.repo.session.flush()
+        await self.repo.session.refresh(product)
+        return product
 
     async def list_products(
         self,
@@ -58,10 +53,13 @@ class ProductService(BaseService[Product]):
         page_size: int = 50,
         status: str | None = None,
         search: str | None = None,
+        include_archived: bool = False,
     ) -> dict:
         """List products with filtering."""
         stmt = select(Product)
 
+        if not include_archived:
+            stmt = stmt.where(Product.archived_at.is_(None))
         if status:
             stmt = stmt.where(Product.status == status)
         if search:
@@ -109,6 +107,13 @@ class ProductService(BaseService[Product]):
         """Create a new product."""
         product = Product(**data.model_dump())
         return await self.repo.create(product)
+
+    async def update(self, entity_id: UUID, data: dict) -> Product:
+        """Update a product. Guards activation on team readiness."""
+        if data.get("status") == "active":
+            member_svc = ProductMemberService(self.repo.session)
+            await member_svc.check_activation_readiness(entity_id)
+        return await super().update(entity_id, data)
 
     # --- Management Notes ---
 

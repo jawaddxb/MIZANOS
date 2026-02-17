@@ -25,6 +25,8 @@ export interface UserRole {
   id: string;
   user_id: string;
   role: AppRole;
+  assigned_by: string | null;
+  created_at: string;
 }
 
 export interface TeamHoliday {

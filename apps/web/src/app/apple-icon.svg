@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <rect width="180" height="180" rx="40" fill="url(#g)"/>
+  <!-- AI sparkle (top-right, prominent) -->
+  <path d="M141 8 L148 21 L161 28 L148 35 L141 48 L134 35 L121 28 L134 21 Z" fill="white" opacity="0.9"/>
+  <!-- Fulcrum / AI hub -->
+  <circle cx="90" cy="51" r="20" fill="white"/>
+  <!-- Left arm -->
+  <line x1="72" y1="65" x2="34" y2="96" stroke="white" stroke-width="14" stroke-linecap="round"/>
+  <!-- Right arm -->
+  <line x1="108" y1="65" x2="146" y2="96" stroke="white" stroke-width="14" stroke-linecap="round"/>
+  <!-- Left chain + plate -->
+  <line x1="34" y1="96" x2="34" y2="113" stroke="white" stroke-width="8" stroke-linecap="round"/>
+  <line x1="17" y1="113" x2="51" y2="113" stroke="white" stroke-width="14" stroke-linecap="round"/>
+  <!-- Right chain + plate -->
+  <line x1="146" y1="96" x2="146" y2="113" stroke="white" stroke-width="8" stroke-linecap="round"/>
+  <line x1="129" y1="113" x2="163" y2="113" stroke="white" stroke-width="14" stroke-linecap="round"/>
+  <!-- Pillar -->
+  <line x1="90" y1="70" x2="90" y2="152" stroke="white" stroke-width="11" stroke-linecap="round" opacity="0.7"/>
+  <!-- Base -->
+  <line x1="56" y1="152" x2="124" y2="152" stroke="white" stroke-width="11" stroke-linecap="round" opacity="0.7"/>
+  <!-- AI orbital dot -->
+  <circle cx="56" cy="39" r="7" fill="white" opacity="0.55"/>
+</svg>

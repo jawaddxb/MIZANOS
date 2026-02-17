@@ -4,15 +4,30 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { settingsRepository } from "@/lib/api/repositories";
 import { toast } from "sonner";
 
-export function useAssignRole() {
+const INVALIDATION_KEYS = [
+  ["users-management"],
+  ["team", "profiles"],
+  ["user-roles"],
+  ["org-chart"],
+];
+
+function useInvalidateRoleQueries() {
   const queryClient = useQueryClient();
+  return () => {
+    for (const key of INVALIDATION_KEYS) {
+      queryClient.invalidateQueries({ queryKey: key });
+    }
+  };
+}
+
+export function useAssignRole() {
+  const invalidate = useInvalidateRoleQueries();
 
   return useMutation({
     mutationFn: ({ userId, role }: { userId: string; role: string }) =>
       settingsRepository.assignRole(userId, role),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users-management"] });
-      queryClient.invalidateQueries({ queryKey: ["team", "profiles"] });
+      invalidate();
       toast.success("Role assigned");
     },
     onError: () => {
@@ -22,18 +37,33 @@ export function useAssignRole() {
 }
 
 export function useRemoveRole() {
-  const queryClient = useQueryClient();
+  const invalidate = useInvalidateRoleQueries();
 
   return useMutation({
     mutationFn: ({ userId, role }: { userId: string; role: string }) =>
       settingsRepository.removeRole(userId, role),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users-management"] });
-      queryClient.invalidateQueries({ queryKey: ["team", "profiles"] });
+      invalidate();
       toast.success("Role removed");
     },
     onError: () => {
       toast.error("Failed to remove role");
+    },
+  });
+}
+
+export function useUpdatePrimaryRole() {
+  const invalidate = useInvalidateRoleQueries();
+
+  return useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: string }) =>
+      settingsRepository.updatePrimaryRole(userId, role),
+    onSuccess: () => {
+      invalidate();
+      toast.success("Primary role updated");
+    },
+    onError: () => {
+      toast.error("Failed to update primary role");
     },
   });
 }

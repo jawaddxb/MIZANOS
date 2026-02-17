@@ -15,3 +15,12 @@ export {
   DEFAULT_ROLE_PERMISSIONS,
   type RoleConfig,
 } from "./roles";
+
+export {
+  NAV_GROUPS,
+  SETTINGS_NAV_ITEM,
+  type NavItem,
+  type NavGroup,
+} from "./navigation";
+
+export { ROUTE_LABELS, capitalizeSegment } from "./breadcrumbs";

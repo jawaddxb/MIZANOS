@@ -22,6 +22,7 @@ import {
   Megaphone,
   FolderGit2,
   BookOpen,
+  Users,
 } from "lucide-react";
 
 interface ProductTabConfig {
@@ -36,6 +37,7 @@ interface ProductTabConfig {
 interface ProductTabsProps {
   productId: string;
   overviewContent?: ReactNode;
+  teamContent?: ReactNode;
   specContent?: ReactNode;
   tasksContent?: ReactNode;
   documentsContent?: ReactNode;
@@ -51,12 +53,14 @@ interface ProductTabsProps {
   defaultTab?: string;
   activeTab?: string;
   onTabChange?: (tab: string) => void;
+  isArchived?: boolean;
   className?: string;
 }
 
 function ProductTabs({
   productId,
   overviewContent,
+  teamContent,
   specContent,
   tasksContent,
   documentsContent,
@@ -72,6 +76,7 @@ function ProductTabs({
   defaultTab = "overview",
   activeTab: controlledTab,
   onTabChange,
+  isArchived,
   className,
 }: ProductTabsProps) {
   const [internalTab, setInternalTab] = useState(defaultTab);
@@ -84,6 +89,12 @@ function ProductTabs({
       label: "Overview",
       icon: <LayoutDashboard className="h-4 w-4" />,
       content: overviewContent,
+    },
+    {
+      value: "team",
+      label: "Team",
+      icon: <Users className="h-4 w-4" />,
+      content: teamContent,
     },
     {
       value: "spec",
@@ -102,6 +113,12 @@ function ProductTabs({
       label: "Documents",
       icon: <FolderOpen className="h-4 w-4" />,
       content: documentsContent,
+    },
+    {
+      value: "system-docs",
+      label: "System Docs",
+      icon: <BookOpen className="h-4 w-4" />,
+      content: systemDocsContent,
     },
     {
       value: "audit",
@@ -151,12 +168,6 @@ function ProductTabs({
       icon: <FolderGit2 className="h-4 w-4" />,
       content: sourcesContent,
     },
-    {
-      value: "system-docs",
-      label: "System Docs",
-      icon: <BookOpen className="h-4 w-4" />,
-      content: systemDocsContent,
-    },
   ];
 
   return (
@@ -184,11 +195,13 @@ function ProductTabs({
         ))}
       </TabsList>
 
-      {tabs.map((tab) => (
-        <TabsContent key={tab.value} value={tab.value} className="mt-6">
-          {tab.content}
-        </TabsContent>
-      ))}
+      <div inert={isArchived || undefined} className={cn(isArchived && "opacity-60")}>
+        {tabs.map((tab) => (
+          <TabsContent key={tab.value} value={tab.value} className="mt-6">
+            {tab.content}
+          </TabsContent>
+        ))}
+      </div>
     </Tabs>
   );
 }

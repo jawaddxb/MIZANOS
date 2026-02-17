@@ -3,9 +3,12 @@
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
 
+from pathlib import Path
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from apps.api.config import settings
@@ -22,6 +25,7 @@ from apps.api.routers import (
     notifications,
     ai,
     github,
+    github_pats,
     audit,
     marketing,
     knowledge,
@@ -38,8 +42,9 @@ from apps.api.routers import (
     stakeholders,
     integrations,
     evaluations,
+    org_chart,
 )
-from apps.api.routers import external_documents, document_folders
+from apps.api.routers import external_documents, document_folders, product_members
 
 
 @asynccontextmanager
@@ -92,6 +97,7 @@ app.include_router(documents.router, prefix="/documents", tags=["documents"])
 app.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 app.include_router(ai.router, prefix="/ai", tags=["ai"])
 app.include_router(github.router, prefix="/github", tags=["github"])
+app.include_router(github_pats.router, prefix="/github-pats", tags=["github-pats"])
 app.include_router(audit.router, prefix="/audits", tags=["audit"])
 app.include_router(marketing.router, prefix="/marketing", tags=["marketing"])
 app.include_router(knowledge.router, prefix="/knowledge", tags=["knowledge"])
@@ -106,12 +112,20 @@ app.include_router(transcription.router, prefix="/transcription", tags=["transcr
 app.include_router(system_documents.router, prefix="/system-documents", tags=["system-documents"])
 app.include_router(port_generator.router, prefix="/port-generator", tags=["port-generator"])
 app.include_router(repo_evaluator.router, prefix="/repo-evaluator", tags=["repo-evaluator"])
+app.include_router(product_members.router, prefix="/products", tags=["product-members"])
 app.include_router(deployment_checklist.router, prefix="/products", tags=["deployment-checklist"])
 app.include_router(stakeholders.router, prefix="/products", tags=["stakeholders"])
 app.include_router(integrations.router, prefix="/products", tags=["integrations"])
 app.include_router(external_documents.router, prefix="/products", tags=["external-documents"])
 app.include_router(document_folders.router, prefix="/products", tags=["document-folders"])
 app.include_router(evaluations.router, prefix="/evaluations", tags=["evaluations"])
+app.include_router(org_chart.router, prefix="/org-chart", tags=["org-chart"])
+
+
+# Mount static files for uploaded avatars
+_uploads_dir = Path("uploads")
+_uploads_dir.mkdir(exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(_uploads_dir)), name="uploads")
 
 
 @app.get("/health")

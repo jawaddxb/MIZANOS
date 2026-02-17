@@ -1,0 +1,15 @@
+"""Arq worker settings — registers job functions and Redis config."""
+
+from apps.api.jobs.tasks import generate_system_docs_job
+from packages.common.redis.client import parse_redis_settings
+
+
+class WorkerSettings:
+    """Arq worker configuration."""
+
+    functions = [generate_system_docs_job]
+    redis_settings = parse_redis_settings()
+    max_jobs = 5
+    job_timeout = 600  # 10 minutes
+    max_tries = 2
+    health_check_interval = 30

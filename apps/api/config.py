@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     jwt_refresh_token_expire_days: int = 7
 
     # CORS
-    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:3001"]
+    cors_origins: list[str] = ["http://localhost:3006", "http://localhost:3001"]
 
     # External APIs
     openai_api_key: str = ""
@@ -35,6 +35,14 @@ class Settings(BaseSettings):
     s3_region: str = "us-east-1"
     s3_access_key: str = ""
     s3_secret_key: str = ""
+
+    # Email (Resend)
+    resend_api_key: str = ""
+    email_from: str = "Mizan <onboarding@resend.dev>"
+    app_base_url: str = "http://localhost:3006"
+
+    # Google OAuth
+    google_oauth_client_id: str = ""
 
     # Encryption
     credential_encryption_key: str = "dev-encryption-key-change-in-production"

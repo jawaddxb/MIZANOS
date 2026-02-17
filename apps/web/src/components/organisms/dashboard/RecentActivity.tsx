@@ -78,7 +78,7 @@ export function RecentActivity() {
             <p className="text-sm text-muted-foreground">No recent activity</p>
           </div>
         ) : (
-          <ScrollArea className="h-[180px] pr-2">
+          <ScrollArea className="h-[150px] pr-2">
             <div className="space-y-0.5">
               {activities.map((activity, index) => {
                 const config = typeConfig[activity.type] || defaultConfig;

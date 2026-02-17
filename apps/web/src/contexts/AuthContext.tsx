@@ -10,8 +10,11 @@ import {
 
 interface User {
   id: string;
+  profile_id?: string;
   email: string;
   full_name?: string;
+  role?: string;
+  avatar_url?: string | null;
 }
 
 interface AuthContextType {
@@ -20,6 +23,7 @@ interface AuthContextType {
   loading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<{ error: Error | null }>;
+  loginWithGoogle: (idToken: string) => Promise<{ error: Error | null }>;
   logout: () => Promise<void>;
   signUp: (
     email: string,
@@ -67,6 +71,22 @@ function AuthProvider({ children, apiBaseUrl = "/api" }: AuthProviderProps) {
     }
   }, [apiBaseUrl]);
 
+  const _storeAuthResponse = (data: {
+    access_token: string;
+    refresh_token?: string;
+    user: { id: string; email: string; full_name?: string; role?: string; avatar_url?: string | null };
+  }) => {
+    localStorage.setItem(TOKEN_KEY, data.access_token);
+    localStorage.setItem("access_token", data.access_token);
+    if (data.refresh_token) {
+      localStorage.setItem("refresh_token", data.refresh_token);
+    }
+    localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+    document.cookie = `access_token=${data.access_token}; path=/; max-age=86400; SameSite=Lax`;
+    setToken(data.access_token);
+    setUser(data.user);
+  };
+
   const login = async (
     email: string,
     password: string,
@@ -80,25 +100,35 @@ function AuthProvider({ children, apiBaseUrl = "/api" }: AuthProviderProps) {
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        return {
-          error: new Error(body.detail || "Login failed"),
-        };
+        return { error: new Error(body.detail || "Login failed") };
       }
 
-      const data = await res.json();
-      localStorage.setItem(TOKEN_KEY, data.access_token);
-      localStorage.setItem("access_token", data.access_token);
-      if (data.refresh_token) {
-        localStorage.setItem("refresh_token", data.refresh_token);
-      }
-      localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-      document.cookie = `access_token=${data.access_token}; path=/; max-age=86400; SameSite=Lax`;
-      setToken(data.access_token);
-      setUser(data.user);
-
+      _storeAuthResponse(await res.json());
       return { error: null };
     } catch (err) {
       return { error: err instanceof Error ? err : new Error("Login failed") };
+    }
+  };
+
+  const loginWithGoogle = async (
+    idToken: string,
+  ): Promise<{ error: Error | null }> => {
+    try {
+      const res = await fetch(`${apiBaseUrl}/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id_token: idToken }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        return { error: new Error(body.detail || "Google login failed") };
+      }
+
+      _storeAuthResponse(await res.json());
+      return { error: null };
+    } catch (err) {
+      return { error: err instanceof Error ? err : new Error("Google login failed") };
     }
   };
 
@@ -147,6 +177,7 @@ function AuthProvider({ children, apiBaseUrl = "/api" }: AuthProviderProps) {
         loading,
         isAuthenticated: !!token && !!user,
         login,
+        loginWithGoogle,
         logout,
         signUp,
       }}

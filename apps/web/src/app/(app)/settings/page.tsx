@@ -3,6 +3,8 @@
 import { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Settings } from "lucide-react";
+import { cn } from "@/lib/utils/cn";
+import { PageHeader } from "@/components/molecules/layout/PageHeader";
 import { Skeleton } from "@/components/atoms/display/Skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/queries/useProfiles";
@@ -25,6 +27,7 @@ const StandardsTab = dynamic(() => import("@/components/organisms/settings/Stand
 const HolidaysTab = dynamic(() => import("@/components/organisms/settings/HolidaysTab").then((m) => ({ default: m.HolidaysTab })), { loading: () => <TabSkeleton /> });
 const ComponentLibraryTab = dynamic(() => import("@/components/organisms/settings/ComponentLibraryTab").then((m) => ({ default: m.ComponentLibraryTab })), { loading: () => <TabSkeleton /> });
 const WorkflowRulesTab = dynamic(() => import("@/components/organisms/settings/WorkflowRulesTab").then((m) => ({ default: m.WorkflowRulesTab })), { loading: () => <TabSkeleton /> });
+const GitHubPatsTab = dynamic(() => import("@/components/organisms/settings/GitHubPatsTab").then((m) => ({ default: m.GitHubPatsTab })), { loading: () => <TabSkeleton /> });
 
 const InviteUserDialog = dynamic(() => import("@/components/organisms/settings/InviteUserDialog").then((m) => ({ default: m.InviteUserDialog })));
 const UserPermissionsDialog = dynamic(() => import("@/components/organisms/settings/UserPermissionsDialog").then((m) => ({ default: m.UserPermissionsDialog })));
@@ -38,12 +41,14 @@ const CreateModuleDialog = dynamic(() => import("@/components/organisms/settings
 const EditModuleDialog = dynamic(() => import("@/components/organisms/settings/EditModuleDialog").then((m) => ({ default: m.EditModuleDialog })));
 const AddGlobalIntegrationDialog = dynamic(() => import("@/components/organisms/settings/AddGlobalIntegrationDialog").then((m) => ({ default: m.AddGlobalIntegrationDialog })));
 const EditStandardsRepositoryDialog = dynamic(() => import("@/components/organisms/settings/EditStandardsRepositoryDialog").then((m) => ({ default: m.EditStandardsRepositoryDialog })));
+const AddPatDialog = dynamic(() => import("@/components/organisms/settings/AddPatDialog").then((m) => ({ default: m.AddPatDialog })));
 
 const ALL_TABS = [
   { id: "profile", label: "Profile", adminOnly: false },
   { id: "standards", label: "Standards", adminOnly: false },
   { id: "modules", label: "Modules", adminOnly: false },
   { id: "integrations", label: "Integrations", adminOnly: false },
+  { id: "github-pats", label: "GitHub PATs", adminOnly: false },
   { id: "notifications", label: "Notifications", adminOnly: false },
   { id: "holidays", label: "Holidays", adminOnly: false },
   { id: "library", label: "Library", adminOnly: false },
@@ -74,50 +79,81 @@ export default function SettingsPage() {
     [isAdmin],
   );
 
+  const generalTabs = visibleTabs.filter((t) => !t.adminOnly);
+  const adminTabs = visibleTabs.filter((t) => t.adminOnly);
+
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center gap-3">
-        <Settings className="h-6 w-6" />
-        <div>
-          <h1 className="text-2xl font-semibold">Settings</h1>
-          <p className="text-sm text-muted-foreground">
-            Configure system preferences, standards, and integrations
-          </p>
-        </div>
+    <div className="p-6 space-y-6">
+      <PageHeader
+        title="Settings"
+        subtitle="Configure system preferences, standards, and integrations"
+        icon={<Settings className="h-5 w-5 text-primary" />}
+      />
+
+      {/* Horizontal tab bar */}
+      <div className="border-b border-border -mx-6 px-6 overflow-x-auto scrollbar-none">
+        <nav className="flex items-center gap-1">
+          {generalTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "relative px-3 py-2.5 text-sm whitespace-nowrap transition-colors",
+                activeTab === tab.id
+                  ? "text-foreground font-medium"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {tab.label}
+              {activeTab === tab.id && (
+                <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-t" />
+              )}
+            </button>
+          ))}
+          {adminTabs.length > 0 && (
+            <>
+              <span className="mx-1 h-4 w-px bg-border" />
+              {adminTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    "relative px-3 py-2.5 text-sm whitespace-nowrap transition-colors",
+                    activeTab === tab.id
+                      ? "text-foreground font-medium"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {tab.label}
+                  {activeTab === tab.id && (
+                    <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-t" />
+                  )}
+                </button>
+              ))}
+            </>
+          )}
+        </nav>
       </div>
 
-      <div className="flex gap-1 border-b overflow-x-auto">
-        {visibleTabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === tab.id
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
+      {/* Tab content */}
       <div className="min-h-[400px]">
-        {activeTab === "standards" ? (
-          <StandardsTabWrapper />
-        ) : activeTab === "holidays" ? (
-          <HolidaysTabWrapper />
-        ) : activeTab === "users" ? (
-          <UserManagementTabWrapper />
-        ) : activeTab === "authority-matrix" ? (
-          <PermissionMatrixTabWrapper />
-        ) : activeTab === "modules" ? (
-          <ModulesTabWrapper />
-        ) : activeTab === "integrations" ? (
-          <IntegrationsTabWrapper />
-        ) : (
-          <GenericSettingsTab tabId={activeTab} />
-        )}
+          {activeTab === "standards" ? (
+            <StandardsTabWrapper />
+          ) : activeTab === "holidays" ? (
+            <HolidaysTabWrapper />
+          ) : activeTab === "users" ? (
+            <UserManagementTabWrapper />
+          ) : activeTab === "authority-matrix" ? (
+            <PermissionMatrixTabWrapper />
+          ) : activeTab === "modules" ? (
+            <ModulesTabWrapper />
+          ) : activeTab === "integrations" ? (
+            <IntegrationsTabWrapper />
+          ) : activeTab === "github-pats" ? (
+            <GitHubPatsTabWrapper />
+          ) : (
+            <GenericSettingsTab tabId={activeTab} />
+          )}
       </div>
     </div>
   );
@@ -243,6 +279,17 @@ function HolidaysTabWrapper() {
       }
       nationalManagement={<NationalHolidaysManagement />}
     />
+  );
+}
+
+function GitHubPatsTabWrapper() {
+  const [addOpen, setAddOpen] = useState(false);
+
+  return (
+    <>
+      <GitHubPatsTab onAddPat={() => setAddOpen(true)} />
+      <AddPatDialog open={addOpen} onOpenChange={setAddOpen} />
+    </>
   );
 }
 

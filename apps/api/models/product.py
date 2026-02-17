@@ -30,6 +30,9 @@ class Product(Base, UUIDMixin, TimestampMixin):
     engineer_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True), ForeignKey("profiles.id"), nullable=True
     )
+    archived_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
 
 class ProductMember(Base, UUIDMixin):

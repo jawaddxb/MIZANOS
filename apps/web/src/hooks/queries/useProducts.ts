@@ -11,6 +11,7 @@ export function useProducts() {
       const result = await productsRepository.getAll({
         sortBy: "updated_at",
         sortOrder: "desc",
+        include_archived: true,
       });
       // Backend returns a plain array, not paginated
       return Array.isArray(result) ? result : result.data ?? [];

@@ -1,9 +1,10 @@
 "use client";
 
 import { use, useState } from "react";
-import { Loader2, Pencil, Eye, Settings, Github } from "lucide-react";
+import { Loader2, Pencil, Eye, Settings, Github, Archive } from "lucide-react";
 
 import { ProductTabs } from "@/components/organisms/product/ProductTabs";
+import { ProductTeamTab } from "@/components/organisms/product/ProductTeamTab";
 import { ProductOverview } from "@/components/organisms/product/ProductOverview";
 import { SpecViewer } from "@/components/organisms/product/SpecViewer";
 import { SpecEditor } from "@/components/organisms/product/SpecEditor";
@@ -84,26 +85,45 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   );
 
   const productData = product.product;
+  const isArchived = !!productData?.archived_at;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold">{productData?.name ?? "Product"}</h1>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setLinkGitHubOpen(true)}>
-            <Github className="h-4 w-4 mr-1" />
-            {productData?.repository_url ? "Update Repo" : "Link GitHub"}
-          </Button>
+          {!isArchived && (
+            <Button variant="outline" size="sm" onClick={() => setLinkGitHubOpen(true)}>
+              <Github className="h-4 w-4 mr-1" />
+              {productData?.repository_url ? "Update Repo" : "Link GitHub"}
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
             <Settings className="h-4 w-4 mr-1" /> Settings
           </Button>
         </div>
       </div>
+      {isArchived && (
+        <div className="flex items-center justify-between rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 mb-4">
+          <div className="flex items-center gap-3">
+            <Archive className="h-5 w-5 text-amber-600 shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-amber-800">This product is archived</p>
+              <p className="text-xs text-amber-600">All content is read-only. Open Settings to restore.</p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" className="text-amber-700 border-amber-300 hover:bg-amber-100" onClick={() => setSettingsOpen(true)}>
+            Restore
+          </Button>
+        </div>
+      )}
       <ProductTabs
         productId={id}
         activeTab={activeTab}
         onTabChange={setActiveTab}
+        isArchived={isArchived}
         overviewContent={<ProductOverview productId={id} />}
+        teamContent={<ProductTeamTab productId={id} />}
         specContent={specContent}
         tasksContent={<TasksViewToggle productId={id} />}
         documentsContent={documentsContent}

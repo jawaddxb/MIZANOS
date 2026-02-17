@@ -27,6 +27,7 @@ const TYPE_LABELS: Record<NotificationType, string> = {
   specification_ready: "Spec Ready",
   stage_changed: "Stage Changed",
   repo_scan_completed: "Repo Scan",
+  product_member_assigned: "Project Assignment",
 };
 
 export function NotificationList({

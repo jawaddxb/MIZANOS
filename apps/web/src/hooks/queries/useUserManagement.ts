@@ -24,17 +24,14 @@ export function useInviteUser() {
       availability?: string;
       max_projects?: number;
       office_location?: string;
+      reports_to?: string;
     }) => settingsRepository.inviteUser(data),
-    onSuccess: (data) => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["users-management"] });
       queryClient.invalidateQueries({ queryKey: ["profiles"] });
-      if (data.temp_password) {
-        toast.info(`User invited. Temporary password: ${data.temp_password}`, {
-          duration: 30000,
-        });
-      } else {
-        toast.success("User invited successfully");
-      }
+      queryClient.invalidateQueries({ queryKey: ["org-chart"] });
+      queryClient.invalidateQueries({ queryKey: ["team", "profiles"] });
+      toast.success(`Invitation email sent to ${variables.email}`);
     },
     onError: (error: Error) => {
       toast.error("Failed to invite user: " + error.message);
@@ -70,6 +67,7 @@ export function useUpdateUserStatus() {
       settingsRepository.updateUserStatus(userId, status),
     onSuccess: (_, { status }) => {
       queryClient.invalidateQueries({ queryKey: ["users-management"] });
+      queryClient.invalidateQueries({ queryKey: ["org-chart"] });
       toast.success(
         `User ${status === "suspended" ? "suspended" : "activated"}`,
       );

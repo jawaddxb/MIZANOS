@@ -26,7 +26,7 @@ def get_service(db: DbSession) -> GitHubService:
 
 @router.get("/connections", response_model=list[GitHubConnectionResponse])
 async def list_connections(user: CurrentUser = None, service: GitHubService = Depends(get_service)):
-    return await service.get_connections(user["id"])
+    return await service.get_connections(user.id)
 
 
 @router.get("/oauth/url")
@@ -36,18 +36,18 @@ async def get_oauth_url(service: GitHubService = Depends(get_service)):
 
 @router.post("/oauth/callback")
 async def oauth_callback(body: GitHubOAuthCallback, user: CurrentUser = None, service: GitHubService = Depends(get_service)):
-    return await service.handle_callback(user["id"], body.code, body.state)
+    return await service.handle_callback(user.id, body.code, body.state)
 
 
 @router.delete("/disconnect")
 async def disconnect(user: CurrentUser = None, service: GitHubService = Depends(get_service)):
-    await service.disconnect(user["id"])
+    await service.disconnect(user.id)
     return {"message": "Disconnected"}
 
 
 @router.get("/repos")
 async def list_repos(user: CurrentUser = None, service: GitHubService = Depends(get_service)):
-    return await service.list_repos(user["id"])
+    return await service.list_repos(user.id)
 
 
 @router.delete("/connections/{connection_id}", status_code=204)
@@ -72,7 +72,7 @@ async def get_analysis(product_id: UUID, user: CurrentUser = None, service: GitH
 
 @router.post("/repo-info", response_model=RepoInfoResponse)
 async def get_repo_info(body: RepoInfoRequest, user: CurrentUser = None, service: GitHubService = Depends(get_service)):
-    return await service.get_repo_info(body.repository_url, body.github_token)
+    return await service.get_repo_info(body.repository_url, body.github_token, body.pat_id)
 
 
 @router.post("/scan")

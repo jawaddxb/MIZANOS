@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, UploadFile
 
 from apps.api.dependencies import CurrentUser, DbSession
 from apps.api.schemas.team import (
@@ -96,6 +96,25 @@ async def delete_national_holiday(holiday_id: UUID, user: CurrentUser = None, se
 @router.get("/users/{user_id}/roles", response_model=list[str])
 async def get_user_roles(user_id: str, user: CurrentUser = None, service: TeamService = Depends(get_service)):
     return await service.get_user_roles(user_id)
+
+
+@router.post("/profiles/{profile_id}/avatar", response_model=ProfileResponse)
+async def upload_avatar(
+    profile_id: UUID,
+    file: UploadFile = File(...),
+    user: CurrentUser = None,
+    service: TeamService = Depends(get_service),
+):
+    return await service.upload_avatar(profile_id, file)
+
+
+@router.delete("/profiles/{profile_id}/avatar", response_model=ProfileResponse)
+async def delete_avatar(
+    profile_id: UUID,
+    user: CurrentUser = None,
+    service: TeamService = Depends(get_service),
+):
+    return await service.delete_avatar(profile_id)
 
 
 @router.get("/availability/{profile_id}", response_model=AvailabilityResponse)

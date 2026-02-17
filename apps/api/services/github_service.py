@@ -194,15 +194,25 @@ class GitHubService:
         return result.scalar_one_or_none()
 
     async def get_repo_info(
-        self, repository_url: str, github_token: str | None = None
+        self,
+        repository_url: str,
+        github_token: str | None = None,
+        pat_id: str | None = None,
     ) -> dict:
+        # Resolve token: explicit token takes priority, then stored PAT
+        token = github_token
+        if not token and pat_id:
+            from apps.api.services.github_pat_service import GitHubPatService
+            pat_service = GitHubPatService(self.session)
+            token = await pat_service.decrypt_token(pat_id)
+
         owner_repo = self._parse_owner_repo(repository_url)
         if not owner_repo:
             return {}
         owner, repo = owner_repo
         headers = {"Accept": "application/vnd.github+json"}
-        if github_token:
-            headers["Authorization"] = f"Bearer {github_token}"
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
         async with httpx.AsyncClient() as client:
             resp = await client.get(
                 f"https://api.github.com/repos/{owner}/{repo}",
@@ -212,16 +222,23 @@ class GitHubService:
             if resp.status_code != 200:
                 return {}
             data = resp.json()
-            return {
-                "name": data.get("name"),
-                "full_name": data.get("full_name"),
-                "description": data.get("description"),
-                "language": data.get("language"),
-                "default_branch": data.get("default_branch"),
-                "stars": data.get("stargazers_count", 0),
-                "forks": data.get("forks_count", 0),
-                "open_issues": data.get("open_issues_count", 0),
-            }
+
+        # Update last_used_at on successful PAT usage
+        if pat_id and resp.status_code == 200:
+            from apps.api.services.github_pat_service import GitHubPatService
+            pat_service = GitHubPatService(self.session)
+            await pat_service.update_last_used(pat_id)
+
+        return {
+            "name": data.get("name"),
+            "full_name": data.get("full_name"),
+            "description": data.get("description"),
+            "language": data.get("language"),
+            "default_branch": data.get("default_branch"),
+            "stars": data.get("stargazers_count", 0),
+            "forks": data.get("forks_count", 0),
+            "open_issues": data.get("open_issues_count", 0),
+        }
 
     async def trigger_scan(self, product_id: UUID) -> dict:
         from apps.api.models.product import Product

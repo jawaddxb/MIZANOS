@@ -14,6 +14,7 @@ export interface Product {
   source_type: ProjectSourceType | null;
   pm_id: string | null;
   engineer_id: string | null;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -40,6 +41,14 @@ export interface ProductEnvironment {
   notes: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export type ProductMemberRole = "pm" | "marketing" | "senior_management" | "ai_engineer";
+
+export interface TeamReadiness {
+  complete: boolean;
+  members: ProductMember[];
+  missing: string[];
 }
 
 export interface ProductDocument {

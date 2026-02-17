@@ -2,12 +2,13 @@
 
 import secrets
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.api.config import settings
 from apps.api.models.settings import (
     FeaturePermission,
     GlobalIntegration,
@@ -17,8 +18,13 @@ from apps.api.models.settings import (
     RolePermission,
     StandardsRepository,
 )
-from apps.api.models.user import Profile, UserPermissionOverride, UserRole
-from packages.common.utils.error_handlers import not_found
+from apps.api.models.user import (
+    InvitationToken,
+    Profile,
+    UserPermissionOverride,
+    UserRole,
+)
+from packages.common.utils.error_handlers import bad_request, forbidden, not_found
 
 
 class SettingsService:
@@ -189,10 +195,13 @@ class SettingsService:
         return list(result.scalars().all())
 
     async def invite_user(self, data) -> dict:
-        from apps.api.services.auth_service import pwd_context
+        from apps.api.services.email_service import EmailService
 
-        temp_password = secrets.token_urlsafe(12)
-        hashed = pwd_context.hash(temp_password)
+        existing = await self.session.execute(
+            select(Profile).where(func.lower(Profile.email) == data.email.lower())
+        )
+        if existing.scalar_one_or_none():
+            raise bad_request("A user with this email already exists")
 
         profile = Profile(
             user_id=str(uuid.uuid4()),
@@ -203,9 +212,9 @@ class SettingsService:
             status="pending",
             invited_at=datetime.now(timezone.utc),
             must_reset_password=True,
-            password_hash=hashed,
             skills=getattr(data, "skills", None),
             max_projects=getattr(data, "max_projects", None),
+            reports_to=getattr(data, "reports_to", None),
         )
         self.session.add(profile)
         await self.session.flush()
@@ -215,17 +224,53 @@ class SettingsService:
         self.session.add(user_role)
         await self.session.flush()
 
-        return {"temp_password": temp_password, "user_id": str(profile.id)}
-
-    async def update_user_status(self, user_id: UUID, status: str) -> dict:
-        profile = await self.session.get(Profile, user_id)
-        if not profile:
-            raise not_found("User")
-        if hasattr(profile, "status"):
-            profile.status = status
+        token_value = secrets.token_urlsafe(48)
+        invitation = InvitationToken(
+            profile_id=profile.id,
+            token=token_value,
+            expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+        )
+        self.session.add(invitation)
         await self.session.flush()
-        await self.session.refresh(profile)
+
+        link = f"{settings.app_base_url}/activate?token={token_value}"
+        await EmailService.send_invitation_email(
+            to_email=data.email,
+            full_name=data.full_name,
+            activation_link=link,
+            inviter_name="Mizan Admin",
+        )
+
+        return {"message": "Invitation sent", "user_id": str(profile.id)}
+
+    async def update_user_status(
+        self, user_id: UUID, status: str, acting_user_id: str,
+    ) -> dict:
+        acting_profile = await self._get_profile_by_user_id(acting_user_id)
+        if not acting_profile:
+            raise forbidden("Could not verify your account")
+
+        actor_role = acting_profile.role or ""
+        if actor_role not in ("superadmin", "admin"):
+            raise forbidden("Only admins can change user status")
+
+        target = await self.session.get(Profile, user_id)
+        if not target:
+            raise not_found("User")
+
+        target_role = target.role or ""
+        if actor_role == "admin" and target_role in ("admin", "superadmin"):
+            raise forbidden("Admins cannot change the status of other admins or superadmins")
+
+        target.status = status
+        await self.session.flush()
+        await self.session.refresh(target)
         return {"message": "Status updated"}
+
+    async def _get_profile_by_user_id(self, user_id: str) -> Profile | None:
+        stmt = select(Profile).where(Profile.user_id == user_id)
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
 
     async def reset_user_password(self, user_id: UUID) -> dict:
         from apps.api.services.auth_service import pwd_context
@@ -242,21 +287,3 @@ class SettingsService:
 
         return {"temp_password": temp_password}
 
-    async def assign_role(self, user_id: UUID, role: str) -> UserRole:
-        user_role = UserRole(user_id=str(user_id), role=role)
-        self.session.add(user_role)
-        await self.session.flush()
-        await self.session.refresh(user_role)
-        return user_role
-
-    async def remove_role(self, user_id: UUID, role: str) -> None:
-        stmt = select(UserRole).where(
-            UserRole.user_id == str(user_id),
-            UserRole.role == role,
-        )
-        result = await self.session.execute(stmt)
-        user_role = result.scalar_one_or_none()
-        if not user_role:
-            raise not_found("UserRole")
-        await self.session.delete(user_role)
-        await self.session.flush()

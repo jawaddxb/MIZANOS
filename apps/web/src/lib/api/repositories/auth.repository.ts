@@ -21,9 +21,11 @@ interface AuthTokens {
 interface AuthResponse extends AuthTokens {
   user: {
     id: string;
+    profile_id?: string;
     email: string;
     full_name: string | null;
     role: string | null;
+    avatar_url: string | null;
   };
 }
 
@@ -71,8 +73,8 @@ export class AuthRepository {
     }
   }
 
-  async resetPassword(data: ResetPasswordRequest): Promise<void> {
-    await this.client.post("/auth/reset-password", data);
+  async forgotPassword(data: ResetPasswordRequest): Promise<void> {
+    await this.client.post("/auth/forgot-password", data);
   }
 
   async confirmReset(data: ConfirmResetRequest): Promise<void> {

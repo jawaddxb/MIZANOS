@@ -1,7 +1,7 @@
 import axios, { type AxiosError, type AxiosInstance } from "axios";
 import { ApiError, type ApiErrorResponse } from "./errors";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4006";
 
 let isRefreshing = false;
 let failedQueue: Array<{
@@ -111,4 +111,4 @@ apiClient.interceptors.response.use(
   },
 );
 
-export { setTokens };
+export { API_BASE_URL, setTokens };

@@ -1,4 +1,4 @@
-"""User-related models: profiles, roles, permissions, preferences, github."""
+"""User-related models: profiles, roles, permissions, preferences, github, tokens."""
 
 import uuid
 from datetime import datetime
@@ -44,6 +44,12 @@ class Profile(Base, UUIDMixin, TimestampMixin):
         ForeignKey("profiles.id"),
         nullable=True,
     )
+    reports_to: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("profiles.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    title: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
 
 class UserRole(Base, UUIDMixin):
@@ -51,6 +57,15 @@ class UserRole(Base, UUIDMixin):
 
     user_id: Mapped[str] = mapped_column(String, nullable=False)
     role: Mapped[str] = mapped_column(String, nullable=False)
+    assigned_by: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("profiles.id"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
 
 class UserPermissionOverride(Base, UUIDMixin):
@@ -96,4 +111,36 @@ class UserGithubConnection(Base, UUIDMixin, TimestampMixin):
     token_scope: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     connected_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class InvitationToken(Base, UUIDMixin):
+    __tablename__ = "invitation_tokens"
+
+    profile_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"),
+    )
+    token: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    used_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(),
+    )
+
+
+class PasswordResetToken(Base, UUIDMixin):
+    __tablename__ = "password_reset_tokens"
+
+    profile_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"),
+    )
+    token: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    used_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(),
     )
