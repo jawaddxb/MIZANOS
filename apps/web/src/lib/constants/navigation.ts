@@ -36,7 +36,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "MANAGE",
     items: [
       { href: "/team", icon: Users, label: "Team" },
-      { href: "/org-chart", icon: Network, label: "Org Chart" },
+      { href: "/org-chart", icon: Network, label: "Organization Chart" },
       { href: "/knowledge", icon: BookOpen, label: "Knowledge Base" },
     ],
   },

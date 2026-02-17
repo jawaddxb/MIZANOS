@@ -24,10 +24,13 @@ export function useInviteUser() {
       availability?: string;
       max_projects?: number;
       office_location?: string;
+      reports_to?: string;
     }) => settingsRepository.inviteUser(data),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["users-management"] });
       queryClient.invalidateQueries({ queryKey: ["profiles"] });
+      queryClient.invalidateQueries({ queryKey: ["org-chart"] });
+      queryClient.invalidateQueries({ queryKey: ["team", "profiles"] });
       toast.success(`Invitation email sent to ${variables.email}`);
     },
     onError: (error: Error) => {
@@ -64,6 +67,7 @@ export function useUpdateUserStatus() {
       settingsRepository.updateUserStatus(userId, status),
     onSuccess: (_, { status }) => {
       queryClient.invalidateQueries({ queryKey: ["users-management"] });
+      queryClient.invalidateQueries({ queryKey: ["org-chart"] });
       toast.success(
         `User ${status === "suspended" ? "suspended" : "activated"}`,
       );

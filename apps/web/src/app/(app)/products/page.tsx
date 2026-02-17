@@ -71,30 +71,6 @@ export default function ProductsPage() {
           </Badge>
         }
       >
-        <div className="flex items-center gap-1.5 p-1 bg-secondary/50 rounded-lg">
-          <Button
-            variant={viewMode === "grid" ? "secondary" : "ghost"}
-            size="icon"
-            className={cn(
-              "h-7 w-7 transition-all",
-              viewMode === "grid" && "shadow-sm",
-            )}
-            onClick={() => setViewMode("grid")}
-          >
-            <LayoutGrid className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant={viewMode === "list" ? "secondary" : "ghost"}
-            size="icon"
-            className={cn(
-              "h-7 w-7 transition-all",
-              viewMode === "list" && "shadow-sm",
-            )}
-            onClick={() => setViewMode("list")}
-          >
-            <List className="h-3.5 w-3.5" />
-          </Button>
-        </div>
         <Link href="/intake">
           <Button className="shadow-sm hover:shadow-md transition-shadow">
             <Plus className="h-4 w-4 mr-2" />
@@ -103,19 +79,41 @@ export default function ProductsPage() {
         </Link>
       </PageHeader>
 
-      <ProductsFilterBar
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        statusFilter={statusFilter}
-        onStatusChange={setStatusFilter}
-        pillarFilter={pillarFilter}
-        onPillarChange={setPillarFilter}
-        stageFilter={stageFilter}
-        onStageChange={setStageFilter}
-        stages={stages}
-        hasActiveFilters={hasActiveFilters}
-        onClearFilters={clearFilters}
-      />
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex-1 min-w-0">
+          <ProductsFilterBar
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            statusFilter={statusFilter}
+            onStatusChange={setStatusFilter}
+            pillarFilter={pillarFilter}
+            onPillarChange={setPillarFilter}
+            stageFilter={stageFilter}
+            onStageChange={setStageFilter}
+            stages={stages}
+            hasActiveFilters={hasActiveFilters}
+            onClearFilters={clearFilters}
+          />
+        </div>
+        <div className="flex items-center gap-1.5 p-1 bg-secondary/50 rounded-lg ml-auto">
+          <Button
+            variant={viewMode === "list" ? "secondary" : "ghost"}
+            size="icon"
+            className={cn("h-7 w-7 transition-all", viewMode === "list" && "shadow-sm")}
+            onClick={() => setViewMode("list")}
+          >
+            <List className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant={viewMode === "grid" ? "secondary" : "ghost"}
+            size="icon"
+            className={cn("h-7 w-7 transition-all", viewMode === "grid" && "shadow-sm")}
+            onClick={() => setViewMode("grid")}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
 
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-10">

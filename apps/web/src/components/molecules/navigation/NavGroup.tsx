@@ -30,7 +30,7 @@ function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
         collapsed && "justify-center px-2",
         isActive
           ? "bg-accent text-accent-foreground font-medium"
-          : "text-muted-foreground font-normal hover:bg-accent/50 hover:text-foreground",
+          : "text-foreground/80 font-normal hover:bg-accent/50 hover:text-foreground",
       )}
     >
       {isActive && (

@@ -3,9 +3,12 @@
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
 
+from pathlib import Path
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from apps.api.config import settings
@@ -38,6 +41,7 @@ from apps.api.routers import (
     stakeholders,
     integrations,
     evaluations,
+    org_chart,
 )
 from apps.api.routers import external_documents, document_folders
 
@@ -112,6 +116,13 @@ app.include_router(integrations.router, prefix="/products", tags=["integrations"
 app.include_router(external_documents.router, prefix="/products", tags=["external-documents"])
 app.include_router(document_folders.router, prefix="/products", tags=["document-folders"])
 app.include_router(evaluations.router, prefix="/evaluations", tags=["evaluations"])
+app.include_router(org_chart.router, prefix="/org-chart", tags=["org-chart"])
+
+
+# Mount static files for uploaded avatars
+_uploads_dir = Path("uploads")
+_uploads_dir.mkdir(exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(_uploads_dir)), name="uploads")
 
 
 @app.get("/health")

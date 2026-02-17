@@ -1,14 +1,21 @@
 """Team service."""
 
+import uuid as uuid_mod
+from pathlib import Path
 from uuid import UUID
 
+from fastapi import UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.models.settings import NationalHoliday, TeamHoliday
 from apps.api.models.user import Profile, UserRole
 from apps.api.schemas.team import HolidayCreate, NationalHolidayCreate, NationalHolidayUpdate
-from packages.common.utils.error_handlers import not_found
+from packages.common.utils.error_handlers import bad_request, not_found
+
+UPLOAD_DIR = Path("uploads/avatars")
+ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+MAX_FILE_SIZE = 2 * 1024 * 1024  # 2MB
 
 
 class TeamService:
@@ -150,3 +157,49 @@ class TeamService:
             "personal_holidays": personal_holidays,
             "national_holidays": national_holidays,
         }
+
+    async def upload_avatar(
+        self, profile_id: UUID, file: UploadFile,
+    ) -> Profile:
+        """Upload an avatar image for a profile."""
+        profile = await self.get_profile(profile_id)
+
+        if file.content_type not in ALLOWED_TYPES:
+            raise bad_request("File must be JPEG, PNG, WebP, or GIF")
+
+        contents = await file.read()
+        if len(contents) > MAX_FILE_SIZE:
+            raise bad_request("File must be under 2MB")
+
+        ext = file.filename.rsplit(".", 1)[-1].lower() if file.filename else "jpg"
+        filename = f"{uuid_mod.uuid4()}.{ext}"
+
+        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+        # Remove old avatar file if it exists
+        if profile.avatar_url:
+            old_path = Path(profile.avatar_url.lstrip("/"))
+            if old_path.exists():
+                old_path.unlink(missing_ok=True)
+
+        file_path = UPLOAD_DIR / filename
+        file_path.write_bytes(contents)
+
+        profile.avatar_url = f"/uploads/avatars/{filename}"
+        await self.session.flush()
+        await self.session.refresh(profile)
+        return profile
+
+    async def delete_avatar(self, profile_id: UUID) -> Profile:
+        """Remove avatar for a profile."""
+        profile = await self.get_profile(profile_id)
+
+        if profile.avatar_url:
+            old_path = Path(profile.avatar_url.lstrip("/"))
+            if old_path.exists():
+                old_path.unlink(missing_ok=True)
+            profile.avatar_url = None
+            await self.session.flush()
+            await self.session.refresh(profile)
+
+        return profile

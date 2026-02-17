@@ -136,6 +136,23 @@ export class TeamRepository {
   async deleteNationalHoliday(id: string): Promise<void> {
     await this.client.delete(`${this.basePath}/holidays/national/${id}`);
   }
+
+  async uploadAvatar(profileId: string, file: File): Promise<Profile> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await this.client.postForm<Profile>(
+      `${this.basePath}/profiles/${profileId}/avatar`,
+      formData,
+    );
+    return response.data;
+  }
+
+  async deleteAvatar(profileId: string): Promise<Profile> {
+    const response = await this.client.delete<Profile>(
+      `${this.basePath}/profiles/${profileId}/avatar`,
+    );
+    return response.data;
+  }
 }
 
 export const teamRepository = new TeamRepository();

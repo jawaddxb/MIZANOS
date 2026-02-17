@@ -10,6 +10,7 @@ import type {
   UserOverride,
   PermissionAuditLog,
   UserWithRole,
+  UserRole,
 } from "@/lib/types";
 import { apiClient } from "../client";
 
@@ -208,6 +209,7 @@ export class SettingsRepository {
     availability?: string;
     max_projects?: number;
     office_location?: string;
+    reports_to?: string;
   }): Promise<{ temp_password?: string }> {
     const response = await this.client.post<{ temp_password?: string }>(
       `${this.basePath}/users/invite`,
@@ -223,12 +225,27 @@ export class SettingsRepository {
     return response.data;
   }
 
-  async assignRole(userId: string, role: string): Promise<void> {
-    await this.client.post(`${this.basePath}/users/${userId}/roles`, { role });
+  async getUserRoles(userId: string): Promise<UserRole[]> {
+    const response = await this.client.get<UserRole[]>(
+      `${this.basePath}/users/${userId}/roles`,
+    );
+    return response.data;
+  }
+
+  async assignRole(userId: string, role: string): Promise<UserRole> {
+    const response = await this.client.post<UserRole>(
+      `${this.basePath}/users/${userId}/roles`,
+      { role },
+    );
+    return response.data;
   }
 
   async removeRole(userId: string, role: string): Promise<void> {
     await this.client.delete(`${this.basePath}/users/${userId}/roles/${role}`);
+  }
+
+  async updatePrimaryRole(userId: string, role: string): Promise<void> {
+    await this.client.patch(`${this.basePath}/users/${userId}/primary-role`, { role });
   }
 }
 

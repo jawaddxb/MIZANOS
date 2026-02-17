@@ -31,12 +31,12 @@ async def get_credential(cred_id: UUID, user: CurrentUser = None, service: Vault
 
 @router.post("", response_model=CredentialResponse, status_code=201)
 async def create_credential(body: CredentialCreate, user: CurrentUser = None, service: VaultService = Depends(get_service)):
-    return await service.create_credential(body, user["id"])
+    return await service.create_credential(body, user.id)
 
 
 @router.patch("/{cred_id}", response_model=CredentialResponse)
 async def update_credential(cred_id: UUID, body: CredentialUpdate, user: CurrentUser = None, service: VaultService = Depends(get_service)):
-    return await service.update_credential(cred_id, body, user["id"])
+    return await service.update_credential(cred_id, body, user.id)
 
 
 @router.delete("/{cred_id}", status_code=204)

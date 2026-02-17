@@ -115,7 +115,7 @@ async def decrypt_credential(credential_id: UUID, user: CurrentUser = None, serv
 
 @router.post("/auto-populate", response_model=AutoPopulateResponse)
 async def auto_populate(body: AutoPopulateRequest, user: CurrentUser = None, service: MarketingService = Depends(get_service)):
-    user_id = user["id"] if user else None
+    user_id = user.id if user else None
     if not user_id:
         from packages.common.utils.error_handlers import bad_request
         raise bad_request("User authentication required for auto-populate")

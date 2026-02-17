@@ -44,6 +44,12 @@ class Profile(Base, UUIDMixin, TimestampMixin):
         ForeignKey("profiles.id"),
         nullable=True,
     )
+    reports_to: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("profiles.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    title: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
 
 class UserRole(Base, UUIDMixin):
@@ -51,6 +57,15 @@ class UserRole(Base, UUIDMixin):
 
     user_id: Mapped[str] = mapped_column(String, nullable=False)
     role: Mapped[str] = mapped_column(String, nullable=False)
+    assigned_by: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("profiles.id"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
 
 class UserPermissionOverride(Base, UUIDMixin):

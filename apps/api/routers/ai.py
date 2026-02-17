@@ -24,27 +24,27 @@ def get_service(db: DbSession) -> AIService:
 
 @router.get("/chat/sessions", response_model=list[ChatSessionResponse])
 async def list_sessions(user: CurrentUser, service: AIService = Depends(get_service)):
-    return await service.get_sessions(user["id"])
+    return await service.get_sessions(user.id)
 
 
 @router.post("/chat/sessions", response_model=ChatSessionResponse, status_code=201)
 async def create_session(body: ChatSessionCreate, user: CurrentUser, service: AIService = Depends(get_service)):
-    return await service.create_session(user["id"], body.product_id)
+    return await service.create_session(user.id, body.product_id)
 
 
 @router.get("/chat/sessions/{session_id}/messages", response_model=list[ChatMessageResponse])
 async def list_messages(session_id: UUID, user: CurrentUser, service: AIService = Depends(get_service)):
-    return await service.get_messages(session_id, user["id"])
+    return await service.get_messages(session_id, user.id)
 
 
 @router.post("/chat/sessions/{session_id}/messages", response_model=ChatMessageResponse, status_code=201)
 async def send_message(session_id: UUID, body: SendMessageBody, user: CurrentUser, service: AIService = Depends(get_service)):
     """Send a message and get a non-streaming AI response."""
-    return await service.send_and_respond(session_id, body.content, user["id"])
+    return await service.send_and_respond(session_id, body.content, user.id)
 
 
 @router.post("/chat", response_class=StreamingResponse)
 async def chat(body: ChatMessageCreate, user: CurrentUser, service: AIService = Depends(get_service)):
     """Send message and receive SSE streaming response."""
-    stream = service.stream_response(body.session_id, body.content, user["id"])
+    stream = service.stream_response(body.session_id, body.content, user.id)
     return StreamingResponse(stream, media_type="text/event-stream")

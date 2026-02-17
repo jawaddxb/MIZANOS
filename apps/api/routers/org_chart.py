@@ -21,13 +21,13 @@ def get_service(db: DbSession) -> OrgChartService:
     return OrgChartService(db)
 
 
-def require_super_admin(user: CurrentUser) -> None:
-    if not user.has_role(AppRole.SUPER_ADMIN):
-        raise forbidden("Only super admins can modify reporting lines")
+def require_admin(user: CurrentUser) -> None:
+    if not user.has_any_role(AppRole.SUPERADMIN, AppRole.ADMIN):
+        raise forbidden("Only admins can modify reporting lines")
 
 
 def require_admin_or_pm(user: CurrentUser) -> None:
-    if not user.has_any_role(AppRole.SUPER_ADMIN, AppRole.ADMIN, AppRole.PM):
+    if not user.has_any_role(AppRole.SUPERADMIN, AppRole.ADMIN, AppRole.PM):
         raise forbidden("Insufficient permissions to resend invitations")
 
 
@@ -47,8 +47,8 @@ async def update_reporting_line(
     user: CurrentUser,
     service: OrgChartService = Depends(get_service),
 ):
-    """Update who a profile reports to (super_admin only)."""
-    require_super_admin(user)
+    """Update who a profile reports to (admin or super_admin)."""
+    require_admin(user)
     return await service.update_reporting_line(profile_id, body.manager_id)
 
 

@@ -18,10 +18,10 @@ def require_roles(*allowed: AppRole):
         user: AuthenticatedUser = Depends(get_current_user),
     ) -> AuthenticatedUser:
         # super_admin bypasses all checks
-        if user.has_role(AppRole.SUPER_ADMIN):
+        if user.has_role(AppRole.SUPERADMIN):
             return user
-        # admin bypasses unless the check is specifically for super_admin
-        if user.has_role(AppRole.ADMIN) and AppRole.SUPER_ADMIN not in allowed:
+        # admin bypasses unless the check is specifically for superadmin
+        if user.has_role(AppRole.ADMIN) and AppRole.SUPERADMIN not in allowed:
             return user
         if user.has_any_role(*allowed):
             return user
@@ -37,7 +37,7 @@ def require_admin():
 
 def require_super_admin():
     """Only super_admin passes."""
-    return require_roles(AppRole.SUPER_ADMIN)
+    return require_roles(AppRole.SUPERADMIN)
 
 
 async def verify_product_access(
@@ -45,8 +45,8 @@ async def verify_product_access(
     user: AuthenticatedUser,
     product_id: UUID,
 ) -> None:
-    """Raise 403 unless user is admin/super_admin or a member of the product."""
-    if user.has_any_role(AppRole.SUPER_ADMIN, AppRole.ADMIN):
+    """Raise 403 unless user is admin/superadmin or a member of the product."""
+    if user.has_any_role(AppRole.SUPERADMIN, AppRole.ADMIN):
         return
 
     from apps.api.models.product import ProductMember

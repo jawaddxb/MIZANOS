@@ -42,7 +42,7 @@ class EmailService:
 
         try:
             resend.Emails.send({
-                "from": "Mizan <noreply@updates.mizan.app>",
+                "from": settings.email_from,
                 "to": [to_email],
                 "subject": f"{inviter_name} invited you to Mizan",
                 "html": html,
@@ -84,7 +84,7 @@ class EmailService:
 
         try:
             resend.Emails.send({
-                "from": "Mizan <noreply@updates.mizan.app>",
+                "from": settings.email_from,
                 "to": [to_email],
                 "subject": "Reset your Mizan password",
                 "html": html,

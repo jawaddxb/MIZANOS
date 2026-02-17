@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils/cn";
 import { Button } from "@/components/molecules/buttons/Button";
 import { TextField } from "@/components/molecules/forms/TextField";
 import { authRepository } from "@/lib/api/repositories";
+import { validatePassword, PASSWORD_RULES } from "@/lib/utils/password";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -123,12 +124,9 @@ export function ResetPasswordForm({
     e.preventDefault();
     setError(null);
 
-    if (!newPassword.trim()) {
-      setError("Please enter a new password.");
-      return;
-    }
-    if (newPassword.length < 8) {
-      setError("Password must be at least 8 characters.");
+    const pwError = validatePassword(newPassword);
+    if (pwError) {
+      setError(pwError);
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -178,16 +176,19 @@ export function ResetPasswordForm({
         noValidate
       >
         <div className="space-y-4">
-          <TextField
-            label="New password"
-            type="password"
-            placeholder="At least 8 characters"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            autoComplete="new-password"
-            required
-            disabled={isSubmitting}
-          />
+          <div>
+            <TextField
+              label="New password"
+              type="password"
+              placeholder="Min 8 chars, upper, lower, number, special"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              autoComplete="new-password"
+              required
+              disabled={isSubmitting}
+            />
+            <p className="text-xs text-muted-foreground mt-1">{PASSWORD_RULES}</p>
+          </div>
           <TextField
             label="Confirm password"
             type="password"

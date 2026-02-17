@@ -1,6 +1,22 @@
 """Authentication schemas."""
 
-from pydantic import BaseModel, EmailStr, Field
+import re
+
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
+PASSWORD_PATTERN = re.compile(
+    r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=\[\]{};:'\",.<>?/\\|`~]).{8,}$"
+)
+PASSWORD_MSG = (
+    "Password must be at least 8 characters and include an uppercase letter, "
+    "a lowercase letter, a number, and a special character."
+)
+
+
+def _validate_password(value: str) -> str:
+    if not PASSWORD_PATTERN.match(value):
+        raise ValueError(PASSWORD_MSG)
+    return value
 
 
 class LoginRequest(BaseModel):
@@ -16,6 +32,11 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str
     full_name: str
+
+    @field_validator("password")
+    @classmethod
+    def check_password(cls, v: str) -> str:
+        return _validate_password(v)
 
 
 class TokenResponse(BaseModel):
@@ -57,6 +78,11 @@ class ResetPasswordRequest(BaseModel):
 
     new_password: str = Field(..., min_length=8)
 
+    @field_validator("new_password")
+    @classmethod
+    def check_password(cls, v: str) -> str:
+        return _validate_password(v)
+
 
 class InviteUserRequest(BaseModel):
     """Invite a new user."""
@@ -78,6 +104,11 @@ class ActivateAccountRequest(BaseModel):
     token: str
     password: str = Field(..., min_length=8)
 
+    @field_validator("password")
+    @classmethod
+    def check_password(cls, v: str) -> str:
+        return _validate_password(v)
+
 
 class ForgotPasswordRequest(BaseModel):
     """Request a password reset email."""
@@ -90,3 +121,8 @@ class ConfirmResetRequest(BaseModel):
 
     token: str
     new_password: str = Field(..., min_length=8)
+
+    @field_validator("new_password")
+    @classmethod
+    def check_password(cls, v: str) -> str:
+        return _validate_password(v)

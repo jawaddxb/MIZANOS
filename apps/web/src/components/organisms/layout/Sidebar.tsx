@@ -1,25 +1,24 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
 import { Button } from "@/components/molecules/buttons/Button";
 import { MizanLogo } from "@/components/atoms/brand/MizanLogo";
 import { SidebarNav } from "./SidebarNav";
 import { useAuth } from "@/contexts/AuthContext";
-import { useProducts } from "@/hooks/queries/useProducts";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/atoms/feedback/Tooltip";
 import {
-  FolderKanban,
-  ChevronDown,
-  Search,
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+} from "@/components/atoms/display/Avatar";
+import { getAvatarUrl } from "@/lib/utils/avatar";
+import {
   LogOut,
-  X,
   PanelLeftClose,
   PanelLeft,
 } from "lucide-react";
@@ -31,10 +30,7 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   const router = useRouter();
-  const pathname = usePathname();
   const { user, logout } = useAuth();
-  const { data: products = [] } = useProducts();
-  const [productsExpanded, setProductsExpanded] = useState(true);
 
   const handleSignOut = async () => {
     await logout();
@@ -102,14 +98,8 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 
       <SidebarNav collapsed={collapsed} />
 
-      {/* Products Section */}
-      <ProductsList
-        collapsed={collapsed}
-        products={products}
-        productsExpanded={productsExpanded}
-        onToggleExpanded={() => setProductsExpanded(!productsExpanded)}
-        pathname={pathname}
-      />
+      {/* Spacer to push user section to bottom */}
+      <div className="flex-1" />
 
       {/* User Section */}
       <UserSection
@@ -117,136 +107,10 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         userInitials={userInitials}
         userName={user?.full_name}
         userEmail={user?.email}
+        avatarUrl={user?.avatar_url}
         onSignOut={handleSignOut}
       />
     </aside>
-  );
-}
-
-interface ProductsListProps {
-  collapsed: boolean;
-  products: { id: string; name: string; progress?: number | null }[];
-  productsExpanded: boolean;
-  onToggleExpanded: () => void;
-  pathname: string;
-}
-
-function ProductsList({
-  collapsed,
-  products,
-  productsExpanded,
-  onToggleExpanded,
-  pathname,
-}: ProductsListProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const filteredProducts = searchQuery
-    ? products.filter((p) =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()),
-      )
-    : products;
-
-  const productsIcon = (
-    <div
-      className={cn(
-        "flex items-center justify-center",
-        collapsed && "px-2 py-2",
-      )}
-    >
-      <FolderKanban className="h-4 w-4 text-muted-foreground" />
-    </div>
-  );
-
-  if (collapsed) {
-    return (
-      <div className="px-2 py-2 relative z-10">
-        <Tooltip>
-          <TooltipTrigger asChild>{productsIcon}</TooltipTrigger>
-          <TooltipContent side="right">
-            Products ({products.length})
-          </TooltipContent>
-        </Tooltip>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex-1 overflow-hidden flex flex-col px-3 py-2 relative z-10">
-      <button
-        onClick={onToggleExpanded}
-        className="flex items-center justify-between w-full px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-accent/30"
-      >
-        <span className="flex items-center gap-2">
-          <FolderKanban className="h-3.5 w-3.5" />
-          Products
-          <span className="text-[10px] font-mono bg-accent px-1.5 py-0.5 rounded-md">
-            {products.length}
-          </span>
-        </span>
-        <ChevronDown
-          className={cn(
-            "h-3.5 w-3.5 transition-transform duration-200",
-            productsExpanded ? "" : "-rotate-90",
-          )}
-        />
-      </button>
-
-      {productsExpanded && (
-        <>
-          {/* Search within products — only shown when list is long */}
-          {products.length > 5 && (
-            <div className="relative mt-1.5 mb-1">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-              <input
-                placeholder="Filter products..."
-                className="w-full pl-7 pr-7 h-7 text-xs rounded-md bg-muted border border-border text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-accent transition-colors"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-            </div>
-          )}
-
-          <div className="flex-1 overflow-y-auto">
-            <ul className="space-y-0.5 pr-2">
-              {filteredProducts.map((product) => {
-                const isActive = pathname === `/products/${product.id}`;
-                return (
-                  <li key={product.id}>
-                    <Link
-                      href={`/products/${product.id}`}
-                      className={cn(
-                        "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-200 group",
-                        isActive
-                          ? "bg-accent text-accent-foreground font-medium"
-                          : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-                      )}
-                    >
-                      <span className="truncate flex-1">{product.name}</span>
-                      <span className="text-[10px] font-mono text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                        {product.progress ?? 0}%
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
-              {filteredProducts.length === 0 && searchQuery && (
-                <li className="px-3 py-4 text-center">
-                  <p className="text-xs text-muted-foreground">No matching projects</p>
-                </li>
-              )}
-            </ul>
-          </div>
-        </>
-      )}
-    </div>
   );
 }
 
@@ -255,6 +119,7 @@ interface UserSectionProps {
   userInitials: string;
   userName?: string | null;
   userEmail?: string | null;
+  avatarUrl?: string | null;
   onSignOut: () => void;
 }
 
@@ -263,12 +128,15 @@ function UserSection({
   userInitials,
   userName,
   userEmail,
+  avatarUrl,
   onSignOut,
 }: UserSectionProps) {
+  const fullAvatarUrl = getAvatarUrl(avatarUrl);
   const avatar = (
-    <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-foreground shrink-0 cursor-default">
-      {userInitials}
-    </div>
+    <Avatar className="h-9 w-9 shrink-0 cursor-default">
+      {fullAvatarUrl && <AvatarImage src={fullAvatarUrl} alt={userName ?? "User"} />}
+      <AvatarFallback className="text-sm font-medium">{userInitials}</AvatarFallback>
+    </Avatar>
   );
 
   return (

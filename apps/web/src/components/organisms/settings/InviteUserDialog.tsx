@@ -12,13 +12,14 @@ import { BaseInput } from "@/components/atoms/inputs/BaseInput";
 import { BaseLabel } from "@/components/atoms/inputs/BaseLabel";
 import { Button } from "@/components/molecules/buttons/Button";
 import { SelectField } from "@/components/molecules/forms/SelectField";
+import { SearchableSelect } from "@/components/molecules/forms/SearchableSelect";
 import { useInviteUser } from "@/hooks/queries/useUserManagement";
-import { Loader2, X } from "lucide-react";
-import { Badge } from "@/components/atoms/display/Badge";
+import { Loader2 } from "lucide-react";
 
 interface InviteUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  managerOptions?: { value: string; label: string }[];
 }
 
 const ROLE_OPTIONS = [
@@ -36,6 +37,14 @@ const OFFICE_OPTIONS = [
   { value: "europe", label: "Europe" },
 ];
 
+const SKILL_OPTIONS = [
+  "AI & Machine Learning", "Cloud & Infrastructure",
+  "Data & Analytics", "Finance", "Leadership",
+  "Marketing", "Operations", "Product Management",
+  "Project Management", "Quality Assurance", "Blockchain",
+  "Research", "Sales", "Software Engineering", "Strategy", "UI/UX Design",
+];
+
 interface InviteFormState {
   email: string;
   full_name: string;
@@ -44,6 +53,7 @@ interface InviteFormState {
   skills: string[];
   max_projects: string;
   skillInput: string;
+  reports_to: string;
 }
 
 const INITIAL_STATE: InviteFormState = {
@@ -54,9 +64,10 @@ const INITIAL_STATE: InviteFormState = {
   skills: [],
   max_projects: "",
   skillInput: "",
+  reports_to: "",
 };
 
-export function InviteUserDialog({ open, onOpenChange }: InviteUserDialogProps) {
+export function InviteUserDialog({ open, onOpenChange, managerOptions }: InviteUserDialogProps) {
   const [form, setForm] = useState<InviteFormState>(INITIAL_STATE);
   const inviteUser = useInviteUser();
 
@@ -96,6 +107,7 @@ export function InviteUserDialog({ open, onOpenChange }: InviteUserDialogProps) 
         office_location: form.office_location || undefined,
         skills: form.skills.length > 0 ? form.skills : undefined,
         max_projects: form.max_projects ? Number(form.max_projects) : undefined,
+        reports_to: form.reports_to || undefined,
       },
       { onSuccess: () => handleClose(false) },
     );
@@ -147,13 +159,70 @@ export function InviteUserDialog({ open, onOpenChange }: InviteUserDialogProps) 
               placeholder="Select office"
             />
           </div>
+          {managerOptions && managerOptions.length > 0 && (
+            <SearchableSelect
+              label="Reports To (optional)"
+              options={managerOptions}
+              value={form.reports_to}
+              onValueChange={(v) => setForm({ ...form, reports_to: v })}
+              placeholder="Search by name..."
+              allowClear
+              clearLabel="None"
+            />
+          )}
+          <div className="space-y-2">
+            <BaseLabel htmlFor="invite-max-projects">Max Projects (concurrent)</BaseLabel>
+            <BaseInput
+              id="invite-max-projects"
+              type="number"
+              min={1}
+              max={20}
+              value={form.max_projects}
+              onChange={(e) => setForm({ ...form, max_projects: e.target.value })}
+              placeholder="e.g., 5"
+            />
+          </div>
           <div className="space-y-2">
             <BaseLabel>Skills</BaseLabel>
+            <div className="flex flex-wrap gap-1.5">
+              {SKILL_OPTIONS.map((skill) => {
+                const selected = form.skills.includes(skill);
+                return (
+                  <button
+                    key={skill}
+                    type="button"
+                    onClick={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        skills: selected ? prev.skills.filter((s) => s !== skill) : [...prev.skills, skill],
+                      }))
+                    }
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                      selected
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background text-muted-foreground border-input hover:border-foreground/30"
+                    }`}
+                  >
+                    {skill}
+                  </button>
+                );
+              })}
+              {form.skills.filter((s) => !SKILL_OPTIONS.includes(s)).map((skill) => (
+                <button
+                  key={skill}
+                  type="button"
+                  onClick={() => handleRemoveSkill(skill)}
+                  className="px-2.5 py-1 rounded-full text-xs font-medium border transition-colors bg-primary text-primary-foreground border-primary"
+                >
+                  {skill} &times;
+                </button>
+              ))}
+            </div>
             <div className="flex gap-2">
               <BaseInput
                 value={form.skillInput}
                 onChange={(e) => setForm({ ...form, skillInput: e.target.value })}
-                placeholder="Add a skill..."
+                placeholder="Add custom skill..."
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
@@ -165,30 +234,6 @@ export function InviteUserDialog({ open, onOpenChange }: InviteUserDialogProps) 
                 Add
               </Button>
             </div>
-            {form.skills.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {form.skills.map((skill) => (
-                  <Badge key={skill} variant="secondary" className="gap-1">
-                    {skill}
-                    <button onClick={() => handleRemoveSkill(skill)} className="ml-1">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="space-y-2">
-            <BaseLabel htmlFor="invite-max-projects">Max Projects</BaseLabel>
-            <BaseInput
-              id="invite-max-projects"
-              type="number"
-              min={1}
-              max={20}
-              value={form.max_projects}
-              onChange={(e) => setForm({ ...form, max_projects: e.target.value })}
-              placeholder="e.g., 5"
-            />
           </div>
         </div>
         <DialogFooter>

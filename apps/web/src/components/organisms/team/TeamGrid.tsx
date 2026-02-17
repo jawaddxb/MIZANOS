@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, Plus, Users, UserCheck, UserX, Briefcase, Crown, Megaphone } from "lucide-react";
+import { Search, Plus, Users, UserCheck, UserX, Briefcase, Crown, Megaphone, LayoutGrid, List } from "lucide-react";
 import { Button } from "@/components/molecules/buttons/Button";
 import { PageHeader } from "@/components/molecules/layout/PageHeader";
 import { Skeleton } from "@/components/atoms/display/Skeleton";
 import { TeamMemberCard } from "./TeamMemberCard";
+import { TeamMemberRow } from "./TeamMemberRow";
 import { TeamCapacityOverview } from "./TeamCapacityOverview";
 import { AddTeamMemberDialog } from "./AddTeamMemberDialog";
 import { SkillFilter } from "@/components/molecules/filters/SkillFilter";
@@ -19,8 +20,8 @@ const ROLE_TABS = [
   { id: "engineer", label: "AI Engineers", icon: Users },
   { id: "pm", label: "Project Managers", icon: UserCheck },
   { id: "marketing", label: "Marketing", icon: Megaphone },
-  { id: "bizdev", label: "Biz Dev", icon: Briefcase },
-  { id: "admin", label: "Senior Mgmt", icon: Crown },
+  { id: "bizdev", label: "Business Development", icon: Briefcase },
+  { id: "admin", label: "Senior Management", icon: Crown },
 ] as const;
 
 const SORT_OPTIONS = [
@@ -37,6 +38,7 @@ export function TeamGrid() {
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("name");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
   const summaryMap = useMemo(() => {
     const map = new Map<string, EvaluationSummary>();
@@ -47,7 +49,11 @@ export function TeamGrid() {
   const roleCounts = useMemo(() => {
     const counts: Record<string, number> = { all: profiles.length };
     profiles.forEach((p) => {
-      counts[p.role ?? "unknown"] = (counts[p.role ?? "unknown"] ?? 0) + 1;
+      const role = p.role ?? "unknown";
+      counts[role] = (counts[role] ?? 0) + 1;
+      if (role === "superadmin") {
+        counts["admin"] = (counts["admin"] ?? 0) + 1;
+      }
     });
     return counts;
   }, [profiles]);
@@ -60,7 +66,10 @@ export function TeamGrid() {
 
   const filteredTeam = useMemo(() => {
     const filtered = profiles.filter((member) => {
-      const matchesRole = activeTab === "all" || member.role === activeTab;
+      const matchesRole =
+        activeTab === "all" ||
+        member.role === activeTab ||
+        (activeTab === "admin" && member.role === "superadmin");
       const matchesSearch =
         !searchQuery ||
         member.full_name?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -167,12 +176,36 @@ export function TeamGrid() {
           onSkillsChange={setSelectedSkills}
           availableSkills={allSkills}
         />
+        <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg border ml-auto">
+          <button
+            onClick={() => setViewMode("list")}
+            className={`flex items-center gap-1.5 h-7 px-3 rounded-md text-xs font-medium transition-all ${
+              viewMode === "list"
+                ? "bg-primary text-primary-foreground shadow-md"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+            }`}
+          >
+            <List className="h-3.5 w-3.5" />
+            List
+          </button>
+          <button
+            onClick={() => setViewMode("grid")}
+            className={`flex items-center gap-1.5 h-7 px-3 rounded-md text-xs font-medium transition-all ${
+              viewMode === "grid"
+                ? "bg-primary text-primary-foreground shadow-md"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+            }`}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" />
+            Grid
+          </button>
+        </div>
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-48" />
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-40" />
           ))}
         </div>
       ) : filteredTeam.length === 0 ? (
@@ -181,8 +214,18 @@ export function TeamGrid() {
           <h3 className="text-lg font-medium mb-1">No team members found</h3>
           <p className="text-sm text-muted-foreground">Try adjusting your search or filters</p>
         </div>
+      ) : viewMode === "list" ? (
+        <div className="rounded-lg border bg-card">
+          {filteredTeam.map((member) => (
+            <TeamMemberRow
+              key={member.id}
+              profile={member}
+              evaluationSummary={summaryMap.get(member.id)}
+            />
+          ))}
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filteredTeam.map((member) => (
             <TeamMemberCard
               key={member.id}

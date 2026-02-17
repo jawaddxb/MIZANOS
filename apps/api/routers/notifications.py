@@ -19,7 +19,7 @@ async def list_notifications(
     user: CurrentUser,
     service: NotificationService = Depends(get_service),
 ) -> list[NotificationResponse]:
-    return await service.get_for_user(user["id"])
+    return await service.get_for_user(user.id)
 
 
 @router.get("/unread/count")
@@ -27,7 +27,7 @@ async def unread_count(
     user: CurrentUser,
     service: NotificationService = Depends(get_service),
 ) -> dict[str, int]:
-    count = await service.count_unread(user["id"])
+    count = await service.count_unread(user.id)
     return {"count": count}
 
 
@@ -37,7 +37,7 @@ async def mark_read(
     user: CurrentUser,
     service: NotificationService = Depends(get_service),
 ) -> MessageResponse:
-    await service.mark_as_read(body.notification_ids, user["id"])
+    await service.mark_as_read(body.notification_ids, user.id)
     return MessageResponse(message="Notifications marked as read")
 
 
@@ -46,7 +46,7 @@ async def mark_all_read(
     user: CurrentUser,
     service: NotificationService = Depends(get_service),
 ) -> MessageResponse:
-    await service.mark_all_read(user["id"])
+    await service.mark_all_read(user.id)
     return MessageResponse(message="All notifications marked as read")
 
 
@@ -55,7 +55,7 @@ async def get_preferences(
     user: CurrentUser,
     service: NotificationService = Depends(get_service),
 ):
-    return await service.get_preferences(user["id"])
+    return await service.get_preferences(user.id)
 
 
 @router.patch("/preferences")
@@ -64,4 +64,4 @@ async def update_preferences(
     user: CurrentUser,
     service: NotificationService = Depends(get_service),
 ):
-    return await service.update_preferences(user["id"], body)
+    return await service.update_preferences(user.id, body)

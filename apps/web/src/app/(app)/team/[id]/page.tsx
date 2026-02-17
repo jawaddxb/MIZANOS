@@ -5,7 +5,8 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ClipboardEdit, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
-import { Avatar } from "@/components/atoms/display/Avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/atoms/display/Avatar";
+import { getAvatarUrl } from "@/lib/utils/avatar";
 import { Badge } from "@/components/atoms/display/Badge";
 import { Button } from "@/components/molecules/buttons/Button";
 import { Skeleton } from "@/components/atoms/display/Skeleton";
@@ -87,7 +88,10 @@ export default function EngineerDetailPage() {
       <div className="flex items-start gap-4 rounded-lg border bg-card p-5">
         <div className="relative">
           <Avatar className="h-16 w-16 text-lg">
-            <span className="font-semibold">{initials}</span>
+            {profile.avatar_url && (
+              <AvatarImage src={getAvatarUrl(profile.avatar_url) ?? ""} alt={profile.full_name ?? ""} />
+            )}
+            <AvatarFallback className="font-semibold">{initials}</AvatarFallback>
           </Avatar>
           <span className={cn("absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-background", availability.color)} />
         </div>

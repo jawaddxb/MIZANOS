@@ -176,9 +176,26 @@ class InviteUserRequest(BaseSchema):
     availability: str | None = None
     max_projects: int | None = None
     office_location: str | None = None
+    reports_to: UUID | None = None
 
 
 class UserStatusUpdate(BaseSchema):
     """User status update."""
 
     status: str
+
+
+class RoleAssignRequest(BaseSchema):
+    """Role assignment request."""
+
+    role: str
+
+
+class UserRoleResponse(BaseSchema):
+    """User role response."""
+
+    id: UUID
+    user_id: str
+    role: str
+    assigned_by: UUID | None = None
+    created_at: datetime

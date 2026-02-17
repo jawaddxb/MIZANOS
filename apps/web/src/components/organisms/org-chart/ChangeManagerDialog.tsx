@@ -10,14 +10,7 @@ import {
   DialogDescription,
 } from "@/components/atoms/layout/Dialog";
 import { BaseButton } from "@/components/atoms/buttons/BaseButton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/atoms/inputs/BaseSelect";
-import { BaseLabel } from "@/components/atoms/inputs/BaseLabel";
+import { SearchableSelect } from "@/components/molecules/forms/SearchableSelect";
 import type { OrgChartNode } from "@/lib/types";
 
 interface ChangeManagerDialogProps {
@@ -37,16 +30,15 @@ export function ChangeManagerDialog({
   onConfirm,
   isPending,
 }: ChangeManagerDialogProps) {
-  const [selectedManagerId, setSelectedManagerId] = useState<string>("__none__");
+  const [selectedManagerId, setSelectedManagerId] = useState<string>("");
 
-  const eligibleManagers = allNodes.filter(
-    (n) => n.id !== targetNode?.id && n.status === "active",
-  );
+  const managerOptions = allNodes
+    .filter((n) => n.id !== targetNode?.id && n.status === "active")
+    .map((n) => ({ value: n.id, label: n.full_name ?? n.email ?? n.id }));
 
   const handleConfirm = () => {
     if (!targetNode) return;
-    const managerId = selectedManagerId === "__none__" ? null : selectedManagerId;
-    onConfirm(targetNode.id, managerId);
+    onConfirm(targetNode.id, selectedManagerId || null);
   };
 
   return (
@@ -60,20 +52,15 @@ export function ChangeManagerDialog({
         </DialogHeader>
 
         <div className="space-y-3 py-2">
-          <BaseLabel>Manager</BaseLabel>
-          <Select value={selectedManagerId} onValueChange={setSelectedManagerId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a manager" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__none__">No manager (root)</SelectItem>
-              {eligibleManagers.map((n) => (
-                <SelectItem key={n.id} value={n.id}>
-                  {n.full_name ?? n.email}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            label="Manager"
+            options={managerOptions}
+            value={selectedManagerId}
+            onValueChange={setSelectedManagerId}
+            placeholder="Search by name..."
+            allowClear
+            clearLabel="No manager (root)"
+          />
         </div>
 
         <DialogFooter>

@@ -45,7 +45,7 @@ async def get_me(
     service: AuthService = Depends(get_auth_service),
 ) -> dict:
     """Get current authenticated user profile."""
-    return await service.get_current_profile(user["id"])
+    return await service.get_current_profile(user.id)
 
 
 @router.post("/register", response_model=TokenResponse)
@@ -73,7 +73,7 @@ async def reset_password(
     service: AuthService = Depends(get_auth_service),
 ):
     """Reset the current user's password."""
-    await service.reset_password(user["id"], body.new_password)
+    await service.reset_password(user.id, body.new_password)
     return MessageResponse(message="Password reset successfully")
 
 

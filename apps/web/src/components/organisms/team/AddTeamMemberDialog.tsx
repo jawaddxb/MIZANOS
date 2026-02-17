@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { X } from "lucide-react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/molecules/buttons/Button";
-import { SkillTag } from "@/components/atoms/display/SkillTag";
+import { SearchableSelect } from "@/components/molecules/forms/SearchableSelect";
 import { useInviteUser } from "@/hooks/queries/useUserManagement";
+import { useProfiles } from "@/hooks/queries/useProfiles";
 
 const ROLES = [
   { value: "admin", label: "Senior Management" },
@@ -27,6 +27,14 @@ const OFFICES = [
   { value: "europe", label: "Europe" },
 ] as const;
 
+const SKILL_OPTIONS = [
+  "AI & Machine Learning", "Cloud & Infrastructure",
+  "Data & Analytics", "Finance", "Leadership",
+  "Marketing", "Operations", "Product Management",
+  "Project Management", "Quality Assurance", "Blockchain",
+  "Research", "Sales", "Software Engineering", "Strategy", "UI/UX Design",
+] as const;
+
 interface AddTeamMemberDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -34,15 +42,17 @@ interface AddTeamMemberDialogProps {
 
 export function AddTeamMemberDialog({ open, onOpenChange }: AddTeamMemberDialogProps) {
   const inviteUser = useInviteUser();
+  const { data: profiles = [] } = useProfiles();
 
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState("engineer");
   const [skills, setSkills] = useState<string[]>([]);
-  const [skillInput, setSkillInput] = useState("");
+  const [customSkillInput, setCustomSkillInput] = useState("");
   const [availability, setAvailability] = useState("available");
   const [maxProjects, setMaxProjects] = useState(3);
   const [officeLocation, setOfficeLocation] = useState("lahore");
+  const [reportsTo, setReportsTo] = useState("");
 
   if (!open) return null;
 
@@ -51,18 +61,11 @@ export function AddTeamMemberDialog({ open, onOpenChange }: AddTeamMemberDialogP
     setFullName("");
     setRole("engineer");
     setSkills([]);
-    setSkillInput("");
+    setCustomSkillInput("");
     setAvailability("available");
     setMaxProjects(3);
     setOfficeLocation("lahore");
-  };
-
-  const handleAddSkill = () => {
-    const trimmed = skillInput.trim().toLowerCase();
-    if (trimmed && !skills.includes(trimmed)) {
-      setSkills([...skills, trimmed]);
-      setSkillInput("");
-    }
+    setReportsTo("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,6 +79,7 @@ export function AddTeamMemberDialog({ open, onOpenChange }: AddTeamMemberDialogP
         availability,
         max_projects: maxProjects,
         office_location: officeLocation,
+        reports_to: reportsTo || undefined,
       },
       {
         onSuccess: () => {
@@ -98,14 +102,26 @@ export function AddTeamMemberDialog({ open, onOpenChange }: AddTeamMemberDialogP
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <SelectField label="Role *" value={role} onChange={setRole} options={ROLES} />
+            <SelectField label="Primary Role *" value={role} onChange={setRole} options={ROLES} />
             <SelectField label="Availability" value={availability} onChange={setAvailability} options={AVAILABILITY} />
           </div>
+
+          <SearchableSelect
+            label="Reports To (optional)"
+            options={profiles
+              .filter((p) => p.status === "active")
+              .map((p) => ({ value: p.id, label: p.full_name ?? p.email ?? p.id }))}
+            value={reportsTo}
+            onValueChange={setReportsTo}
+            placeholder="Search by name..."
+            allowClear
+            clearLabel="None"
+          />
 
           <div className="grid grid-cols-2 gap-3">
             <SelectField label="Office Location" value={officeLocation} onChange={setOfficeLocation} options={OFFICES} />
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Max Projects</label>
+              <label className="text-sm font-medium">Max Projects (concurrent)</label>
               <input
                 type="number"
                 min={1}
@@ -117,35 +133,75 @@ export function AddTeamMemberDialog({ open, onOpenChange }: AddTeamMemberDialogP
             </div>
           </div>
 
-          {/* Skills tag input */}
+          {/* Skills selection */}
           <div className="space-y-1.5">
             <label className="text-sm font-medium">Skills</label>
+            <div className="flex flex-wrap gap-1.5">
+              {SKILL_OPTIONS.map((skill) => {
+                const selected = skills.includes(skill);
+                return (
+                  <button
+                    key={skill}
+                    type="button"
+                    onClick={() =>
+                      setSkills(selected ? skills.filter((s) => s !== skill) : [...skills, skill])
+                    }
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                      selected
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background text-muted-foreground border-input hover:border-foreground/30"
+                    }`}
+                  >
+                    {skill}
+                  </button>
+                );
+              })}
+              {skills.filter((s) => !SKILL_OPTIONS.includes(s as typeof SKILL_OPTIONS[number])).map((skill) => (
+                <button
+                  key={skill}
+                  type="button"
+                  onClick={() => setSkills(skills.filter((s) => s !== skill))}
+                  className="px-2.5 py-1 rounded-full text-xs font-medium border transition-colors bg-primary text-primary-foreground border-primary"
+                >
+                  {skill} &times;
+                </button>
+              ))}
+            </div>
             <div className="flex gap-2">
               <input
-                placeholder="Add skill..."
-                value={skillInput}
-                onChange={(e) => setSkillInput(e.target.value)}
+                placeholder="Add custom skill..."
+                value={customSkillInput}
+                onChange={(e) => setCustomSkillInput(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") { e.preventDefault(); handleAddSkill(); }
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    const trimmed = customSkillInput.trim();
+                    if (trimmed && !skills.includes(trimmed)) {
+                      setSkills([...skills, trimmed]);
+                      setCustomSkillInput("");
+                    }
+                  }
                 }}
-                className="flex-1 h-9 rounded-md border bg-background px-3 text-sm"
+                className="flex-1 h-8 rounded-md border bg-background px-3 text-sm"
               />
-              <Button type="button" variant="outline" size="sm" onClick={handleAddSkill}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const trimmed = customSkillInput.trim();
+                  if (trimmed && !skills.includes(trimmed)) {
+                    setSkills([...skills, trimmed]);
+                    setCustomSkillInput("");
+                  }
+                }}
+              >
                 Add
               </Button>
             </div>
-            {skills.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {skills.map((skill) => (
-                  <SkillTag
-                    key={skill}
-                    skill={skill}
-                    onRemove={() => setSkills(skills.filter((s) => s !== skill))}
-                  />
-                ))}
-              </div>
-            )}
           </div>
+
+          <p className="text-xs text-muted-foreground">An invitation email will be sent to activate their account.</p>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

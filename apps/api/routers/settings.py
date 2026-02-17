@@ -13,6 +13,7 @@ from apps.api.schemas.settings import (
     ModuleResponse,
     PermissionAuditLogResponse,
     ProjectIntegrationCreate,
+    RoleAssignRequest,
     RolePermissionResponse,
     RolePermissionUpdate,
     StandardsRepositoryCreate,
@@ -22,8 +23,10 @@ from apps.api.schemas.settings import (
     UserOverrideResponse,
     UserOverrideUpdate,
     UserResponse,
+    UserRoleResponse,
     UserStatusUpdate,
 )
+from apps.api.services.role_service import RoleService
 from apps.api.services.settings_service import SettingsService
 
 router = APIRouter()
@@ -31,6 +34,10 @@ router = APIRouter()
 
 def get_service(db: DbSession) -> SettingsService:
     return SettingsService(db)
+
+
+def get_role_service(db: DbSession) -> RoleService:
+    return RoleService(db)
 
 
 @router.get("/modules", response_model=list[ModuleResponse])
@@ -126,7 +133,7 @@ async def list_standards_repositories(user: CurrentUser = None, service: Setting
 
 @router.post("/standards-repositories", response_model=StandardsRepositoryResponse, status_code=201)
 async def create_standards_repository(body: StandardsRepositoryCreate, user: CurrentUser, service: SettingsService = Depends(get_service)):
-    return await service.create_standards_repository(body, user["id"])
+    return await service.create_standards_repository(body, user.id)
 
 
 @router.patch("/standards-repositories/{repo_id}", response_model=StandardsRepositoryResponse)
@@ -151,7 +158,7 @@ async def invite_user(body: InviteUserRequest, user: CurrentUser = None, service
 
 @router.patch("/users/{user_id}/status")
 async def update_user_status(user_id: UUID, body: UserStatusUpdate, user: CurrentUser = None, service: SettingsService = Depends(get_service)):
-    return await service.update_user_status(user_id, body.status, user["id"])
+    return await service.update_user_status(user_id, body.status, user.id)
 
 
 @router.post("/users/{user_id}/reset-password")
@@ -159,11 +166,21 @@ async def reset_user_password(user_id: UUID, user: CurrentUser = None, service: 
     return await service.reset_user_password(user_id)
 
 
-@router.post("/users/{user_id}/roles", status_code=201)
-async def assign_role(user_id: UUID, body: dict, user: CurrentUser = None, service: SettingsService = Depends(get_service)):
-    return await service.assign_role(user_id, body["role"])
+@router.get("/users/{user_id}/roles", response_model=list[UserRoleResponse])
+async def get_user_roles(user_id: UUID, user: CurrentUser, service: RoleService = Depends(get_role_service)):
+    return await service.get_user_roles(user_id)
+
+
+@router.post("/users/{user_id}/roles", response_model=UserRoleResponse, status_code=201)
+async def assign_role(user_id: UUID, body: RoleAssignRequest, user: CurrentUser, service: RoleService = Depends(get_role_service)):
+    return await service.assign_role(user_id, body.role, user)
 
 
 @router.delete("/users/{user_id}/roles/{role}", status_code=204)
-async def remove_role(user_id: UUID, role: str, user: CurrentUser = None, service: SettingsService = Depends(get_service)):
-    await service.remove_role(user_id, role)
+async def remove_role(user_id: UUID, role: str, user: CurrentUser, service: RoleService = Depends(get_role_service)):
+    await service.remove_role(user_id, role, user)
+
+
+@router.patch("/users/{user_id}/primary-role")
+async def update_primary_role(user_id: UUID, body: RoleAssignRequest, user: CurrentUser, service: RoleService = Depends(get_role_service)):
+    return await service.update_primary_role(user_id, body.role, user)

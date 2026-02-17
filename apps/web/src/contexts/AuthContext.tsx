@@ -10,9 +10,11 @@ import {
 
 interface User {
   id: string;
+  profile_id?: string;
   email: string;
   full_name?: string;
   role?: string;
+  avatar_url?: string | null;
 }
 
 interface AuthContextType {
@@ -72,7 +74,7 @@ function AuthProvider({ children, apiBaseUrl = "/api" }: AuthProviderProps) {
   const _storeAuthResponse = (data: {
     access_token: string;
     refresh_token?: string;
-    user: { id: string; email: string; full_name?: string };
+    user: { id: string; email: string; full_name?: string; role?: string; avatar_url?: string | null };
   }) => {
     localStorage.setItem(TOKEN_KEY, data.access_token);
     localStorage.setItem("access_token", data.access_token);

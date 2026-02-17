@@ -6,6 +6,7 @@ import { Loader2, CheckCircle2 } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
 import { Button } from "@/components/molecules/buttons/Button";
 import { TextField } from "@/components/molecules/forms/TextField";
+import { validatePassword, PASSWORD_RULES } from "@/lib/utils/password";
 
 function ActivateContent() {
   const searchParams = useSearchParams();
@@ -17,7 +18,8 @@ function ActivateContent() {
   const [status, setStatus] = useState<"form" | "submitting" | "success" | "error">("form");
   const [message, setMessage] = useState("");
 
-  const isValid = password.length >= 8 && password === confirmPassword;
+  const pwError = validatePassword(password);
+  const isValid = !pwError && password === confirmPassword;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,15 +134,21 @@ function ActivateContent() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
-                <TextField
-                  label="Password"
-                  type="password"
-                  required
-                  placeholder="At least 8 characters"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="new-password"
-                />
+                <div>
+                  <TextField
+                    label="Password"
+                    type="password"
+                    required
+                    placeholder="Min 8 chars, upper, lower, number, special"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="new-password"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">{PASSWORD_RULES}</p>
+                  {password && pwError && (
+                    <p className="text-xs text-destructive mt-1">{pwError}</p>
+                  )}
+                </div>
                 <div>
                   <TextField
                     label="Confirm password"

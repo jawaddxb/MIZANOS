@@ -136,3 +136,5 @@ export type {
   EvaluationSummary,
   ProjectCompletion,
 } from "./evaluation";
+
+export type { OrgChartNode, UpdateReportingLineRequest } from "./org-chart";

@@ -53,6 +53,7 @@ class AuthService:
                 "email": profile.email,
                 "full_name": profile.full_name,
                 "role": profile.role,
+                "avatar_url": profile.avatar_url,
             },
         }
 
@@ -126,9 +127,11 @@ class AuthService:
             raise bad_request("User not found")
         return {
             "id": str(profile.user_id),
+            "profile_id": str(profile.id),
             "email": profile.email,
             "full_name": profile.full_name,
             "role": profile.role,
+            "avatar_url": profile.avatar_url,
         }
 
     async def activate_account(self, token: str, password: str) -> dict:
@@ -245,6 +248,7 @@ class AuthService:
                 "email": profile.email,
                 "full_name": profile.full_name,
                 "role": profile.role,
+                "avatar_url": profile.avatar_url,
             },
         }
 

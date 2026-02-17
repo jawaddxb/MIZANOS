@@ -23,3 +23,4 @@ export { SystemDocumentsRepository, systemDocumentsRepository } from "./system-d
 export { RepoEvaluatorRepository, repoEvaluatorRepository } from "./repo-evaluator.repository";
 export { TranscriptionRepository, transcriptionRepository } from "./transcription.repository";
 export { EvaluationRepository, evaluationRepository } from "./evaluation.repository";
+export { OrgChartRepository, orgChartRepository } from "./org-chart.repository";

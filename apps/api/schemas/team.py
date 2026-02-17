@@ -16,6 +16,7 @@ class ProfileResponse(BaseSchema):
     id: UUID
     user_id: UUID
     full_name: str | None = None
+    email: str | None = None
     avatar_url: str | None = None
     role: str = "engineer"
     status: str = "active"
