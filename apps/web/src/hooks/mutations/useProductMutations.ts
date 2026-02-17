@@ -39,18 +39,36 @@ export function useUpdateProduct() {
   });
 }
 
-export function useDeleteProduct() {
+export function useArchiveProduct() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string): Promise<void> =>
-      productsRepository.delete(id),
+    mutationFn: (id: string): Promise<Product> =>
+      productsRepository.archive(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast.success("Product deleted");
+      toast.success("Product archived");
     },
     onError: (error: Error) => {
-      toast.error("Failed to delete product: " + error.message);
+      toast.error("Failed to archive product: " + error.message);
+    },
+  });
+}
+
+export function useUnarchiveProduct() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string): Promise<Product> =>
+      productsRepository.unarchive(id),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["products", data.id] });
+      queryClient.invalidateQueries({ queryKey: ["product-detail", data.id] });
+      toast.success("Product restored");
+    },
+    onError: (error: Error) => {
+      toast.error("Failed to restore product: " + error.message);
     },
   });
 }

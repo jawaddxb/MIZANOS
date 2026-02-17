@@ -27,6 +27,7 @@ const StandardsTab = dynamic(() => import("@/components/organisms/settings/Stand
 const HolidaysTab = dynamic(() => import("@/components/organisms/settings/HolidaysTab").then((m) => ({ default: m.HolidaysTab })), { loading: () => <TabSkeleton /> });
 const ComponentLibraryTab = dynamic(() => import("@/components/organisms/settings/ComponentLibraryTab").then((m) => ({ default: m.ComponentLibraryTab })), { loading: () => <TabSkeleton /> });
 const WorkflowRulesTab = dynamic(() => import("@/components/organisms/settings/WorkflowRulesTab").then((m) => ({ default: m.WorkflowRulesTab })), { loading: () => <TabSkeleton /> });
+const GitHubPatsTab = dynamic(() => import("@/components/organisms/settings/GitHubPatsTab").then((m) => ({ default: m.GitHubPatsTab })), { loading: () => <TabSkeleton /> });
 
 const InviteUserDialog = dynamic(() => import("@/components/organisms/settings/InviteUserDialog").then((m) => ({ default: m.InviteUserDialog })));
 const UserPermissionsDialog = dynamic(() => import("@/components/organisms/settings/UserPermissionsDialog").then((m) => ({ default: m.UserPermissionsDialog })));
@@ -40,12 +41,14 @@ const CreateModuleDialog = dynamic(() => import("@/components/organisms/settings
 const EditModuleDialog = dynamic(() => import("@/components/organisms/settings/EditModuleDialog").then((m) => ({ default: m.EditModuleDialog })));
 const AddGlobalIntegrationDialog = dynamic(() => import("@/components/organisms/settings/AddGlobalIntegrationDialog").then((m) => ({ default: m.AddGlobalIntegrationDialog })));
 const EditStandardsRepositoryDialog = dynamic(() => import("@/components/organisms/settings/EditStandardsRepositoryDialog").then((m) => ({ default: m.EditStandardsRepositoryDialog })));
+const AddPatDialog = dynamic(() => import("@/components/organisms/settings/AddPatDialog").then((m) => ({ default: m.AddPatDialog })));
 
 const ALL_TABS = [
   { id: "profile", label: "Profile", adminOnly: false },
   { id: "standards", label: "Standards", adminOnly: false },
   { id: "modules", label: "Modules", adminOnly: false },
   { id: "integrations", label: "Integrations", adminOnly: false },
+  { id: "github-pats", label: "GitHub PATs", adminOnly: false },
   { id: "notifications", label: "Notifications", adminOnly: false },
   { id: "holidays", label: "Holidays", adminOnly: false },
   { id: "library", label: "Library", adminOnly: false },
@@ -146,6 +149,8 @@ export default function SettingsPage() {
             <ModulesTabWrapper />
           ) : activeTab === "integrations" ? (
             <IntegrationsTabWrapper />
+          ) : activeTab === "github-pats" ? (
+            <GitHubPatsTabWrapper />
           ) : (
             <GenericSettingsTab tabId={activeTab} />
           )}
@@ -274,6 +279,17 @@ function HolidaysTabWrapper() {
       }
       nationalManagement={<NationalHolidaysManagement />}
     />
+  );
+}
+
+function GitHubPatsTabWrapper() {
+  const [addOpen, setAddOpen] = useState(false);
+
+  return (
+    <>
+      <GitHubPatsTab onAddPat={() => setAddOpen(true)} />
+      <AddPatDialog open={addOpen} onOpenChange={setAddOpen} />
+    </>
   );
 }
 

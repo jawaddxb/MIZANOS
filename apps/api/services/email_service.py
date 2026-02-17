@@ -93,3 +93,45 @@ class EmailService:
         except Exception:
             logger.exception("Failed to send password reset email to %s", to_email)
             return False
+
+    @staticmethod
+    async def send_assignment_email(
+        to_email: str,
+        full_name: str,
+        product_name: str,
+        role: str,
+        product_url: str,
+    ) -> bool:
+        """Send a product assignment email. Returns True on success."""
+        if not settings.resend_api_key:
+            logger.warning("RESEND_API_KEY not set — skipping assignment email to %s", to_email)
+            return False
+
+        import resend
+
+        resend.api_key = settings.resend_api_key
+
+        html = (
+            f"<h2>Project Assignment</h2>"
+            f"<p>Hi {full_name},</p>"
+            f"<p>You've been assigned to <strong>{product_name}</strong> "
+            f"as <strong>{role}</strong>.</p>"
+            f'<p><a href="{product_url}" '
+            f'style="display:inline-block;padding:12px 24px;'
+            f"background:#2563eb;color:#fff;border-radius:6px;"
+            f'text-decoration:none;font-weight:600">'
+            f"View Project</a></p>"
+            f"<p>Or copy this link: {product_url}</p>"
+        )
+
+        try:
+            resend.Emails.send({
+                "from": settings.email_from,
+                "to": [to_email],
+                "subject": f"You've been assigned to {product_name}",
+                "html": html,
+            })
+            return True
+        except Exception:
+            logger.exception("Failed to send assignment email to %s", to_email)
+            return False

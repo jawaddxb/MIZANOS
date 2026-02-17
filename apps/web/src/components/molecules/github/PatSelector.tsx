@@ -5,13 +5,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/atoms/layo
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/atoms/display/Avatar";
 import { BaseInput } from "@/components/atoms/inputs/BaseInput";
 import { Button } from "@/components/molecules/buttons/Button";
-import { ChevronDown, Loader2, CheckCircle2, Plus } from "lucide-react";
+import { ChevronDown, Loader2, CheckCircle2, Plus, Key } from "lucide-react";
 import { useGitHubPats } from "@/hooks/queries/useGitHubPats";
 import { useVerifyPat, useCreatePat } from "@/hooks/mutations/useGitHubPatMutations";
 import type { GitHubPat, GitHubPatVerifyResult } from "@/lib/types";
 
 interface PatSelectorProps {
   selectedPatId: string | null;
+  rawTokenActive?: boolean;
   onPatSelect: (patId: string | null) => void;
   onUseRawToken: (token: string) => void;
 }
@@ -50,13 +51,14 @@ function PatListItem({
   );
 }
 
-export function PatSelector({ selectedPatId, onPatSelect, onUseRawToken }: PatSelectorProps) {
+export function PatSelector({ selectedPatId, rawTokenActive, onPatSelect, onUseRawToken }: PatSelectorProps) {
   const [open, setOpen] = useState(false);
   const [mineOnly, setMineOnly] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [rawToken, setRawToken] = useState("");
   const [label, setLabel] = useState("");
   const [verifyResult, setVerifyResult] = useState<GitHubPatVerifyResult | null>(null);
+  const [useOnceUsername, setUseOnceUsername] = useState<string | null>(null);
 
   const { data: pats = [] } = useGitHubPats(mineOnly);
   const { data: allPats = [] } = useGitHubPats(false);
@@ -66,11 +68,16 @@ export function PatSelector({ selectedPatId, onPatSelect, onUseRawToken }: PatSe
   const selectedPat = allPats.find((p) => p.id === selectedPatId);
 
   const handleVerify = async () => {
-    const result = await verifyPat.mutateAsync(rawToken);
-    setVerifyResult(result);
+    try {
+      const result = await verifyPat.mutateAsync(rawToken);
+      setVerifyResult(result);
+    } catch {
+      // toast is shown by the mutation's onError handler
+    }
   };
 
   const handleUseOnce = () => {
+    setUseOnceUsername(verifyResult?.github_username ?? null);
     onUseRawToken(rawToken);
     resetAddState();
     setOpen(false);
@@ -78,10 +85,14 @@ export function PatSelector({ selectedPatId, onPatSelect, onUseRawToken }: PatSe
 
   const handleSaveAndUse = async () => {
     if (!label.trim()) return;
-    const pat = await createPat.mutateAsync({ label: label.trim(), token: rawToken });
-    onPatSelect(pat.id);
-    resetAddState();
-    setOpen(false);
+    try {
+      const pat = await createPat.mutateAsync({ label: label.trim(), token: rawToken });
+      onPatSelect(pat.id);
+      resetAddState();
+      setOpen(false);
+    } catch {
+      // toast is shown by the mutation's onError handler
+    }
   };
 
   const resetAddState = () => {
@@ -108,6 +119,14 @@ export function PatSelector({ selectedPatId, onPatSelect, onUseRawToken }: PatSe
               <span className="truncate text-sm">
                 {selectedPat.label} (@{selectedPat.github_username})
               </span>
+            </span>
+          ) : rawTokenActive ? (
+            <span className="flex items-center gap-2 min-w-0">
+              <Key className="h-4 w-4 text-primary shrink-0" />
+              <span className="truncate text-sm">
+                One-time token{useOnceUsername ? ` (@${useOnceUsername})` : ""}
+              </span>
+              <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
             </span>
           ) : (
             <span className="text-sm text-muted-foreground">Select a GitHub PAT...</span>

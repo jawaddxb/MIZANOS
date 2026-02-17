@@ -19,8 +19,10 @@ export type { Profile, UserRole, TeamHoliday, NationalHoliday } from "./user";
 export type {
   Product,
   ProductMember,
+  ProductMemberRole,
   ProductEnvironment,
   ProductDocument,
+  TeamReadiness,
 } from "./product";
 
 export type {
@@ -138,3 +140,5 @@ export type {
 } from "./evaluation";
 
 export type { OrgChartNode, UpdateReportingLineRequest } from "./org-chart";
+
+export type { GitHubPat, GitHubPatVerifyResult } from "./github-pat";

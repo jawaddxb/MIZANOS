@@ -76,6 +76,7 @@ export interface ScrapedWebsite {
 export interface GitHubData {
   repositoryUrl: string;
   githubToken: string | null;
+  patId?: string | null;
   repoInfo: Record<string, JsonValue>;
   techStack: Record<string, JsonValue>;
   branch: string;

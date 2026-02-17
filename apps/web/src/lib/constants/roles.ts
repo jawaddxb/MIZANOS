@@ -37,6 +37,11 @@ export const ROLE_CONFIG: Record<AppRole, RoleConfig> = {
     description: "Marketing campaigns, domains, and social media",
     color: "var(--role-marketing)",
   },
+  product_manager: {
+    label: "Product Manager",
+    description: "Product intake and overview access only",
+    color: "var(--role-pm)",
+  },
 } as const;
 
 export const APP_ROLES: AppRole[] = [
@@ -46,6 +51,7 @@ export const APP_ROLES: AppRole[] = [
   "engineer",
   "bizdev",
   "marketing",
+  "product_manager",
 ];
 
 export const DEFAULT_ROLE_PERMISSIONS: Record<AppRole, string[]> = {
@@ -93,5 +99,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AppRole, string[]> = {
     "marketing.edit",
     "documents.view",
     "knowledge.view",
+  ],
+  product_manager: [
+    "products.view",
+    "intake.access",
   ],
 } as const;

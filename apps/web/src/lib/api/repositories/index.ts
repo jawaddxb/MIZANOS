@@ -24,3 +24,4 @@ export { RepoEvaluatorRepository, repoEvaluatorRepository } from "./repo-evaluat
 export { TranscriptionRepository, transcriptionRepository } from "./transcription.repository";
 export { EvaluationRepository, evaluationRepository } from "./evaluation.repository";
 export { OrgChartRepository, orgChartRepository } from "./org-chart.repository";
+export { GitHubPatsRepository, githubPatsRepository } from "./github-pats.repository";

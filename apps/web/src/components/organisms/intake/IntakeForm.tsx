@@ -10,6 +10,8 @@ import { Button } from "@/components/molecules/buttons/Button";
 import { useIntakeSubmit } from "@/hooks/features/useIntakeSubmit";
 import { aiRepository } from "@/lib/api/repositories";
 
+import { useProducts } from "@/hooks/queries/useProducts";
+
 import { IntakeBasicInfo } from "./IntakeBasicInfo";
 import { IntakeSourcesStep } from "./IntakeSourcesStep";
 import { IntakeSpecReview } from "./IntakeSpecReview";
@@ -79,9 +81,16 @@ export function IntakeForm() {
   });
 
   const { isSubmitting, submitProgress, submitLabel, handleSubmit } = useIntakeSubmit();
+  const { data: existingProducts = [] } = useProducts();
+
+  const isDuplicateName = React.useMemo(() => {
+    const trimmed = formData.projectName.trim().toLowerCase();
+    if (!trimmed) return false;
+    return existingProducts.some((p) => p.name?.toLowerCase() === trimmed);
+  }, [formData.projectName, existingProducts]);
 
   const canProceedFromBasicInfo =
-    formData.projectName.trim() !== "" && formData.pillar !== "";
+    formData.projectName.trim() !== "" && formData.pillar !== "" && !isDuplicateName;
 
   const hasAnySources =
     formData.sources.documents.length > 0 ||
@@ -211,7 +220,7 @@ export function IntakeForm() {
           onPillarChange={(v) => setFormData((p) => ({ ...p, pillar: v }))}
           sourceType={formData.sourceType}
           onSourceTypeChange={(v) => setFormData((p) => ({ ...p, sourceType: v }))}
-          errors={{}}
+          errors={isDuplicateName ? { projectName: "A project with this name already exists" } : {}}
         />
       )}
       {currentStep === "sources" && (

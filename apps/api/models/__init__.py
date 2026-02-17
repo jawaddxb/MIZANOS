@@ -54,6 +54,7 @@ from .user import (
     UserPermissionOverride,
     UserRole,
 )
+from .github_pat import GitHubPat
 from .vault import CompanyCredential
 
 __all__ = [
@@ -129,6 +130,8 @@ __all__ = [
     "UserGithubConnection",
     "InvitationToken",
     "PasswordResetToken",
+    # GitHub PAT
+    "GitHubPat",
     # Vault
     "CompanyCredential",
 ]

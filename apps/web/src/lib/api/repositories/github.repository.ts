@@ -1,6 +1,17 @@
 import type { AxiosInstance } from "axios";
-import type { RepoScanHistory, RepositoryAnalysis, GitHubInfo } from "@/lib/types";
+import type { RepoScanHistory, RepositoryAnalysis } from "@/lib/types";
 import { apiClient } from "../client";
+
+export interface RepoInfoResult {
+  name: string | null;
+  full_name: string | null;
+  description: string | null;
+  language: string | null;
+  default_branch: string | null;
+  stars: number;
+  forks: number;
+  open_issues: number;
+}
 
 interface GitHubConnection {
   id: string;
@@ -77,10 +88,11 @@ export class GitHubRepository {
   async getRepoInfo(
     repositoryUrl: string,
     githubToken?: string,
-  ): Promise<GitHubInfo> {
-    const response = await this.client.post<GitHubInfo>(
+    patId?: string,
+  ): Promise<RepoInfoResult> {
+    const response = await this.client.post<RepoInfoResult>(
       `${this.basePath}/repo-info`,
-      { repository_url: repositoryUrl, github_token: githubToken },
+      { repository_url: repositoryUrl, github_token: githubToken, pat_id: patId },
     );
     return response.data;
   }

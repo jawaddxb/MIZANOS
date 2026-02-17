@@ -7,6 +7,7 @@ import { BaseInput } from "@/components/atoms/inputs/BaseInput";
 import { BaseLabel } from "@/components/atoms/inputs/BaseLabel";
 import { BaseCheckbox } from "@/components/atoms/inputs/BaseCheckbox";
 import { Button } from "@/components/molecules/buttons/Button";
+import { PatSelector } from "@/components/molecules/github/PatSelector";
 import { githubRepository } from "@/lib/api/repositories";
 import type { GitHubData } from "./types";
 
@@ -17,24 +18,23 @@ interface GitHubRepoInputProps {
 
 const GITHUB_URL_REGEX = /^https?:\/\/(www\.)?github\.com\/[^/]+\/[^/]+/;
 
-function extractRepoPath(url: string): string {
-  return url.replace(/^https?:\/\/(www\.)?github\.com\//, "").replace(/\/$/, "");
-}
-
 export function GitHubRepoInput({ githubData, onGitHubDataChange }: GitHubRepoInputProps) {
   const [repoUrl, setRepoUrl] = React.useState("");
   const [isPrivate, setIsPrivate] = React.useState(false);
-  const [githubToken, setGithubToken] = React.useState("");
+  const [selectedPatId, setSelectedPatId] = React.useState<string | null>(null);
+  const [rawToken, setRawToken] = React.useState<string | null>(null);
   const [isScanning, setIsScanning] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+
+  const hasAuth = !!selectedPatId || !!rawToken;
 
   const handleScan = React.useCallback(async () => {
     if (!GITHUB_URL_REGEX.test(repoUrl)) {
       setError("Please enter a valid GitHub repository URL");
       return;
     }
-    if (isPrivate && !githubToken) {
-      setError("GitHub token is required for private repositories");
+    if (isPrivate && !hasAuth) {
+      setError("Please select a PAT or add a token for private repositories");
       return;
     }
 
@@ -42,25 +42,34 @@ export function GitHubRepoInput({ githubData, onGitHubDataChange }: GitHubRepoIn
     setIsScanning(true);
 
     try {
-      const info = await githubRepository.getRepoInfo(
-        repoUrl,
-        isPrivate ? githubToken : undefined,
-      );
-      const repo = info.repository;
+      const token = isPrivate ? (rawToken ?? undefined) : undefined;
+      const patId = isPrivate ? (selectedPatId ?? undefined) : undefined;
+
+      const repo = await githubRepository.getRepoInfo(repoUrl, token, patId);
+
+      if (!repo.name && !repo.full_name) {
+        setError(
+          isPrivate
+            ? "Could not access repository. Please check the URL and your token permissions."
+            : "Repository not found. If it's private, check the private repository option and provide a token.",
+        );
+        return;
+      }
 
       const data: GitHubData = {
         repositoryUrl: repoUrl,
-        githubToken: isPrivate ? githubToken : null,
+        githubToken: isPrivate ? (rawToken ?? null) : null,
+        patId: isPrivate ? (selectedPatId ?? null) : null,
         repoInfo: {
           name: repo.name ?? "",
-          fullName: repo.fullName ?? "",
-          description: "",
-          stars: 0,
-          forks: repo.forksCount ?? 0,
-          isPrivate: repo.isPrivate ?? false,
+          fullName: repo.full_name ?? "",
+          description: repo.description ?? "",
+          stars: repo.stars ?? 0,
+          forks: repo.forks ?? 0,
+          isPrivate,
         },
         techStack: {},
-        branch: repo.defaultBranch ?? "main",
+        branch: repo.default_branch ?? "main",
       };
 
       onGitHubDataChange(data);
@@ -69,15 +78,28 @@ export function GitHubRepoInput({ githubData, onGitHubDataChange }: GitHubRepoIn
     } finally {
       setIsScanning(false);
     }
-  }, [repoUrl, isPrivate, githubToken, onGitHubDataChange]);
+  }, [repoUrl, isPrivate, rawToken, selectedPatId, hasAuth, onGitHubDataChange]);
 
   const handleClear = React.useCallback(() => {
     setRepoUrl("");
-    setGithubToken("");
+    setSelectedPatId(null);
+    setRawToken(null);
     setIsPrivate(false);
     setError(null);
     onGitHubDataChange(null);
   }, [onGitHubDataChange]);
+
+  const handlePatSelect = React.useCallback((patId: string | null) => {
+    setSelectedPatId(patId);
+    setRawToken(null);
+    setError(null);
+  }, []);
+
+  const handleUseRawToken = React.useCallback((token: string) => {
+    setRawToken(token);
+    setSelectedPatId(null);
+    setError(null);
+  }, []);
 
   if (githubData) {
     const info = githubData.repoInfo;
@@ -150,17 +172,13 @@ export function GitHubRepoInput({ githubData, onGitHubDataChange }: GitHubRepoIn
 
       {isPrivate && (
         <div className="space-y-2">
-          <BaseLabel htmlFor="github-token">GitHub Token</BaseLabel>
-          <BaseInput
-            id="github-token"
-            type="password"
-            placeholder="ghp_xxxxxxxxxxxx"
-            value={githubToken}
-            onChange={(e) => setGithubToken(e.target.value)}
+          <BaseLabel>GitHub Token</BaseLabel>
+          <PatSelector
+            selectedPatId={selectedPatId}
+            rawTokenActive={!!rawToken}
+            onPatSelect={handlePatSelect}
+            onUseRawToken={handleUseRawToken}
           />
-          <p className="text-xs text-muted-foreground">
-            Create a token at GitHub Settings &gt; Developer Settings &gt; Personal Access Tokens
-          </p>
         </div>
       )}
 

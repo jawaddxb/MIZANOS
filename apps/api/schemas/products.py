@@ -49,6 +49,7 @@ class ProductResponse(ProductBase):
     engineer_id: UUID | None = None
     lovable_url: str | None = None
     logo_url: str | None = None
+    archived_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -99,6 +100,13 @@ class PartnerNoteResponse(BaseSchema):
     updated_at: datetime
 
 
+class ProductMemberAddRequest(BaseSchema):
+    """Add a member to a product."""
+
+    profile_id: UUID
+    role: str
+
+
 class ProductMemberResponse(BaseSchema):
     """Product member response."""
 
@@ -107,6 +115,14 @@ class ProductMemberResponse(BaseSchema):
     profile_id: UUID
     role: str | None = None
     created_at: datetime
+
+
+class TeamReadinessResponse(BaseSchema):
+    """Team composition readiness check."""
+
+    complete: bool
+    members: list[ProductMemberResponse]
+    missing: list[str]
 
 
 class ProductEnvironmentResponse(BaseSchema):

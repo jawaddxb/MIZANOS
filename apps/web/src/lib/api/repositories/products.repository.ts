@@ -4,6 +4,7 @@ import type {
   ProductEnvironment,
   DeploymentChecklistItem,
   Stakeholder,
+  TeamReadiness,
 } from "@/lib/types";
 import { BaseRepository, type QueryParams } from "./base.repository";
 
@@ -31,6 +32,13 @@ export class ProductsRepository extends BaseRepository<Product> {
 
   async removeMember(productId: string, memberId: string): Promise<void> {
     await this.client.delete(`${this.basePath}/${productId}/members/${memberId}`);
+  }
+
+  async getTeamReadiness(productId: string): Promise<TeamReadiness> {
+    const response = await this.client.get<TeamReadiness>(
+      `${this.basePath}/${productId}/team-readiness`,
+    );
+    return response.data;
   }
 
   async getEnvironments(productId: string): Promise<ProductEnvironment[]> {
@@ -223,6 +231,20 @@ export class ProductsRepository extends BaseRepository<Product> {
 
   async deletePartnerNote(noteId: string): Promise<void> {
     await this.client.delete(`/products/partner-notes/${noteId}`);
+  }
+
+  async archive(productId: string): Promise<Product> {
+    const response = await this.client.post<Product>(
+      `${this.basePath}/${productId}/archive`,
+    );
+    return response.data;
+  }
+
+  async unarchive(productId: string): Promise<Product> {
+    const response = await this.client.post<Product>(
+      `${this.basePath}/${productId}/unarchive`,
+    );
+    return response.data;
   }
 }
 

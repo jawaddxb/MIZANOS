@@ -12,13 +12,17 @@ import {
   TooltipTrigger,
 } from "@/components/atoms/feedback/Tooltip";
 import { NAV_GROUPS, SETTINGS_NAV_ITEM } from "@/lib/constants";
+import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
 
 interface SidebarNavProps {
   collapsed: boolean;
 }
 
+const PM_ALLOWED_HREFS = new Set(["/products", "/intake"]);
+
 export function SidebarNav({ collapsed }: SidebarNavProps) {
   const pathname = usePathname();
+  const { isProductManager } = useRoleVisibility();
   const settingsActive =
     pathname === SETTINGS_NAV_ITEM.href ||
     pathname.startsWith(SETTINGS_NAV_ITEM.href);
@@ -50,24 +54,29 @@ export function SidebarNav({ collapsed }: SidebarNavProps) {
       )}
     >
       <div className="space-y-5">
-        {NAV_GROUPS.map((group) => (
+        {(isProductManager
+          ? [{ label: "MAIN", items: NAV_GROUPS[0].items.filter((i) => PM_ALLOWED_HREFS.has(i.href)) }]
+          : NAV_GROUPS
+        ).map((group) => (
           <NavGroup key={group.label} group={group} collapsed={collapsed} />
         ))}
       </div>
 
-      <div className="mt-auto pt-4">
-        <Separator className="mb-3 bg-border" />
-        {collapsed ? (
-          <Tooltip>
-            <TooltipTrigger asChild>{settingsLink}</TooltipTrigger>
-            <TooltipContent side="right">
-              {SETTINGS_NAV_ITEM.label}
-            </TooltipContent>
-          </Tooltip>
-        ) : (
-          settingsLink
-        )}
-      </div>
+      {!isProductManager && (
+        <div className="mt-auto pt-4">
+          <Separator className="mb-3 bg-border" />
+          {collapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>{settingsLink}</TooltipTrigger>
+              <TooltipContent side="right">
+                {SETTINGS_NAV_ITEM.label}
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            settingsLink
+          )}
+        </div>
+      )}
     </nav>
   );
 }

@@ -39,6 +39,7 @@ class RepoInfoRequest(BaseSchema):
 
     repository_url: str
     github_token: str | None = None
+    pat_id: str | None = None
 
 
 class RepoInfoResponse(BaseSchema):

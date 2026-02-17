@@ -1,4 +1,4 @@
-export type AppRole = "superadmin" | "admin" | "pm" | "engineer" | "bizdev" | "marketing";
+export type AppRole = "superadmin" | "admin" | "pm" | "engineer" | "bizdev" | "marketing" | "product_manager";
 
 export type EnvironmentType = "development" | "staging" | "production";
 
@@ -8,7 +8,8 @@ export type NotificationType =
   | "qa_check_failed"
   | "specification_ready"
   | "stage_changed"
-  | "repo_scan_completed";
+  | "repo_scan_completed"
+  | "product_member_assigned";
 
 export type ProjectSourceType =
   | "lovable_port"

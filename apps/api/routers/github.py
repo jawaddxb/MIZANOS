@@ -72,7 +72,7 @@ async def get_analysis(product_id: UUID, user: CurrentUser = None, service: GitH
 
 @router.post("/repo-info", response_model=RepoInfoResponse)
 async def get_repo_info(body: RepoInfoRequest, user: CurrentUser = None, service: GitHubService = Depends(get_service)):
-    return await service.get_repo_info(body.repository_url, body.github_token)
+    return await service.get_repo_info(body.repository_url, body.github_token, body.pat_id)
 
 
 @router.post("/scan")

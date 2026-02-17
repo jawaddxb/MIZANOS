@@ -25,6 +25,7 @@ from apps.api.routers import (
     notifications,
     ai,
     github,
+    github_pats,
     audit,
     marketing,
     knowledge,
@@ -43,7 +44,7 @@ from apps.api.routers import (
     evaluations,
     org_chart,
 )
-from apps.api.routers import external_documents, document_folders
+from apps.api.routers import external_documents, document_folders, product_members
 
 
 @asynccontextmanager
@@ -96,6 +97,7 @@ app.include_router(documents.router, prefix="/documents", tags=["documents"])
 app.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 app.include_router(ai.router, prefix="/ai", tags=["ai"])
 app.include_router(github.router, prefix="/github", tags=["github"])
+app.include_router(github_pats.router, prefix="/github-pats", tags=["github-pats"])
 app.include_router(audit.router, prefix="/audits", tags=["audit"])
 app.include_router(marketing.router, prefix="/marketing", tags=["marketing"])
 app.include_router(knowledge.router, prefix="/knowledge", tags=["knowledge"])
@@ -110,6 +112,7 @@ app.include_router(transcription.router, prefix="/transcription", tags=["transcr
 app.include_router(system_documents.router, prefix="/system-documents", tags=["system-documents"])
 app.include_router(port_generator.router, prefix="/port-generator", tags=["port-generator"])
 app.include_router(repo_evaluator.router, prefix="/repo-evaluator", tags=["repo-evaluator"])
+app.include_router(product_members.router, prefix="/products", tags=["product-members"])
 app.include_router(deployment_checklist.router, prefix="/products", tags=["deployment-checklist"])
 app.include_router(stakeholders.router, prefix="/products", tags=["stakeholders"])
 app.include_router(integrations.router, prefix="/products", tags=["integrations"])

@@ -14,7 +14,6 @@ from apps.api.schemas.products import (
     ProductEnvironmentResponse,
     ProductEnvironmentUpsert,
     ProductListResponse,
-    ProductMemberResponse,
     ProductResponse,
     ProductUpdate,
     SpecificationSourceCreate,
@@ -35,12 +34,17 @@ async def list_products(
     page_size: int = Query(50, ge=1, le=100),
     status: str | None = None,
     search: str | None = None,
+    include_archived: bool = Query(False),
     user: CurrentUser = None,
     service: ProductService = Depends(get_service),
 ):
     """List products with pagination and filtering."""
     return await service.list_products(
-        page=page, page_size=page_size, status=status, search=search
+        page=page,
+        page_size=page_size,
+        status=status,
+        search=search,
+        include_archived=include_archived,
     )
 
 
@@ -52,19 +56,6 @@ async def get_product(
 ):
     """Get a product by ID."""
     return await service.get_or_404(product_id)
-
-
-@router.get(
-    "/{product_id}/members",
-    response_model=list[ProductMemberResponse],
-)
-async def list_product_members(
-    product_id: UUID,
-    user: CurrentUser = None,
-    service: ProductService = Depends(get_service),
-):
-    """List members for a product."""
-    return await service.get_members(product_id)
 
 
 @router.get(
@@ -129,14 +120,24 @@ async def update_product(
     return await service.update(product_id, body.model_dump(exclude_unset=True))
 
 
-@router.delete("/{product_id}", status_code=204)
-async def delete_product(
+@router.post("/{product_id}/archive", response_model=ProductResponse)
+async def archive_product(
     product_id: UUID,
     user: CurrentUser = None,
     service: ProductService = Depends(get_service),
 ):
-    """Delete a product."""
-    await service.delete(product_id)
+    """Archive a product (soft-delete)."""
+    return await service.archive(product_id)
+
+
+@router.post("/{product_id}/unarchive", response_model=ProductResponse)
+async def unarchive_product(
+    product_id: UUID,
+    user: CurrentUser = None,
+    service: ProductService = Depends(get_service),
+):
+    """Restore an archived product."""
+    return await service.unarchive(product_id)
 
 
 @router.get(

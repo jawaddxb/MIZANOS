@@ -10,6 +10,7 @@ class AppRole(str, enum.Enum):
     ENGINEER = "engineer"
     BIZDEV = "bizdev"
     MARKETING = "marketing"
+    PRODUCT_MANAGER = "product_manager"
 
 
 class EnvironmentType(str, enum.Enum):
@@ -25,6 +26,22 @@ class NotificationType(str, enum.Enum):
     SPECIFICATION_READY = "specification_ready"
     STAGE_CHANGED = "stage_changed"
     REPO_SCAN_COMPLETED = "repo_scan_completed"
+    PRODUCT_MEMBER_ASSIGNED = "product_member_assigned"
+
+
+class ProductMemberRole(str, enum.Enum):
+    PM = "pm"
+    MARKETING = "marketing"
+    SENIOR_MANAGEMENT = "senior_management"
+    AI_ENGINEER = "ai_engineer"
+
+
+REQUIRED_TEAM_COMPOSITION = {
+    ProductMemberRole.PM: 1,
+    ProductMemberRole.MARKETING: 1,
+    ProductMemberRole.SENIOR_MANAGEMENT: 1,
+    ProductMemberRole.AI_ENGINEER: 1,
+}
 
 
 class ProjectSourceType(str, enum.Enum):

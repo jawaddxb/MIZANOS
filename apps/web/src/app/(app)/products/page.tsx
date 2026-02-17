@@ -16,6 +16,7 @@ import {
   Loader2,
   LayoutGrid,
   List,
+  Archive,
 } from "lucide-react";
 
 export default function ProductsPage() {
@@ -24,14 +25,21 @@ export default function ProductsPage() {
   const [pillarFilter, setPillarFilter] = useState("all");
   const [stageFilter, setStageFilter] = useState("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
+  const [showArchived, setShowArchived] = useState(false);
 
   const { data: products = [], isLoading } = useProducts();
 
+  const archivedCount = products.filter((p) => p.archived_at).length;
+
+  const activeProducts = showArchived
+    ? products.filter((p) => p.archived_at)
+    : products.filter((p) => !p.archived_at);
+
   const stages = [
-    ...new Set(products.map((p) => p.stage).filter(Boolean)),
+    ...new Set(activeProducts.map((p) => p.stage).filter(Boolean)),
   ] as string[];
 
-  const filteredProducts = products.filter((product) => {
+  const filteredProducts = activeProducts.filter((product) => {
     const matchesSearch = product.name
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
@@ -95,6 +103,22 @@ export default function ProductsPage() {
             onClearFilters={clearFilters}
           />
         </div>
+        {archivedCount > 0 && (
+          <Button
+            variant={showArchived ? "default" : "outline"}
+            size="sm"
+            className={cn(
+              "h-9 text-xs gap-1.5 transition-all",
+              showArchived
+                ? "bg-amber-600 hover:bg-amber-700 text-white shadow-md border-amber-600"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+            onClick={() => setShowArchived(!showArchived)}
+          >
+            <Archive className="h-3.5 w-3.5" />
+            Archived ({archivedCount})
+          </Button>
+        )}
         <div className="flex items-center gap-1.5 p-1 bg-secondary/50 rounded-lg ml-auto">
           <Button
             variant={viewMode === "list" ? "secondary" : "ghost"}
