@@ -7,7 +7,12 @@ RUN pip install --no-cache-dir -e .
 
 COPY apps/api/ ./apps/api/
 COPY packages/common/ ./packages/common/
+COPY infra/alembic/ ./infra/alembic/
+COPY infra/alembic.ini ./infra/alembic.ini
 
-EXPOSE 8000
+COPY infra/start-api.sh ./start-api.sh
+RUN chmod +x ./start-api.sh
 
-CMD ["uvicorn", "apps.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+EXPOSE ${PORT:-8000}
+
+CMD ["./start-api.sh"]

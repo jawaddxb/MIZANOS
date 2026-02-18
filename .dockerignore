@@ -1,0 +1,38 @@
+# Version control
+.git
+.gitignore
+
+# Dependencies
+node_modules
+.venv
+__pycache__
+
+# Build artifacts
+.next
+dist
+*.egg-info
+
+# Environment and secrets
+.env
+.env.*
+
+# Uploads and local data
+uploads/
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing and docs
+tests/
+*.md
+!README.md
+
+# Docker
+infra/docker-compose.yml
