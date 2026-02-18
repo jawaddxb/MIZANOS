@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
 import { Button } from "@/components/molecules/buttons/Button";
 import { TextField } from "@/components/molecules/forms/TextField";
@@ -145,12 +145,21 @@ function ActivateContent() {
                 </p>
               </div>
             ) : status === "error" ? (
-              <div className="rounded-md bg-destructive/10 border border-destructive/20 px-4 py-3 space-y-2">
-                <p className="text-sm font-medium text-destructive">{message}</p>
-                <p className="text-xs text-muted-foreground">
-                  This can happen if a newer activation link was sent or the link has already been used.
-                  Please contact your administrator to request a new invitation.
-                </p>
+              <div className="space-y-4">
+                <div className="rounded-md bg-destructive/10 border border-destructive/20 px-4 py-3 space-y-2">
+                  <p className="text-sm font-medium text-destructive">{message}</p>
+                  <p className="text-xs text-muted-foreground">
+                    This can happen if a newer activation link was sent or the link has already been used.
+                    Please contact your administrator to request a new invitation.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => router.push("/login")}
+                >
+                  Continue to Login <ArrowRight className="h-4 w-4" />
+                </Button>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">

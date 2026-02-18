@@ -28,6 +28,7 @@ const HolidaysTab = dynamic(() => import("@/components/organisms/settings/Holida
 const ComponentLibraryTab = dynamic(() => import("@/components/organisms/settings/ComponentLibraryTab").then((m) => ({ default: m.ComponentLibraryTab })), { loading: () => <TabSkeleton /> });
 const WorkflowRulesTab = dynamic(() => import("@/components/organisms/settings/WorkflowRulesTab").then((m) => ({ default: m.WorkflowRulesTab })), { loading: () => <TabSkeleton /> });
 const GitHubPatsTab = dynamic(() => import("@/components/organisms/settings/GitHubPatsTab").then((m) => ({ default: m.GitHubPatsTab })), { loading: () => <TabSkeleton /> });
+const OrgSettingsTab = dynamic(() => import("@/components/organisms/settings/OrgSettingsTab").then((m) => ({ default: m.OrgSettingsTab })), { loading: () => <TabSkeleton /> });
 
 const InviteUserDialog = dynamic(() => import("@/components/organisms/settings/InviteUserDialog").then((m) => ({ default: m.InviteUserDialog })));
 const UserPermissionsDialog = dynamic(() => import("@/components/organisms/settings/UserPermissionsDialog").then((m) => ({ default: m.UserPermissionsDialog })));
@@ -44,17 +45,18 @@ const EditStandardsRepositoryDialog = dynamic(() => import("@/components/organis
 const AddPatDialog = dynamic(() => import("@/components/organisms/settings/AddPatDialog").then((m) => ({ default: m.AddPatDialog })));
 
 const ALL_TABS = [
-  { id: "profile", label: "Profile", adminOnly: false },
-  { id: "standards", label: "Standards", adminOnly: false },
-  { id: "modules", label: "Modules", adminOnly: false },
-  { id: "integrations", label: "Integrations", adminOnly: false },
-  { id: "github-pats", label: "GitHub PATs", adminOnly: false },
-  { id: "notifications", label: "Notifications", adminOnly: false },
-  { id: "holidays", label: "Holidays", adminOnly: false },
-  { id: "library", label: "Library", adminOnly: false },
-  { id: "users", label: "Users", adminOnly: true },
-  { id: "authority-matrix", label: "Authority Matrix", adminOnly: true },
-  { id: "workflow", label: "Workflow", adminOnly: true },
+  { id: "profile", label: "Profile" },
+  { id: "standards", label: "Standards" },
+  { id: "modules", label: "Modules" },
+  { id: "integrations", label: "Integrations" },
+  { id: "github-pats", label: "GitHub PATs" },
+  { id: "notifications", label: "Notifications" },
+  { id: "holidays", label: "Holidays" },
+  { id: "library", label: "Library" },
+  { id: "users", label: "Users", adminOnly: true as const },
+  { id: "authority-matrix", label: "Authority Matrix", adminOnly: true as const },
+  { id: "workflow", label: "Workflow", adminOnly: true as const },
+  { id: "org-settings", label: "Organization", superadminOnly: true as const },
 ] as const;
 
 type TabId = (typeof ALL_TABS)[number]["id"];
@@ -68,19 +70,25 @@ const TAB_COMPONENTS: Partial<Record<TabId, React.ComponentType>> = {
   notifications: NotificationsTab,
   library: ComponentLibraryTab,
   workflow: WorkflowRulesTab,
+  "org-settings": OrgSettingsTab,
 };
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabId>("profile");
-  const { isAdmin } = useRoleVisibility();
+  const { isAdmin, isSuperAdmin } = useRoleVisibility();
 
   const visibleTabs = useMemo(
-    () => ALL_TABS.filter((tab) => !tab.adminOnly || isAdmin),
-    [isAdmin],
+    () =>
+      ALL_TABS.filter((tab) => {
+        if ("superadminOnly" in tab) return isSuperAdmin;
+        return !("adminOnly" in tab) || isAdmin;
+      }),
+    [isAdmin, isSuperAdmin],
   );
 
-  const generalTabs = visibleTabs.filter((t) => !t.adminOnly);
-  const adminTabs = visibleTabs.filter((t) => t.adminOnly);
+  const isElevated = (t: (typeof ALL_TABS)[number]) => "adminOnly" in t || "superadminOnly" in t;
+  const generalTabs = visibleTabs.filter((t) => !isElevated(t));
+  const adminTabs = visibleTabs.filter(isElevated);
 
   return (
     <div className="p-6 space-y-6">
@@ -90,7 +98,6 @@ export default function SettingsPage() {
         icon={<Settings className="h-5 w-5 text-primary" />}
       />
 
-      {/* Horizontal tab bar */}
       <div className="border-b border-border -mx-6 px-6 overflow-x-auto scrollbar-none">
         <nav className="flex items-center gap-1">
           {generalTabs.map((tab) => (
@@ -135,7 +142,6 @@ export default function SettingsPage() {
         </nav>
       </div>
 
-      {/* Tab content */}
       <div className="min-h-[400px]">
           {activeTab === "standards" ? (
             <StandardsTabWrapper />
@@ -158,7 +164,6 @@ export default function SettingsPage() {
     </div>
   );
 }
-
 function UserManagementTabWrapper() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [permissionsProfile, setPermissionsProfile] = useState<Profile | null>(null);
@@ -185,7 +190,6 @@ function UserManagementTabWrapper() {
     </>
   );
 }
-
 function PermissionMatrixTabWrapper() {
   const [addOverrideOpen, setAddOverrideOpen] = useState(false);
 
@@ -201,7 +205,6 @@ function PermissionMatrixTabWrapper() {
     </>
   );
 }
-
 function ModulesTabWrapper() {
   const { isAdmin } = useRoleVisibility();
   const [createOpen, setCreateOpen] = useState(false);
@@ -223,7 +226,6 @@ function ModulesTabWrapper() {
     </>
   );
 }
-
 function IntegrationsTabWrapper() {
   const { isAdmin } = useRoleVisibility();
   const [addOpen, setAddOpen] = useState(false);
@@ -235,7 +237,6 @@ function IntegrationsTabWrapper() {
     </>
   );
 }
-
 function StandardsTabWrapper() {
   const { data: repositories = [], isLoading } = useStandardsRepositories();
   const createRepo = useCreateStandardsRepository();
@@ -294,7 +295,6 @@ function GitHubPatsTabWrapper() {
 }
 
 function GenericSettingsTab({ tabId }: { tabId: TabId }) {
-  const Component = TAB_COMPONENTS[tabId];
-  if (!Component) return null;
-  return <Component />;
+  const Comp = TAB_COMPONENTS[tabId];
+  return Comp ? <Comp /> : null;
 }

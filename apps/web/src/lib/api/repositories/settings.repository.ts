@@ -11,6 +11,7 @@ import type {
   PermissionAuditLog,
   UserWithRole,
   UserRole,
+  OrgSetting,
 } from "@/lib/types";
 import { apiClient } from "../client";
 
@@ -210,8 +211,8 @@ export class SettingsRepository {
     max_projects?: number;
     office_location?: string;
     reports_to?: string;
-  }): Promise<{ temp_password?: string }> {
-    const response = await this.client.post<{ temp_password?: string }>(
+  }): Promise<{ message: string; user_id: string }> {
+    const response = await this.client.post<{ message: string; user_id: string }>(
       `${this.basePath}/users/invite`,
       data,
     );
@@ -253,6 +254,22 @@ export class SettingsRepository {
 
   async updatePrimaryRole(userId: string, role: string): Promise<void> {
     await this.client.patch(`${this.basePath}/users/${userId}/primary-role`, { role });
+  }
+
+  async getOrgSettings(): Promise<OrgSetting[]> {
+    const response = await this.client.get<OrgSetting[]>(`${this.basePath}/org`);
+    return response.data;
+  }
+
+  async updateOrgSetting(
+    key: string,
+    value: Record<string, unknown>,
+  ): Promise<OrgSetting> {
+    const response = await this.client.patch<OrgSetting>(
+      `${this.basePath}/org/${key}`,
+      { value },
+    );
+    return response.data;
   }
 }
 

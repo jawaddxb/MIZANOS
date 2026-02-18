@@ -36,6 +36,7 @@ from .settings import (
     ManagementNoteAccess,
     Module,
     NationalHoliday,
+    OrgSetting,
     PermissionAuditLog,
     ProjectIntegration,
     RolePermission,
@@ -112,6 +113,7 @@ __all__ = [
     "NationalHoliday",
     "TeamHoliday",
     "ManagementNoteAccess",
+    "OrgSetting",
     # Specification
     "Specification",
     "SpecificationFeature",

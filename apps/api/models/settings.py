@@ -159,3 +159,16 @@ class ManagementNoteAccess(Base, UUIDMixin):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class OrgSetting(Base, UUIDMixin):
+    __tablename__ = "org_settings"
+
+    key: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    value: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default="{}")
+    updated_by: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("profiles.id"), nullable=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )

@@ -199,3 +199,19 @@ class UserRoleResponse(BaseSchema):
     role: str
     assigned_by: UUID | None = None
     created_at: datetime
+
+
+class OrgSettingResponse(BaseSchema):
+    """Org-level setting response."""
+
+    id: UUID
+    key: str
+    value: dict
+    updated_by: UUID | None = None
+    updated_at: datetime
+
+
+class OrgSettingUpdate(BaseSchema):
+    """Org-level setting update."""
+
+    value: dict

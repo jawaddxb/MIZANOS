@@ -15,6 +15,7 @@ from apps.api.models.enums import (
 )
 from apps.api.models.notification import Notification
 from apps.api.models.product import Product, ProductMember
+from apps.api.models.settings import OrgSetting
 from apps.api.models.user import Profile, UserRole
 from apps.api.services.email_service import EmailService
 from packages.common.utils.error_handlers import bad_request, forbidden, not_found
@@ -56,6 +57,7 @@ class ProductMemberService:
         await self._check_manage_permission(actor)
         product = await self._get_product(product_id)
         profile = await self._get_profile(profile_id)
+        await self._validate_pending_profile(profile)
 
         # Validate role value
         try:
@@ -129,6 +131,20 @@ class ProductMemberService:
             )
 
     # ---- private helpers ----
+
+    async def _validate_pending_profile(self, profile: Profile) -> None:
+        """Reject adding pending profiles when org setting is off."""
+        if profile.status != "pending":
+            return
+        stmt = select(OrgSetting.value).where(
+            OrgSetting.key == "show_pending_profiles_in_assignments"
+        )
+        result = await self.session.execute(stmt)
+        setting_value = result.scalar_one_or_none()
+        if not setting_value or not setting_value.get("enabled"):
+            raise bad_request(
+                "Cannot add pending activation users to project teams"
+            )
 
     async def _check_manage_permission(self, actor) -> None:
         user_id = actor.id if hasattr(actor, "id") else actor["id"]

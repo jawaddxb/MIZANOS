@@ -61,3 +61,11 @@ export interface ProjectIntegration {
   created_at: string;
   updated_at: string;
 }
+
+export interface OrgSetting {
+  id: string;
+  key: string;
+  value: Record<string, unknown>;
+  updated_by: string | null;
+  updated_at: string;
+}

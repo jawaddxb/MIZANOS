@@ -7,6 +7,7 @@ import {
   useRemoveProductMember,
 } from "@/hooks/mutations/useProductMemberMutations";
 import { useProfiles } from "@/hooks/queries/useProfiles";
+import { useShowPendingProfiles } from "@/hooks/queries/useOrgSettings";
 import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
 import { TeamReadinessBanner } from "@/components/molecules/team/TeamReadinessBanner";
 import { TeamRoleSection } from "@/components/molecules/team/TeamRoleSection";
@@ -32,6 +33,7 @@ interface ProductTeamTabProps {
 export function ProductTeamTab({ productId }: ProductTeamTabProps) {
   const { data: readiness, isLoading } = useTeamReadiness(productId);
   const { data: profiles = [] } = useProfiles();
+  const showPendingProfiles = useShowPendingProfiles();
   const { isAdmin, isPM } = useRoleVisibility();
   const addMember = useAddProductMember(productId);
   const removeMember = useRemoveProductMember(productId);
@@ -82,6 +84,7 @@ export function ProductTeamTab({ productId }: ProductTeamTabProps) {
             canManage={canManage}
             profiles={profiles}
             allMemberProfileIds={allMemberProfileIds}
+            showPendingProfiles={showPendingProfiles}
             onAdd={handleAdd}
             onRemove={(memberId) => removeMember.mutate(memberId)}
             isAdding={addMember.isPending}

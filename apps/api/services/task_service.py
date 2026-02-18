@@ -7,9 +7,12 @@ from sqlalchemy import select, func, delete as sa_delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.models.product import ProductMember
+from apps.api.models.settings import OrgSetting
 from apps.api.models.task import Task
+from apps.api.models.user import Profile
 from apps.api.schemas.tasks import TaskCreate
 from apps.api.services.base_service import BaseService
+from packages.common.utils.error_handlers import bad_request
 
 
 class TaskService(BaseService[Task]):
@@ -116,5 +119,30 @@ class TaskService(BaseService[Task]):
 
     async def create_task(self, data: TaskCreate) -> Task:
         """Create a new task."""
+        if data.assignee_id:
+            await self._validate_assignee(data.assignee_id)
         task = Task(**data.model_dump())
         return await self.repo.create(task)
+
+    async def update(self, entity_id: UUID, data: dict) -> Task:
+        """Update a task with assignee validation."""
+        if "assignee_id" in data and data["assignee_id"]:
+            await self._validate_assignee(UUID(str(data["assignee_id"])))
+        return await super().update(entity_id, data)
+
+    async def _validate_assignee(self, assignee_id: UUID) -> None:
+        """Reject assigning to pending profiles when org setting is off."""
+        stmt = select(OrgSetting.value).where(
+            OrgSetting.key == "show_pending_profiles_in_assignments"
+        )
+        result = await self.repo.session.execute(stmt)
+        setting_value = result.scalar_one_or_none()
+
+        if setting_value and setting_value.get("enabled"):
+            return
+
+        profile = await self.repo.session.get(Profile, assignee_id)
+        if profile and profile.status == "pending":
+            raise bad_request(
+                "Cannot assign tasks to users with pending activation"
+            )

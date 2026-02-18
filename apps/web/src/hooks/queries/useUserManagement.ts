@@ -26,12 +26,12 @@ export function useInviteUser() {
       office_location?: string;
       reports_to?: string;
     }) => settingsRepository.inviteUser(data),
-    onSuccess: (_data, variables) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["users-management"] });
       queryClient.invalidateQueries({ queryKey: ["profiles"] });
       queryClient.invalidateQueries({ queryKey: ["org-chart"] });
       queryClient.invalidateQueries({ queryKey: ["team", "profiles"] });
-      toast.success(`Invitation email sent to ${variables.email}`);
+      toast.success(data.message ?? `Invitation email sent to ${variables.email}`);
     },
     onError: (error: Error) => {
       toast.error("Failed to invite user: " + error.message);

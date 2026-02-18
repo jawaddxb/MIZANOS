@@ -13,6 +13,7 @@ from apps.api.models.settings import (
     FeaturePermission,
     GlobalIntegration,
     Module,
+    OrgSetting,
     PermissionAuditLog,
     ProjectIntegration,
     RolePermission,
@@ -234,14 +235,26 @@ class SettingsService:
         await self.session.flush()
 
         link = f"{settings.app_base_url}/activate?token={token_value}"
-        await EmailService.send_invitation_email(
-            to_email=data.email,
-            full_name=data.full_name,
-            activation_link=link,
-            inviter_name="Mizan Admin",
-        )
 
-        return {"message": "Invitation sent", "user_id": str(profile.id)}
+        email_setting_stmt = select(OrgSetting.value).where(
+            OrgSetting.key == "send_activation_email_on_invite"
+        )
+        email_setting = (await self.session.execute(email_setting_stmt)).scalar_one_or_none()
+        should_send_email = not email_setting or email_setting.get("enabled", True)
+
+        if should_send_email:
+            await EmailService.send_invitation_email(
+                to_email=data.email,
+                full_name=data.full_name,
+                activation_link=link,
+                inviter_name="Mizan Admin",
+            )
+            return {"message": "Invitation sent", "user_id": str(profile.id)}
+
+        return {
+            "message": "User created (activation email disabled)",
+            "user_id": str(profile.id),
+        }
 
     async def update_user_status(
         self, user_id: UUID, status: str, acting_user_id: str,

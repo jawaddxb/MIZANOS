@@ -72,6 +72,7 @@ export type {
   FeaturePermission,
   Integration,
   ProjectIntegration,
+  OrgSetting,
 } from "./settings";
 
 export type { AIChatSession, AIChatMessage } from "./ai";

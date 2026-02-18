@@ -4,13 +4,16 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
-from apps.api.dependencies import CurrentUser, DbSession
+from apps.api.dependencies import AuthenticatedUser, CurrentUser, DbSession
+from apps.api.auth import require_super_admin
 from apps.api.schemas.settings import (
     FeaturePermissionResponse,
     GlobalIntegrationCreate,
     IntegrationResponse,
     InviteUserRequest,
     ModuleResponse,
+    OrgSettingResponse,
+    OrgSettingUpdate,
     PermissionAuditLogResponse,
     ProjectIntegrationCreate,
     RoleAssignRequest,
@@ -26,6 +29,7 @@ from apps.api.schemas.settings import (
     UserRoleResponse,
     UserStatusUpdate,
 )
+from apps.api.services.org_settings_service import OrgSettingsService
 from apps.api.services.role_service import RoleService
 from apps.api.services.settings_service import SettingsService
 
@@ -38,6 +42,10 @@ def get_service(db: DbSession) -> SettingsService:
 
 def get_role_service(db: DbSession) -> RoleService:
     return RoleService(db)
+
+
+def get_org_settings_service(db: DbSession) -> OrgSettingsService:
+    return OrgSettingsService(db)
 
 
 @router.get("/modules", response_model=list[ModuleResponse])
@@ -189,3 +197,21 @@ async def remove_role(user_id: UUID, role: str, user: CurrentUser, service: Role
 @router.patch("/users/{user_id}/primary-role")
 async def update_primary_role(user_id: UUID, body: RoleAssignRequest, user: CurrentUser, service: RoleService = Depends(get_role_service)):
     return await service.update_primary_role(user_id, body.role, user)
+
+
+@router.get("/org", response_model=list[OrgSettingResponse])
+async def list_org_settings(
+    user: CurrentUser,
+    service: OrgSettingsService = Depends(get_org_settings_service),
+):
+    return await service.get_all()
+
+
+@router.patch("/org/{key}", response_model=OrgSettingResponse)
+async def update_org_setting(
+    key: str,
+    body: OrgSettingUpdate,
+    user: AuthenticatedUser = require_super_admin(),
+    service: OrgSettingsService = Depends(get_org_settings_service),
+):
+    return await service.update(key, body.value, user.profile_id)

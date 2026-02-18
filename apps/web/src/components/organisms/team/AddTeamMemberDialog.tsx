@@ -5,6 +5,7 @@ import { Button } from "@/components/molecules/buttons/Button";
 import { SearchableSelect } from "@/components/molecules/forms/SearchableSelect";
 import { useInviteUser } from "@/hooks/queries/useUserManagement";
 import { useProfiles } from "@/hooks/queries/useProfiles";
+import { useSendActivationEmailOnInvite, useShowPendingProfiles } from "@/hooks/queries/useOrgSettings";
 import { APP_ROLES, ROLE_CONFIG } from "@/lib/constants/roles";
 
 const ROLES = APP_ROLES.map((r) => ({ value: r, label: ROLE_CONFIG[r].label }));
@@ -39,15 +40,17 @@ interface AddTeamMemberDialogProps {
 export function AddTeamMemberDialog({ open, onOpenChange }: AddTeamMemberDialogProps) {
   const inviteUser = useInviteUser();
   const { data: profiles = [] } = useProfiles();
+  const sendEmailEnabled = useSendActivationEmailOnInvite();
+  const showPending = useShowPendingProfiles();
 
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState("engineer");
+  const [role, setRole] = useState("");
   const [skills, setSkills] = useState<string[]>([]);
   const [customSkillInput, setCustomSkillInput] = useState("");
   const [availability, setAvailability] = useState("available");
   const [maxProjects, setMaxProjects] = useState(3);
-  const [officeLocation, setOfficeLocation] = useState("lahore");
+  const [officeLocation, setOfficeLocation] = useState("");
   const [reportsTo, setReportsTo] = useState("");
 
   if (!open) return null;
@@ -55,12 +58,12 @@ export function AddTeamMemberDialog({ open, onOpenChange }: AddTeamMemberDialogP
   const resetForm = () => {
     setEmail("");
     setFullName("");
-    setRole("engineer");
+    setRole("");
     setSkills([]);
     setCustomSkillInput("");
     setAvailability("available");
     setMaxProjects(3);
-    setOfficeLocation("lahore");
+    setOfficeLocation("");
     setReportsTo("");
   };
 
@@ -98,15 +101,18 @@ export function AddTeamMemberDialog({ open, onOpenChange }: AddTeamMemberDialogP
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <SelectField label="Primary Role *" value={role} onChange={setRole} options={ROLES} />
+            <SelectField label="Primary Role *" value={role} onChange={setRole} options={ROLES} placeholder="Select role..." />
             <SelectField label="Availability" value={availability} onChange={setAvailability} options={AVAILABILITY} />
           </div>
 
           <SearchableSelect
             label="Reports To (optional)"
             options={profiles
-              .filter((p) => p.status === "active")
-              .map((p) => ({ value: p.id, label: p.full_name ?? p.email ?? p.id }))}
+              .filter((p) => p.status === "active" || (showPending && p.status === "pending"))
+              .map((p) => ({
+                value: p.id,
+                label: `${p.full_name ?? p.email ?? p.id} — ${p.role ?? "no role"}${p.status === "pending" ? " (pending activation)" : ""}`,
+              }))}
             value={reportsTo}
             onValueChange={setReportsTo}
             placeholder="Search by name..."
@@ -115,7 +121,7 @@ export function AddTeamMemberDialog({ open, onOpenChange }: AddTeamMemberDialogP
           />
 
           <div className="grid grid-cols-2 gap-3">
-            <SelectField label="Office Location" value={officeLocation} onChange={setOfficeLocation} options={OFFICES} />
+            <SelectField label="Office Location *" value={officeLocation} onChange={setOfficeLocation} options={OFFICES} placeholder="Select office..." />
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Max Projects (concurrent)</label>
               <input
@@ -197,13 +203,17 @@ export function AddTeamMemberDialog({ open, onOpenChange }: AddTeamMemberDialogP
             </div>
           </div>
 
-          <p className="text-xs text-muted-foreground">An invitation email will be sent to activate their account.</p>
+          <p className="text-xs text-muted-foreground">
+            {sendEmailEnabled
+              ? "An invitation email will be sent to activate their account."
+              : "Account will be created without sending an activation email."}
+          </p>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!email || !fullName || inviteUser.isPending}>
+            <Button type="submit" disabled={!email || !fullName || !role || !officeLocation || inviteUser.isPending}>
               {inviteUser.isPending ? "Inviting..." : "Invite Member"}
             </Button>
           </div>
@@ -243,17 +253,21 @@ interface SelectFieldProps {
   value: string;
   onChange: (value: string) => void;
   options: ReadonlyArray<{ value: string; label: string }>;
+  placeholder?: string;
 }
 
-function SelectField({ label, value, onChange, options }: SelectFieldProps) {
+function SelectField({ label, value, onChange, options, placeholder }: SelectFieldProps) {
   return (
     <div className="space-y-1.5">
       <label className="text-sm font-medium">{label}</label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full h-9 rounded-md border bg-background px-3 text-sm"
+        className={`w-full h-9 rounded-md border bg-background px-3 text-sm ${!value ? "text-muted-foreground" : ""}`}
       >
+        {placeholder && (
+          <option value="" disabled>{placeholder}</option>
+        )}
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>{opt.label}</option>
         ))}

@@ -14,6 +14,7 @@ interface TeamRoleSectionProps {
   canManage: boolean;
   profiles: Profile[];
   allMemberProfileIds: Set<string>;
+  showPendingProfiles: boolean;
   onAdd: (profileId: string, role: string) => void;
   onRemove: (memberId: string) => void;
   isAdding: boolean;
@@ -28,6 +29,7 @@ export function TeamRoleSection({
   canManage,
   profiles,
   allMemberProfileIds,
+  showPendingProfiles,
   onAdd,
   onRemove,
   isAdding,
@@ -39,9 +41,13 @@ export function TeamRoleSection({
 
   const profileOptions = profiles
     .filter((p) => !allMemberProfileIds.has(p.id))
+    .filter((p) => showPendingProfiles || p.status !== "pending")
     .map((p) => ({
       value: p.id,
-      label: p.full_name || p.email || "Unknown",
+      label:
+        p.status === "pending"
+          ? `${p.full_name || p.email || "Unknown"} (Pending Activation)`
+          : (p.full_name || p.email || "Unknown"),
     }));
 
   const handleSelect = (profileId: string) => {
