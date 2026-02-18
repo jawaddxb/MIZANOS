@@ -134,6 +134,25 @@ class AuthService:
             "avatar_url": profile.avatar_url,
         }
 
+    async def validate_activation_token(self, token: str) -> dict:
+        """Check if an activation token is valid without consuming it."""
+        from apps.api.models.user import InvitationToken
+
+        stmt = select(InvitationToken).where(InvitationToken.token == token)
+        result = await self.session.execute(stmt)
+        inv = result.scalar_one_or_none()
+
+        if not inv:
+            raise bad_request("Invalid activation token")
+        if inv.used_at is not None:
+            raise bad_request("This activation link has already been used")
+        if not inv.is_active:
+            raise bad_request("This activation link is no longer valid. Please request a new one.")
+        if inv.expires_at < datetime.now(timezone.utc):
+            raise bad_request("This activation link has expired")
+
+        return {"valid": True}
+
     async def activate_account(self, token: str, password: str) -> dict:
         """Activate account using an invitation token."""
         from apps.api.models.user import InvitationToken, Profile
@@ -146,10 +165,13 @@ class AuthService:
             raise bad_request("Invalid activation token")
         if inv.used_at is not None:
             raise bad_request("This activation link has already been used")
+        if not inv.is_active:
+            raise bad_request("This activation link is no longer valid. Please request a new one.")
         if inv.expires_at < datetime.now(timezone.utc):
             raise bad_request("This activation link has expired")
 
         inv.used_at = datetime.now(timezone.utc)
+        inv.is_active = False
 
         profile = await self.session.get(Profile, inv.profile_id)
         if not profile:

@@ -4,7 +4,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.config import settings
@@ -76,6 +76,16 @@ class OrgChartService:
             raise not_found("Profile")
         if profile.status != "pending":
             raise bad_request("Only pending users can receive invitations")
+
+        # Deactivate any existing active tokens for this profile
+        await self.session.execute(
+            update(InvitationToken)
+            .where(
+                InvitationToken.profile_id == profile_id,
+                InvitationToken.is_active.is_(True),
+            )
+            .values(is_active=False)
+        )
 
         token_value = secrets.token_urlsafe(48)
         expires_at = datetime.now(timezone.utc) + timedelta(days=7)

@@ -1,12 +1,14 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
 import { Button } from "@/components/molecules/buttons/Button";
 import { TextField } from "@/components/molecules/forms/TextField";
 import { validatePassword, PASSWORD_RULES } from "@/lib/utils/password";
+
+type PageStatus = "validating" | "form" | "submitting" | "success" | "error";
 
 function ActivateContent() {
   const searchParams = useSearchParams();
@@ -15,11 +17,24 @@ function ActivateContent() {
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [status, setStatus] = useState<"form" | "submitting" | "success" | "error">("form");
-  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState<PageStatus>(token ? "validating" : "error");
+  const [message, setMessage] = useState(token ? "" : "No activation token was provided in the URL.");
 
   const pwError = validatePassword(password);
   const isValid = !pwError && password === confirmPassword;
+
+  useEffect(() => {
+    if (!token) return;
+    apiClient
+      .get("/auth/activate/validate", { params: { token } })
+      .then(() => setStatus("form"))
+      .catch((err: unknown) => {
+        setStatus("error");
+        const detail = (err as { response?: { data?: { detail?: string } } })
+          ?.response?.data?.detail;
+        setMessage(detail ?? "This activation link is invalid.");
+      });
+  }, [token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,8 +57,8 @@ function ActivateContent() {
     }
   };
 
-  const heading = !token
-    ? { title: "Invalid Link", subtitle: "No activation token was provided in the URL." }
+  const heading = status === "error"
+    ? { title: "Invalid Link", subtitle: message }
     : { title: "Activate your account", subtitle: "Choose a password to complete your account setup" };
 
   return (
@@ -114,10 +129,11 @@ function ActivateContent() {
           </div>
 
           <div className="rounded-xl border bg-card p-6 shadow-sm">
-            {!token ? (
-              <p className="text-sm text-destructive text-center">
-                Please check the link in your invitation email and try again.
-              </p>
+            {status === "validating" ? (
+              <div className="flex flex-col items-center gap-2 py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Verifying your activation link...</p>
+              </div>
             ) : status === "success" ? (
               <div className="text-center space-y-3 py-2">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
@@ -129,8 +145,12 @@ function ActivateContent() {
                 </p>
               </div>
             ) : status === "error" ? (
-              <div className="rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2">
-                <p className="text-sm text-destructive">{message}</p>
+              <div className="rounded-md bg-destructive/10 border border-destructive/20 px-4 py-3 space-y-2">
+                <p className="text-sm font-medium text-destructive">{message}</p>
+                <p className="text-xs text-muted-foreground">
+                  This can happen if a newer activation link was sent or the link has already been used.
+                  Please contact your administrator to request a new invitation.
+                </p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">

@@ -88,6 +88,15 @@ async def invite_user(
     return MessageResponse(message="Invitation sent")
 
 
+@router.get("/activate/validate")
+async def validate_activation_token(
+    token: str,
+    service: AuthService = Depends(get_auth_service),
+):
+    """Check if an activation token is valid."""
+    return await service.validate_activation_token(token)
+
+
 @router.post("/activate", response_model=MessageResponse)
 async def activate_account(
     body: ActivateAccountRequest,
