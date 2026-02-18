@@ -108,7 +108,7 @@ export default function OrgChartPage() {
         </div>
       ) : (
         <div className="flex flex-1">
-          <div className="flex-1">
+          <div className="flex-1 overflow-x-auto">
             <OrgChartTree
               nodes={nodes ?? []}
               canResendInvite={isAdmin || isPM}

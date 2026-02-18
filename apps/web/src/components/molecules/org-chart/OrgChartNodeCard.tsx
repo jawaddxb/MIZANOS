@@ -131,75 +131,59 @@ export function OrgChartNodeCard({
       {...pointerProps}
       style={style}
       className={cn(
-        "inline-flex rounded-lg border bg-card shadow-sm min-w-[260px] max-w-[340px] hover:shadow-md transition-shadow overflow-hidden select-none",
+        "inline-flex items-center gap-2 rounded-lg border bg-card shadow-sm max-w-[200px] px-2.5 py-2 hover:shadow-md transition-shadow overflow-hidden select-none",
         canDrag ? "cursor-grab" : "cursor-default",
         dragging && "cursor-grabbing shadow-lg opacity-90",
       )}
       onClick={!canDrag && canEditHierarchy ? () => onEditManager(node) : undefined}
     >
-      {/* Left section — Avatar + Location */}
-      <div className="flex flex-col items-center justify-center gap-1.5 px-3 py-3 bg-muted/30 border-r">
-        <Avatar className="h-11 w-11">
-          {node.avatar_url && (
-            <AvatarImage src={getAvatarUrl(node.avatar_url) ?? ""} alt={node.full_name ?? ""} />
-          )}
-          <AvatarFallback className="text-sm font-medium">
-            {getInitials(node.full_name)}
-          </AvatarFallback>
-        </Avatar>
-        {node.office_location && (
-          <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-            <MapPin className="h-2.5 w-2.5 shrink-0" />
-            <span className="truncate max-w-[60px]">{node.office_location}</span>
-          </span>
+      <Avatar className="h-9 w-9 shrink-0">
+        {node.avatar_url && (
+          <AvatarImage src={getAvatarUrl(node.avatar_url) ?? ""} alt={node.full_name ?? ""} />
         )}
-      </div>
+        <AvatarFallback className="text-xs font-medium">
+          {getInitials(node.full_name)}
+        </AvatarFallback>
+      </Avatar>
 
-      {/* Right section — Details */}
-      <div className="min-w-0 flex-1 px-3 py-2.5 space-y-0.5 text-left">
-        <div className="flex items-center gap-2">
-          <p className="text-sm font-semibold text-foreground truncate flex-1">
+      <div className="min-w-0 flex-1 text-left">
+        <div className="flex items-center gap-1">
+          <p className="text-xs font-semibold text-foreground truncate flex-1">
             {node.full_name ?? "Unnamed"}
           </p>
           {isPending && canResendInvite && (
             <BaseButton
               variant="ghost"
               size="icon"
-              className="h-5 w-5 shrink-0"
+              className="h-4 w-4 shrink-0"
               onClick={(e) => {
                 e.stopPropagation();
                 onResendInvite(node.id);
               }}
             >
-              <Send className="h-3 w-3" />
+              <Send className="h-2.5 w-2.5" />
             </BaseButton>
           )}
         </div>
 
-        {node.email && (
-          <p className="text-[11px] text-muted-foreground truncate leading-tight">
-            {node.email}
-          </p>
-        )}
-
-        {node.title && (
-          <p className="text-[11px] text-muted-foreground truncate leading-tight">
-            {node.title}
-          </p>
-        )}
-
-        <div className="flex items-center gap-1 pt-0.5 justify-start">
-          {node.roles.slice(0, 2).map((role) => (
+        <div className="flex items-center gap-1">
+          {node.roles.slice(0, 1).map((role) => (
             <span
               key={role}
-              className={`text-[10px] px-1.5 py-px rounded font-medium ${ROLE_COLORS[role] ?? "bg-muted text-muted-foreground"}`}
+              className={`text-[9px] px-1 py-px rounded font-medium leading-tight ${ROLE_COLORS[role] ?? "bg-muted text-muted-foreground"}`}
             >
               {ROLE_LABELS[role] ?? role}
             </span>
           ))}
           {isPending && (
-            <span className="text-[10px] px-1.5 py-px rounded font-medium text-amber-600 bg-amber-50 dark:bg-amber-950">
+            <span className="text-[9px] px-1 py-px rounded font-medium leading-tight text-amber-600 bg-amber-50 dark:bg-amber-950">
               Pending
+            </span>
+          )}
+          {node.office_location && (
+            <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground">
+              <MapPin className="h-2 w-2 shrink-0" />
+              <span className="truncate max-w-[50px]">{node.office_location}</span>
             </span>
           )}
         </div>

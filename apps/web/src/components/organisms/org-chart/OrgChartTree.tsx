@@ -128,15 +128,14 @@ export function OrgChartTree({
   return (
     <div ref={containerRef} className="overflow-auto py-4 relative">
       {draggable && <OrgChartLines nodes={nodes} containerRef={containerRef} />}
-      {roots.map((root) => (
+      {roots.length === 1 ? (
         <Tree
-          key={root.id}
           lineWidth={draggable ? "0px" : "1px"}
           lineColor={draggable ? "transparent" : "hsl(var(--border))"}
           lineBorderRadius="6px"
           label={
             <OrgChartNodeCard
-              node={root}
+              node={roots[0]}
               canResendInvite={canResendInvite}
               canEditHierarchy={canEditHierarchy}
               onResendInvite={onResendInvite}
@@ -146,7 +145,7 @@ export function OrgChartTree({
             />
           }
         >
-          {root.children.map((child) => (
+          {roots[0].children.map((child) => (
             <RenderTreeNode
               key={child.id}
               node={child}
@@ -159,7 +158,27 @@ export function OrgChartTree({
             />
           ))}
         </Tree>
-      ))}
+      ) : (
+        <Tree
+          lineWidth={draggable ? "0px" : "1px"}
+          lineColor={draggable ? "transparent" : "hsl(var(--border))"}
+          lineBorderRadius="6px"
+          label={<span />}
+        >
+          {roots.map((root) => (
+            <RenderTreeNode
+              key={root.id}
+              node={root}
+              canResendInvite={canResendInvite}
+              canEditHierarchy={canEditHierarchy}
+              onResendInvite={onResendInvite}
+              onEditManager={onEditManager}
+              compact={compact}
+              draggable={draggable}
+            />
+          ))}
+        </Tree>
+      )}
     </div>
   );
 }
