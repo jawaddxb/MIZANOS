@@ -4,6 +4,7 @@ import enum
 
 
 class AppRole(str, enum.Enum):
+    BUSINESS_OWNER = "business_owner"
     SUPERADMIN = "superadmin"
     ADMIN = "admin"
     PM = "pm"
@@ -32,14 +33,14 @@ class NotificationType(str, enum.Enum):
 class ProductMemberRole(str, enum.Enum):
     PM = "pm"
     MARKETING = "marketing"
-    SENIOR_MANAGEMENT = "senior_management"
+    BUSINESS_OWNER = "business_owner"
     AI_ENGINEER = "ai_engineer"
 
 
 REQUIRED_TEAM_COMPOSITION = {
     ProductMemberRole.PM: 1,
     ProductMemberRole.MARKETING: 1,
-    ProductMemberRole.SENIOR_MANAGEMENT: 1,
+    ProductMemberRole.BUSINESS_OWNER: 1,
     ProductMemberRole.AI_ENGINEER: 1,
 }
 

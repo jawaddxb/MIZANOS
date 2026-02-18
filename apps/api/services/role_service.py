@@ -9,7 +9,7 @@ from apps.api.dependencies import AuthenticatedUser
 from apps.api.models.enums import AppRole
 from apps.api.models.settings import PermissionAuditLog
 from apps.api.models.user import Profile, UserRole
-from packages.common.utils.error_handlers import forbidden, not_found
+from packages.common.utils.error_handlers import bad_request, forbidden, not_found
 
 
 class RoleService:
@@ -25,13 +25,14 @@ class RoleService:
         role: str | None = None,
     ) -> None:
         """Check that actor can modify roles on the target."""
+        actor_is_business_owner = actor.has_role(AppRole.BUSINESS_OWNER)
         actor_is_superadmin = actor.has_role(AppRole.SUPERADMIN)
         actor_is_admin = actor.has_role(AppRole.ADMIN)
 
-        if not (actor_is_superadmin or actor_is_admin):
+        if not (actor_is_business_owner or actor_is_superadmin or actor_is_admin):
             raise forbidden("Only admins can manage roles")
 
-        if actor_is_admin and not actor_is_superadmin:
+        if actor_is_admin and not (actor_is_superadmin or actor_is_business_owner):
             if target.role == "superadmin":
                 raise forbidden("Admins cannot modify superadmin roles")
             if role == "superadmin":
@@ -50,6 +51,9 @@ class RoleService:
     ) -> UserRole:
         target = await self._get_target(user_id)
         self._check_authorization(actor, target, role)
+
+        if target.role == role:
+            raise bad_request(f"'{role}' is already the user's primary role")
 
         user_role = UserRole(
             user_id=target.user_id,
@@ -102,6 +106,12 @@ class RoleService:
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
+    async def get_all_user_roles(self) -> list[UserRole]:
+        """Return every user-role assignment (for bulk display)."""
+        stmt = select(UserRole)
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
     async def update_primary_role(
         self, user_id: UUID, new_role: str, actor: AuthenticatedUser,
     ) -> Profile:
@@ -110,6 +120,15 @@ class RoleService:
 
         old_role = target.role
         target.role = new_role
+
+        conflict_stmt = select(UserRole).where(
+            UserRole.user_id == target.user_id,
+            UserRole.role == new_role,
+        )
+        conflict_result = await self.session.execute(conflict_stmt)
+        conflicting = conflict_result.scalar_one_or_none()
+        if conflicting:
+            await self.session.delete(conflicting)
 
         audit = PermissionAuditLog(
             action_type="primary_role_changed",

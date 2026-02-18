@@ -12,7 +12,9 @@ import { AddTeamMemberDialog } from "./AddTeamMemberDialog";
 import { SkillFilter } from "@/components/molecules/filters/SkillFilter";
 import { useProfiles } from "@/hooks/queries/useProfiles";
 import { useEvaluationSummaries } from "@/hooks/queries/useEvaluations";
+import { useAllUserRoles } from "@/hooks/queries/useUserRoles";
 import type { Profile } from "@/lib/types/user";
+import type { UserRole } from "@/lib/types";
 import type { EvaluationSummary } from "@/lib/types/evaluation";
 
 const ROLE_TABS = [
@@ -21,7 +23,7 @@ const ROLE_TABS = [
   { id: "pm", label: "Project Managers", icon: UserCheck },
   { id: "marketing", label: "Marketing", icon: Megaphone },
   { id: "bizdev", label: "Business Development", icon: Briefcase },
-  { id: "admin", label: "Senior Management", icon: Crown },
+  { id: "admin", label: "Leadership", icon: Crown },
 ] as const;
 
 const SORT_OPTIONS = [
@@ -32,6 +34,7 @@ const SORT_OPTIONS = [
 export function TeamGrid() {
   const { data: profiles = [], isLoading } = useProfiles();
   const { data: summaries = [] } = useEvaluationSummaries();
+  const { data: allUserRoles = [] } = useAllUserRoles();
   const [searchQuery, setSearchQuery] = useState("");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [activeTab, setActiveTab] = useState("all");
@@ -46,12 +49,22 @@ export function TeamGrid() {
     return map;
   }, [summaries]);
 
+  const rolesMap = useMemo(() => {
+    const map = new Map<string, UserRole[]>();
+    allUserRoles.forEach((r) => {
+      const list = map.get(r.user_id) ?? [];
+      list.push(r);
+      map.set(r.user_id, list);
+    });
+    return map;
+  }, [allUserRoles]);
+
   const roleCounts = useMemo(() => {
     const counts: Record<string, number> = { all: profiles.length };
     profiles.forEach((p) => {
       const role = p.role ?? "unknown";
       counts[role] = (counts[role] ?? 0) + 1;
-      if (role === "superadmin") {
+      if (role === "superadmin" || role === "business_owner") {
         counts["admin"] = (counts["admin"] ?? 0) + 1;
       }
     });
@@ -69,7 +82,7 @@ export function TeamGrid() {
       const matchesRole =
         activeTab === "all" ||
         member.role === activeTab ||
-        (activeTab === "admin" && member.role === "superadmin");
+        (activeTab === "admin" && (member.role === "superadmin" || member.role === "business_owner"));
       const matchesSearch =
         !searchQuery ||
         member.full_name?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -216,11 +229,25 @@ export function TeamGrid() {
         </div>
       ) : viewMode === "list" ? (
         <div className="rounded-lg border bg-card">
+          <div className="flex items-center gap-4 px-4 py-2 border-b border-border bg-muted/50">
+            <div className="shrink-0 w-8" />
+            <div className="flex-1 min-w-0 grid grid-cols-[160px_120px_150px_80px_90px_40px_1fr_auto] items-center gap-4">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Name</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Primary Role</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Additional Roles</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Projects</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Score</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Skills</span>
+              <span className="w-[52px]" />
+            </div>
+          </div>
           {filteredTeam.map((member) => (
             <TeamMemberRow
               key={member.id}
               profile={member}
               evaluationSummary={summaryMap.get(member.id)}
+              additionalRoles={(rolesMap.get(member.user_id) ?? []).filter(r => r.role !== member.role)}
             />
           ))}
         </div>

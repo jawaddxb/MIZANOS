@@ -19,12 +19,20 @@ export interface Product {
   updated_at: string;
 }
 
+export interface ProfileSummary {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  avatar_url: string | null;
+}
+
 export interface ProductMember {
   id: string;
   product_id: string;
   profile_id: string;
   role: string | null;
   created_at: string;
+  profile: ProfileSummary | null;
 }
 
 export interface ProductEnvironment {
@@ -43,7 +51,7 @@ export interface ProductEnvironment {
   updated_at: string;
 }
 
-export type ProductMemberRole = "pm" | "marketing" | "senior_management" | "ai_engineer";
+export type ProductMemberRole = "pm" | "marketing" | "business_owner" | "ai_engineer";
 
 export interface TeamReadiness {
   complete: boolean;
