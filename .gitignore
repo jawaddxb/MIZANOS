@@ -11,6 +11,7 @@ build/
 *.egg-info/
 __pycache__/
 *.pyc
+*.tsbuildinfo
 
 # Environment
 .env
