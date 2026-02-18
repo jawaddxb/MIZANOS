@@ -12,7 +12,13 @@ import { TeamReadinessBanner } from "@/components/molecules/team/TeamReadinessBa
 import { TeamRoleSection } from "@/components/molecules/team/TeamRoleSection";
 import type { ProductMemberRole } from "@/lib/types";
 
-const ROLE_CONFIG: { key: ProductMemberRole; label: string; allowMultiple: boolean }[] = [
+interface RoleConfig {
+  key: ProductMemberRole;
+  label: string;
+  allowMultiple: boolean;
+}
+
+const ROLE_CONFIG: RoleConfig[] = [
   { key: "pm", label: "Project Manager", allowMultiple: false },
   { key: "ai_engineer", label: "AI Engineers", allowMultiple: true },
   { key: "business_owner", label: "Business Owner", allowMultiple: false },

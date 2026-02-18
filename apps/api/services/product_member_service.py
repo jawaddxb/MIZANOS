@@ -130,11 +130,21 @@ class ProductMemberService:
 
     # ---- private helpers ----
 
-    async def _check_manage_permission(self, actor: dict) -> None:
-        user_id = actor["id"]
+    async def _check_manage_permission(self, actor) -> None:
+        user_id = actor.id if hasattr(actor, "id") else actor["id"]
+        roles: set[str] = set()
+
+        # Check profile's primary role
+        profile_stmt = select(Profile.role).where(Profile.user_id == user_id)
+        profile_result = await self.session.execute(profile_stmt)
+        primary_role = profile_result.scalar_one_or_none()
+        if primary_role:
+            roles.add(primary_role)
+
+        # Check additional roles from user_roles table
         stmt = select(UserRole.role).where(UserRole.user_id == user_id)
         result = await self.session.execute(stmt)
-        roles = {r for r in result.scalars().all()}
+        roles.update(result.scalars().all())
 
         allowed = {"business_owner", "superadmin", "admin", "pm"}
         if not roles & allowed:

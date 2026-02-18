@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Network, UserPlus, List, LayoutGrid, RotateCcw } from "lucide-react";
 import { Skeleton } from "@/components/atoms/display/Skeleton";
 import { BaseButton } from "@/components/atoms/buttons/BaseButton";
 import { PageHeader } from "@/components/molecules/layout/PageHeader";
 import { ChangeManagerDialog } from "@/components/organisms/org-chart/ChangeManagerDialog";
+import { buildTree } from "@/components/organisms/org-chart/OrgChartTree";
+import { UnassignedSidebar } from "@/components/organisms/org-chart/UnassignedSidebar";
 
 const OrgChartTree = dynamic(
   () => import("@/components/organisms/org-chart/OrgChartTree").then((m) => m.OrgChartTree),
@@ -41,6 +43,7 @@ export default function OrgChartPage() {
     setCardsMoved(false);
   }, []);
 
+  const { orphans } = useMemo(() => buildTree(nodes ?? []), [nodes]);
   const canInvite = isAdmin || isPM;
 
   const handleEditManager = (node: OrgChartNode) => {
@@ -56,7 +59,7 @@ export default function OrgChartPage() {
   };
 
   return (
-    <div className="p-6 relative">
+    <div className="flex flex-col min-h-full p-6 relative">
       <PageHeader
         title="Organization Chart"
         subtitle="Team structure and reporting lines"
@@ -104,15 +107,27 @@ export default function OrgChartPage() {
           </div>
         </div>
       ) : (
-        <OrgChartTree
-          nodes={nodes ?? []}
-          canResendInvite={isAdmin || isPM}
-          canEditHierarchy={isAdmin}
-          onResendInvite={(id) => resendInvite.mutate(id)}
-          onEditManager={handleEditManager}
-          compact={!showDetails}
-          draggable
-        />
+        <div className="flex flex-1">
+          <div className="flex-1">
+            <OrgChartTree
+              nodes={nodes ?? []}
+              canResendInvite={isAdmin || isPM}
+              canEditHierarchy={isAdmin}
+              onResendInvite={(id) => resendInvite.mutate(id)}
+              onEditManager={handleEditManager}
+              compact={!showDetails}
+              draggable
+            />
+          </div>
+          <UnassignedSidebar
+            orphans={orphans}
+            canResendInvite={isAdmin || isPM}
+            canEditHierarchy={isAdmin}
+            onResendInvite={(id) => resendInvite.mutate(id)}
+            onEditManager={handleEditManager}
+            compact={!showDetails}
+          />
+        </div>
       )}
 
       {cardsMoved && (

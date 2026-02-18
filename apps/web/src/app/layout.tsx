@@ -7,7 +7,7 @@ import "@/styles/globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "Mizan AI - Project Lifecycle Management",
+  title: "Mizan - Project Lifecycle Management",
   description: "Comprehensive project lifecycle management platform powered by AI",
 };
 

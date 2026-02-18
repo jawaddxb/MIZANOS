@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { TeamMemberCard } from "./TeamMemberCard";
-import { TeamAddMemberForm } from "./TeamAddMemberForm";
+import { SearchableSelect } from "@/components/molecules/forms/SearchableSelect";
 import type { ProductMember, Profile } from "@/lib/types";
 
 interface TeamRoleSectionProps {
@@ -33,13 +33,21 @@ export function TeamRoleSection({
   isAdding,
   isRemoving,
 }: TeamRoleSectionProps) {
-  const [showForm, setShowForm] = useState(false);
+  const [showAddMore, setShowAddMore] = useState(false);
   const hasMembers = members.length > 0;
   const canAddMore = allowMultiple || !hasMembers;
 
-  const handleAdd = (profileId: string) => {
+  const profileOptions = profiles
+    .filter((p) => !allMemberProfileIds.has(p.id))
+    .map((p) => ({
+      value: p.id,
+      label: p.full_name || p.email || "Unknown",
+    }));
+
+  const handleSelect = (profileId: string) => {
+    if (!profileId) return;
     onAdd(profileId, role);
-    setShowForm(false);
+    setShowAddMore(false);
   };
 
   return (
@@ -57,46 +65,51 @@ export function TeamRoleSection({
 
       {hasMembers && (
         <div className="space-y-2">
-          {members.map((member) => {
-            const profile = profiles.find((p) => p.id === member.profile_id);
-            const name =
-              profile?.full_name ||
-              profile?.email ||
-              "Unknown";
-            return (
-              <TeamMemberCard
-                key={member.id}
-                name={name}
-                email={profile?.email ?? null}
-                avatarUrl={profile?.avatar_url ?? null}
-                canRemove={canManage}
-                onRemove={() => onRemove(member.id)}
-                isRemoving={isRemoving}
-              />
-            );
-          })}
+          {members.map((member) => (
+            <TeamMemberCard
+              key={member.id}
+              name={member.profile?.full_name || member.profile?.email || "Unknown"}
+              email={member.profile?.email ?? null}
+              avatarUrl={member.profile?.avatar_url ?? null}
+              canRemove={canManage}
+              onRemove={() => onRemove(member.id)}
+              isRemoving={isRemoving}
+            />
+          ))}
         </div>
       )}
 
-      {canManage && canAddMore && !showForm && (
+      {canManage && canAddMore && !hasMembers && (
+        <SearchableSelect
+          options={profileOptions}
+          value=""
+          onValueChange={handleSelect}
+          placeholder={`Select ${label}...`}
+          emptyLabel="No available members"
+        />
+      )}
+
+      {canManage && canAddMore && hasMembers && !showAddMore && (
         <button
           type="button"
-          onClick={() => setShowForm(true)}
+          onClick={() => setShowAddMore(true)}
           className="flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors mt-2"
         >
           <Plus className="h-3.5 w-3.5" />
-          {hasMembers ? `Add Another ${label.replace(/s$/, "")}` : `Assign ${label}`}
+          Add Another
         </button>
       )}
 
-      {showForm && (
-        <TeamAddMemberForm
-          role={role}
-          profiles={profiles}
-          excludeProfileIds={allMemberProfileIds}
-          onAdd={handleAdd}
-          isPending={isAdding}
-        />
+      {showAddMore && (
+        <div className="mt-2">
+          <SearchableSelect
+            options={profileOptions}
+            value=""
+            onValueChange={handleSelect}
+            placeholder={`Select ${label}...`}
+            emptyLabel="No available members"
+          />
+        </div>
       )}
     </div>
   );

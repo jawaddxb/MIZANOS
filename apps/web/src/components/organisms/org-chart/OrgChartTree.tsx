@@ -2,18 +2,17 @@
 
 import { useMemo, useRef } from "react";
 import { Tree, TreeNode } from "react-organizational-chart";
-import { AlertTriangle } from "lucide-react";
 import { OrgChartNodeCard } from "@/components/molecules/org-chart/OrgChartNodeCard";
 import { OrgChartLines } from "@/components/molecules/org-chart/OrgChartLines";
 import type { OrgChartNode } from "@/lib/types";
 
-interface TreeNodeData extends OrgChartNode {
+export interface TreeNodeData extends OrgChartNode {
   children: TreeNodeData[];
 }
 
 const LEADERSHIP_ROLES = new Set(["superadmin", "admin"]);
 
-function buildTree(nodes: OrgChartNode[]): { roots: TreeNodeData[]; orphans: TreeNodeData[] } {
+export function buildTree(nodes: OrgChartNode[]): { roots: TreeNodeData[]; orphans: TreeNodeData[] } {
   const map = new Map<string, TreeNodeData>();
   const parentIds = new Set<string>();
   const topLevel: TreeNodeData[] = [];
@@ -120,78 +119,47 @@ export function OrgChartTree({
   draggable,
 }: OrgChartTreeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { roots, orphans } = useMemo(() => buildTree(nodes), [nodes]);
+  const { roots } = useMemo(() => buildTree(nodes), [nodes]);
 
-  if (roots.length === 0 && orphans.length === 0) {
+  if (roots.length === 0) {
     return <p className="text-center text-muted-foreground py-8">No team members found.</p>;
   }
 
   return (
-    <div className="space-y-6">
-      {roots.length > 0 && (
-        <div ref={containerRef} className="overflow-auto py-4 relative">
-          {draggable && <OrgChartLines nodes={nodes} containerRef={containerRef} />}
-          {roots.map((root) => (
-            <Tree
-              key={root.id}
-              lineWidth={draggable ? "0px" : "1px"}
-              lineColor={draggable ? "transparent" : "hsl(var(--border))"}
-              lineBorderRadius="6px"
-              label={
-                <OrgChartNodeCard
-                  node={root}
-                  canResendInvite={canResendInvite}
-                  canEditHierarchy={canEditHierarchy}
-                  onResendInvite={onResendInvite}
-                  onEditManager={onEditManager}
-                  compact={compact}
-                  draggable={draggable}
-                />
-              }
-            >
-              {root.children.map((child) => (
-                <RenderTreeNode
-                  key={child.id}
-                  node={child}
-                  canResendInvite={canResendInvite}
-                  canEditHierarchy={canEditHierarchy}
-                  onResendInvite={onResendInvite}
-                  onEditManager={onEditManager}
-                  compact={compact}
-                  draggable={draggable}
-                />
-              ))}
-            </Tree>
+    <div ref={containerRef} className="overflow-auto py-4 relative">
+      {draggable && <OrgChartLines nodes={nodes} containerRef={containerRef} />}
+      {roots.map((root) => (
+        <Tree
+          key={root.id}
+          lineWidth={draggable ? "0px" : "1px"}
+          lineColor={draggable ? "transparent" : "hsl(var(--border))"}
+          lineBorderRadius="6px"
+          label={
+            <OrgChartNodeCard
+              node={root}
+              canResendInvite={canResendInvite}
+              canEditHierarchy={canEditHierarchy}
+              onResendInvite={onResendInvite}
+              onEditManager={onEditManager}
+              compact={compact}
+              draggable={draggable}
+            />
+          }
+        >
+          {root.children.map((child) => (
+            <RenderTreeNode
+              key={child.id}
+              node={child}
+              canResendInvite={canResendInvite}
+              canEditHierarchy={canEditHierarchy}
+              onResendInvite={onResendInvite}
+              onEditManager={onEditManager}
+              compact={compact}
+              draggable={draggable}
+            />
           ))}
-        </div>
-      )}
-
-      {orphans.length > 0 && (
-        <div className="border-t pt-5">
-          <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle className="h-4 w-4 text-status-warning" />
-            <h3 className="text-sm font-semibold">
-              Unassigned ({orphans.length})
-            </h3>
-            <span className="text-xs text-muted-foreground">
-              No reporting line
-            </span>
-          </div>
-          <div className="flex flex-wrap gap-2.5">
-            {orphans.map((node) => (
-              <OrgChartNodeCard
-                key={node.id}
-                node={node}
-                canResendInvite={canResendInvite}
-                canEditHierarchy={canEditHierarchy}
-                onResendInvite={onResendInvite}
-                onEditManager={onEditManager}
-                compact={compact}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+        </Tree>
+      ))}
     </div>
   );
 }

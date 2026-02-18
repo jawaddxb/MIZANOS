@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
 import { Button } from "@/components/molecules/buttons/Button";
 import { TextField } from "@/components/molecules/forms/TextField";
@@ -171,9 +171,6 @@ function ActivateContent() {
                   loading={status === "submitting"}
                   disabled={!isValid}
                 >
-                  {status === "submitting" && (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  )}
                   Activate Account
                 </Button>
               </form>

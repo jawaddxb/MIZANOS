@@ -10,7 +10,6 @@ interface OrgChartLinesProps {
 
 export function OrgChartLines({ nodes, containerRef }: OrgChartLinesProps) {
   const [lines, setLines] = useState<{ x1: number; y1: number; x2: number; y2: number }[]>([]);
-  const [size, setSize] = useState({ w: 0, h: 0 });
 
   const edges = useMemo(
     () => {
@@ -27,7 +26,6 @@ export function OrgChartLines({ nodes, containerRef }: OrgChartLinesProps) {
     if (!container) return;
 
     const cRect = container.getBoundingClientRect();
-    setSize({ w: container.scrollWidth, h: container.scrollHeight });
 
     const cards = container.querySelectorAll<HTMLElement>("[data-node-id]");
     const posMap = new Map<string, DOMRect>();
@@ -75,8 +73,7 @@ export function OrgChartLines({ nodes, containerRef }: OrgChartLinesProps) {
 
   return (
     <svg
-      className="absolute top-0 left-0 pointer-events-none"
-      style={{ width: size.w, height: size.h }}
+      className="absolute inset-0 pointer-events-none overflow-visible"
     >
       {lines.map((l, i) => {
         const midY = (l.y1 + l.y2) / 2;

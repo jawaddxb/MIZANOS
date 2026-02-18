@@ -23,11 +23,12 @@ const OFFICES = [
 ] as const;
 
 const SKILL_OPTIONS = [
-  "AI & Machine Learning", "Cloud & Infrastructure",
-  "Data & Analytics", "Finance", "Leadership",
-  "Marketing", "Operations", "Product Management",
-  "Project Management", "Quality Assurance", "Blockchain",
-  "Research", "Sales", "Software Engineering", "Strategy", "UI/UX Design",
+  "Leadership", "Strategy", "Business Development",
+  "Product Management", "Project Management", "Finance",
+  "Marketing", "Sales", "Operations",
+  "Software Engineering", "AI & Machine Learning",
+  "Cloud & Infrastructure", "Data & Analytics", "Blockchain",
+  "UI/UX Design", "Quality Assurance", "Research", "Vibe Coding",
 ] as const;
 
 interface AddTeamMemberDialogProps {

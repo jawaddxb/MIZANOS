@@ -24,6 +24,8 @@ class ProductCreate(ProductBase):
 
     pm_id: UUID | None = None
     engineer_id: UUID | None = None
+    business_owner_id: UUID | None = None
+    marketing_manager_id: UUID | None = None
 
 
 class ProductUpdate(BaseSchema):
@@ -39,6 +41,8 @@ class ProductUpdate(BaseSchema):
     source_type: str | None = None
     pm_id: UUID | None = None
     engineer_id: UUID | None = None
+    business_owner_id: UUID | None = None
+    marketing_manager_id: UUID | None = None
 
 
 class ProductResponse(ProductBase):
@@ -47,6 +51,8 @@ class ProductResponse(ProductBase):
     id: UUID
     pm_id: UUID | None = None
     engineer_id: UUID | None = None
+    business_owner_id: UUID | None = None
+    marketing_manager_id: UUID | None = None
     lovable_url: str | None = None
     logo_url: str | None = None
     archived_at: datetime | None = None

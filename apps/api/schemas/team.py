@@ -18,11 +18,11 @@ class ProfileResponse(BaseSchema):
     full_name: str | None = None
     email: str | None = None
     avatar_url: str | None = None
-    role: str = "engineer"
-    status: str = "active"
+    role: str | None = None
+    status: str | None = None
     skills: list[str] = []
-    availability_status: str | None = None
-    max_concurrent_projects: int = 3
+    availability: str | None = None
+    max_projects: int | None = None
     last_login: datetime | None = None
     created_at: datetime
 
@@ -38,8 +38,8 @@ class ProfileUpdate(BaseSchema):
     full_name: str | None = None
     avatar_url: str | None = None
     skills: list[str] | None = None
-    availability_status: str | None = None
-    max_concurrent_projects: int | None = None
+    availability: str | None = None
+    max_projects: int | None = None
 
 
 class HolidayCreate(BaseSchema):
