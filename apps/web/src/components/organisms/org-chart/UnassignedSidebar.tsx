@@ -3,7 +3,7 @@
 import { AlertTriangle } from "lucide-react";
 import { OrgChartNodeCard } from "@/components/molecules/org-chart/OrgChartNodeCard";
 import type { OrgChartNode } from "@/lib/types";
-import type { TreeNodeData } from "./OrgChartTree";
+import type { TreeNodeData } from "./buildTree";
 
 interface UnassignedSidebarProps {
   orphans: TreeNodeData[];

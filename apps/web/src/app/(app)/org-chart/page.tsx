@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/atoms/display/Skeleton";
 import { BaseButton } from "@/components/atoms/buttons/BaseButton";
 import { PageHeader } from "@/components/molecules/layout/PageHeader";
 import { ChangeManagerDialog } from "@/components/organisms/org-chart/ChangeManagerDialog";
-import { buildTree } from "@/components/organisms/org-chart/OrgChartTree";
+import { buildTree } from "@/components/organisms/org-chart/buildTree";
 import { UnassignedSidebar } from "@/components/organisms/org-chart/UnassignedSidebar";
 
 const OrgChartTree = dynamic(
