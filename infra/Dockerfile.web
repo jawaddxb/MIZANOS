@@ -10,7 +10,7 @@ COPY apps/web/package.json ./apps/web/
 RUN npm ci --workspace=apps/web
 
 COPY apps/web/ ./apps/web/
-RUN npm run build --workspace=apps/web
+RUN mkdir -p ./apps/web/public && npm run build --workspace=apps/web
 
 FROM node:22-alpine AS runner
 WORKDIR /app

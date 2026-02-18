@@ -25,6 +25,7 @@ dependencies = [
     "anthropic>=0.40.0",
     "aiofiles>=24.1.0",
     "google-auth>=2.0.0",
+    "requests>=2.31.0",
 ]
 
 [project.optional-dependencies]
