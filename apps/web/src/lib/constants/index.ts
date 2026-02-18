@@ -24,3 +24,12 @@ export {
 } from "./navigation";
 
 export { ROUTE_LABELS, capitalizeSegment } from "./breadcrumbs";
+
+export {
+  TASK_STATUS_DISPLAY,
+  TASK_PRIORITY_COLORS,
+  TASK_STATUSES,
+  TASK_PRIORITIES,
+  TASK_PILLARS,
+  type TaskStatusConfig,
+} from "./tasks";

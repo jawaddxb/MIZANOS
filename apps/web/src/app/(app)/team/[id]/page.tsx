@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ClipboardEdit, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, ClipboardEdit, CheckCircle2, Shield, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/atoms/display/Avatar";
 import { getAvatarUrl } from "@/lib/utils/avatar";
 import { Badge } from "@/components/atoms/display/Badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/display/Card";
 import { Button } from "@/components/molecules/buttons/Button";
 import { Skeleton } from "@/components/atoms/display/Skeleton";
 import { EvaluationBreakdown } from "@/components/organisms/team/EvaluationBreakdown";
@@ -16,14 +17,10 @@ import { RecordEvaluationDialog } from "@/components/organisms/team/RecordEvalua
 import { RecordCompletionDialog } from "@/components/organisms/team/RecordCompletionDialog";
 import { useProfile } from "@/hooks/queries/useProfiles";
 import { useEvaluations, useProjectCompletions } from "@/hooks/queries/useEvaluations";
-
-const roleLabels: Record<string, string> = {
-  engineer: "AI Engineer",
-  pm: "Project Manager",
-  marketing: "Marketing",
-  bizdev: "Business Development",
-  admin: "Senior Management",
-};
+import { useUserRoles } from "@/hooks/queries/useUserRoles";
+import { useProfileProjects } from "@/hooks/queries/useProfileProjects";
+import { ROLE_CONFIG } from "@/lib/constants/roles";
+import type { AppRole } from "@/lib/types/enums";
 
 const availabilityConfig: Record<string, { label: string; color: string }> = {
   available: { label: "Available", color: "bg-status-healthy" },
@@ -42,6 +39,8 @@ export default function EngineerDetailPage() {
   const { data: profile, isLoading: profileLoading } = useProfile(id);
   const { data: evaluations = [], isLoading: evalsLoading } = useEvaluations(id);
   const { data: completions = [], isLoading: completionsLoading } = useProjectCompletions(id);
+  const { data: userRoles = [] } = useUserRoles(id);
+  const { data: assignedProjects = [] } = useProfileProjects(id);
 
   const [evalOpen, setEvalOpen] = useState(false);
   const [completionOpen, setCompletionOpen] = useState(false);
@@ -77,6 +76,9 @@ export default function EngineerDetailPage() {
     .toUpperCase()
     .slice(0, 2) ?? "?";
 
+  const primaryRoleConfig = ROLE_CONFIG[profile.role as AppRole];
+  const secondaryRoles = userRoles.filter(r => r.role !== profile.role);
+
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       {/* Back link */}
@@ -104,7 +106,7 @@ export default function EngineerDetailPage() {
               </span>
             )}
           </div>
-          <p className="text-sm text-muted-foreground">{roleLabels[profile.role ?? ""] ?? profile.role}</p>
+          <p className="text-sm text-muted-foreground">{profile.email}</p>
           <div className="flex items-center gap-3 mt-2">
             <Badge variant="secondary">{availability.label}</Badge>
             <span className="text-xs text-muted-foreground">
@@ -120,6 +122,76 @@ export default function EngineerDetailPage() {
             <CheckCircle2 className="h-4 w-4 mr-1" /> Complete
           </Button>
         </div>
+      </div>
+
+      {/* Roles & Projects */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Shield className="h-4 w-4 text-primary" />
+              Roles
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Primary Role</span>
+              <div className="mt-1">
+                <Badge variant="default" className="text-xs">
+                  {primaryRoleConfig?.label ?? profile.role ?? "None"}
+                </Badge>
+              </div>
+              {primaryRoleConfig?.description && (
+                <p className="text-xs text-muted-foreground mt-1">{primaryRoleConfig.description}</p>
+              )}
+            </div>
+            <div>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Additional Roles</span>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {secondaryRoles.length > 0 ? (
+                  secondaryRoles.map((ur) => (
+                    <Badge key={ur.id} variant="outline" className="text-xs">
+                      {ROLE_CONFIG[ur.role as AppRole]?.label ?? ur.role}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-xs text-muted-foreground">No additional roles assigned</span>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Briefcase className="h-4 w-4 text-primary" />
+              Assigned Projects ({assignedProjects.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {assignedProjects.length > 0 ? (
+              <div className="space-y-2">
+                {assignedProjects.map((project) => (
+                  <Link
+                    key={project.id}
+                    href={`/projects/${project.productId}`}
+                    className="flex items-center justify-between p-2 rounded-md border hover:bg-accent/50 transition-colors"
+                  >
+                    <span className="text-sm font-medium truncate">{project.productName}</span>
+                    {project.role && (
+                      <Badge variant="secondary" className="text-[10px] shrink-0 ml-2">
+                        {ROLE_CONFIG[project.role as AppRole]?.label ?? project.role}
+                      </Badge>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">No projects assigned</p>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Evaluation Section */}

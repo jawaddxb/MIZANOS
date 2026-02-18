@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { githubRepository } from "@/lib/api/repositories";
-import type { GitHubInfo } from "@/lib/types";
+import type { RepoInfoResult } from "@/lib/api/repositories/github.repository";
 
 export function useGitHubInfo(
   repositoryUrl: string | null | undefined,
@@ -10,7 +10,7 @@ export function useGitHubInfo(
 ) {
   return useQuery({
     queryKey: ["github-info", repositoryUrl],
-    queryFn: (): Promise<GitHubInfo> =>
+    queryFn: (): Promise<RepoInfoResult> =>
       githubRepository.getRepoInfo(repositoryUrl!, githubToken),
     enabled: !!repositoryUrl && repositoryUrl.includes("github.com"),
     staleTime: 5 * 60 * 1000,

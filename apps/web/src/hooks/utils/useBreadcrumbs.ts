@@ -33,7 +33,7 @@ export function useBreadcrumbs(): BreadcrumbItem[] {
   const hasId = segments.length >= 2 && isUUID(idSegment);
 
   const productQuery = useProduct(
-    parentSegment === "products" && hasId ? idSegment : "",
+    parentSegment === "projects" && hasId ? idSegment : "",
   );
   const profileQuery = useProfile(
     parentSegment === "team" && hasId ? idSegment : "",
@@ -61,7 +61,7 @@ export function useBreadcrumbs(): BreadcrumbItem[] {
       if (isUUID(segment)) {
         let entityLabel = "...";
 
-        if (parentSegment === "products" && productQuery.data) {
+        if (parentSegment === "projects" && productQuery.data) {
           entityLabel = productQuery.data.name;
         } else if (parentSegment === "team" && profileQuery.data) {
           entityLabel = profileQuery.data.full_name ?? profileQuery.data.email ?? "Member";

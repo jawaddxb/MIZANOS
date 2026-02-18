@@ -18,7 +18,8 @@ export function useGenerateTasksFromSpec(productId: string) {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["tasks", productId] });
-      toast.success(`Generated ${data.length} tasks from specification`);
+      queryClient.invalidateQueries({ queryKey: ["tasks", productId, "drafts"] });
+      toast.success(`Generated ${data.length} draft tasks — review in Drafts tab`);
     },
     onError: (error: Error) => {
       toast.error("Failed to generate tasks: " + error.message);
@@ -40,7 +41,8 @@ export function useGenerateTasksFromTemplates(productId: string) {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["tasks", productId] });
-      toast.success(`Generated ${data.length} tasks from templates`);
+      queryClient.invalidateQueries({ queryKey: ["tasks", productId, "drafts"] });
+      toast.success(`Generated ${data.length} draft tasks — review in Drafts tab`);
     },
     onError: (error: Error) => {
       toast.error("Failed to generate tasks: " + error.message);

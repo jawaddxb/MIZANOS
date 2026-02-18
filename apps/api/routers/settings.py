@@ -166,6 +166,11 @@ async def reset_user_password(user_id: UUID, user: CurrentUser = None, service: 
     return await service.reset_user_password(user_id)
 
 
+@router.get("/user-roles", response_model=list[UserRoleResponse])
+async def get_all_user_roles(user: CurrentUser, service: RoleService = Depends(get_role_service)):
+    return await service.get_all_user_roles()
+
+
 @router.get("/users/{user_id}/roles", response_model=list[UserRoleResponse])
 async def get_user_roles(user_id: UUID, user: CurrentUser, service: RoleService = Depends(get_role_service)):
     return await service.get_user_roles(user_id)

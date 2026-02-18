@@ -8,15 +8,9 @@ import { Button } from "@/components/molecules/buttons/Button";
 import { PillarBadge } from "@/components/molecules/indicators/PillarBadge";
 import { useTasks } from "@/hooks/queries/useTasks";
 import { ClaudeCodePrompt } from "@/components/molecules/tasks/ClaudeCodePrompt";
+import { TASK_STATUS_DISPLAY, TASK_PRIORITY_COLORS } from "@/lib/constants";
 import type { Task, TaskStatus, TaskPriority } from "@/lib/types";
-import {
-  CheckCircle2,
-  Circle,
-  Clock,
-  AlertTriangle,
-  Filter,
-  ListTodo,
-} from "lucide-react";
+import { Filter, ListTodo } from "lucide-react";
 
 interface TasksTabProps {
   productId: string;
@@ -25,24 +19,8 @@ interface TasksTabProps {
 type FilterStatus = TaskStatus | "all";
 type FilterPriority = TaskPriority | "all";
 
-const STATUS_CONFIG: Record<
-  string,
-  { icon: typeof Circle; color: string; label: string }
-> = {
-  backlog: { icon: Circle, color: "text-muted-foreground", label: "Backlog" },
-  in_progress: { icon: Clock, color: "text-yellow-600 dark:text-yellow-400", label: "In Progress" },
-  review: { icon: AlertTriangle, color: "text-orange-600 dark:text-orange-400", label: "Review" },
-  done: { icon: CheckCircle2, color: "text-green-600 dark:text-green-400", label: "Done" },
-};
-
-const PRIORITY_COLORS: Record<string, string> = {
-  low: "bg-muted text-muted-foreground",
-  medium: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-  high: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-};
-
 function TaskRow({ task }: { task: Task }) {
-  const statusConfig = STATUS_CONFIG[task.status ?? "backlog"] ?? STATUS_CONFIG.backlog;
+  const statusConfig = TASK_STATUS_DISPLAY[task.status ?? "backlog"] ?? TASK_STATUS_DISPLAY.backlog;
   const StatusIcon = statusConfig.icon;
 
   return (
@@ -62,7 +40,7 @@ function TaskRow({ task }: { task: Task }) {
             {task.priority && (
               <Badge
                 variant="secondary"
-                className={`text-[10px] ${PRIORITY_COLORS[task.priority] ?? ""}`}
+                className={`text-[10px] ${TASK_PRIORITY_COLORS[task.priority] ?? ""}`}
               >
                 {task.priority}
               </Badge>
@@ -151,7 +129,7 @@ function TasksTab({ productId }: TasksTabProps) {
         <div className="grid grid-cols-4 gap-2 flex-1">
           {(["backlog", "in_progress", "review", "done"] as TaskStatus[]).map(
             (status) => {
-              const config = STATUS_CONFIG[status];
+              const config = TASK_STATUS_DISPLAY[status];
               const Icon = config.icon;
               const count = statusCounts[status] ?? 0;
               return (

@@ -166,6 +166,8 @@ class SpecificationService(BaseService[Specification]):
             status="todo",
             priority=feature.priority,
             pillar="development",
+            is_draft=True,
+            generation_source="specification",
         )
         self.repo.session.add(task)
         await self.repo.session.flush()
@@ -234,6 +236,7 @@ class SpecificationService(BaseService[Specification]):
                 priority=feature.priority or "medium",
                 pillar="development",
                 generation_source="specification",
+                is_draft=True,
             )
             self.repo.session.add(task)
             tasks.append(task)

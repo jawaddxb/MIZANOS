@@ -35,6 +35,9 @@ coverage/
 htmlcov/
 .pytest_cache/
 
+# Uploads (runtime user data)
+uploads/
+
 # Misc
 *.log
 npm-debug.log*

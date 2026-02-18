@@ -98,7 +98,7 @@ export function ProductsSection() {
           {filteredProducts.map((product, index) => (
             <Link
               key={product.id}
-              href={`/products/${product.id}`}
+              href={`/projects/${product.id}`}
               className={cn(
                 "group block relative overflow-hidden bg-card rounded-lg border border-l-[3px] p-3",
                 "transition-all duration-200 ease-out hover:shadow-md hover:-translate-y-0.5",

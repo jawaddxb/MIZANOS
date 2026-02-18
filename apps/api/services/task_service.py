@@ -1,10 +1,12 @@
 """Task service."""
 
+from datetime import datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete as sa_delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.api.models.product import ProductMember
 from apps.api.models.task import Task
 from apps.api.schemas.tasks import TaskCreate
 from apps.api.services.base_service import BaseService
@@ -21,19 +23,40 @@ class TaskService(BaseService[Task]):
         *,
         product_id: UUID | None = None,
         assignee_id: UUID | None = None,
+        pm_id: UUID | None = None,
         status: str | None = None,
+        priority: str | None = None,
+        pillar: str | None = None,
+        search: str | None = None,
+        include_drafts: bool = False,
         page: int = 1,
         page_size: int = 50,
     ) -> dict:
-        """List tasks with optional filtering."""
+        """List tasks with optional filtering. Excludes drafts by default."""
         stmt = select(Task)
+
+        if not include_drafts:
+            stmt = stmt.where(Task.is_draft == False)  # noqa: E712
 
         if product_id:
             stmt = stmt.where(Task.product_id == product_id)
         if assignee_id:
             stmt = stmt.where(Task.assignee_id == assignee_id)
+        if pm_id:
+            stmt = stmt.join(
+                ProductMember,
+                (Task.product_id == ProductMember.product_id)
+                & (ProductMember.profile_id == pm_id)
+                & (ProductMember.role == "pm"),
+            )
         if status:
             stmt = stmt.where(Task.status == status)
+        if priority:
+            stmt = stmt.where(Task.priority == priority)
+        if pillar:
+            stmt = stmt.where(Task.pillar == pillar)
+        if search:
+            stmt = stmt.where(Task.title.ilike(f"%{search}%"))
 
         stmt = stmt.order_by(Task.sort_order)
 
@@ -45,6 +68,51 @@ class TaskService(BaseService[Task]):
         data = list(result.scalars().all())
 
         return {"data": data, "total": total, "page": page, "page_size": page_size}
+
+    async def list_drafts(self, product_id: UUID) -> list[Task]:
+        """List draft tasks for a product."""
+        stmt = (
+            select(Task)
+            .where(Task.product_id == product_id, Task.is_draft == True)  # noqa: E712
+            .order_by(Task.created_at.desc())
+        )
+        result = await self.repo.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def approve_task(self, task_id: UUID, approver_id: UUID) -> Task:
+        """Approve a draft task, making it a real assignable task."""
+        task = await self.get_or_404(task_id)
+        return await self.repo.update(task, {
+            "is_draft": False,
+            "approved_by": approver_id,
+            "approved_at": datetime.now(timezone.utc),
+        })
+
+    async def bulk_approve_tasks(
+        self, task_ids: list[UUID], approver_id: UUID
+    ) -> dict:
+        """Approve multiple draft tasks."""
+        now = datetime.now(timezone.utc)
+        approved = []
+        for tid in task_ids:
+            task = await self.get_or_404(tid)
+            await self.repo.update(task, {
+                "is_draft": False,
+                "approved_by": approver_id,
+                "approved_at": now,
+            })
+            approved.append(tid)
+        return {"approved_count": len(approved), "task_ids": approved}
+
+    async def reject_task(self, task_id: UUID) -> None:
+        """Reject (delete) a draft task."""
+        task = await self.get_or_404(task_id)
+        await self.repo.delete(task)
+
+    async def bulk_reject_tasks(self, task_ids: list[UUID]) -> None:
+        """Reject (delete) multiple draft tasks."""
+        stmt = sa_delete(Task).where(Task.id.in_(task_ids))
+        await self.repo.session.execute(stmt)
 
     async def create_task(self, data: TaskCreate) -> Task:
         """Create a new task."""

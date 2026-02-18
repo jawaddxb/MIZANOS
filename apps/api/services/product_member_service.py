@@ -6,6 +6,7 @@ from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from apps.api.models.enums import (
     REQUIRED_TEAM_COMPOSITION,
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 MEMBER_ROLE_LABELS = {
     ProductMemberRole.PM: "Project Manager",
     ProductMemberRole.MARKETING: "Marketing",
-    ProductMemberRole.SENIOR_MANAGEMENT: "Senior Management",
+    ProductMemberRole.BUSINESS_OWNER: "Business Owner",
     ProductMemberRole.AI_ENGINEER: "AI Engineer",
 }
 
@@ -37,6 +38,7 @@ class ProductMemberService:
     async def get_members(self, product_id: UUID) -> list[ProductMember]:
         stmt = (
             select(ProductMember)
+            .options(selectinload(ProductMember.profile))
             .where(ProductMember.product_id == product_id)
             .order_by(ProductMember.created_at.desc())
         )
@@ -69,7 +71,16 @@ class ProductMemberService:
         )
         self.session.add(member)
         await self.session.flush()
-        await self.session.refresh(member)
+        await self.session.refresh(member, attribute_names=["id", "created_at"])
+
+        # Reload with profile relationship
+        stmt = (
+            select(ProductMember)
+            .options(selectinload(ProductMember.profile))
+            .where(ProductMember.id == member.id)
+        )
+        result = await self.session.execute(stmt)
+        member = result.scalar_one()
 
         await self._notify_assignment(profile, product, role)
 
@@ -119,13 +130,23 @@ class ProductMemberService:
 
     # ---- private helpers ----
 
-    async def _check_manage_permission(self, actor: dict) -> None:
-        user_id = actor["id"]
+    async def _check_manage_permission(self, actor) -> None:
+        user_id = actor.id if hasattr(actor, "id") else actor["id"]
+        roles: set[str] = set()
+
+        # Check profile's primary role
+        profile_stmt = select(Profile.role).where(Profile.user_id == user_id)
+        profile_result = await self.session.execute(profile_stmt)
+        primary_role = profile_result.scalar_one_or_none()
+        if primary_role:
+            roles.add(primary_role)
+
+        # Check additional roles from user_roles table
         stmt = select(UserRole.role).where(UserRole.user_id == user_id)
         result = await self.session.execute(stmt)
-        roles = {r for r in result.scalars().all()}
+        roles.update(result.scalars().all())
 
-        allowed = {"superadmin", "admin", "pm"}
+        allowed = {"business_owner", "superadmin", "admin", "pm"}
         if not roles & allowed:
             raise forbidden("Only admins or PMs can manage product members")
 

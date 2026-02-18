@@ -9,21 +9,19 @@ import { getAvatarUrl } from "@/lib/utils/avatar";
 import { Shield } from "lucide-react";
 import { UserRolesDialog } from "./UserRolesDialog";
 import { useAuth } from "@/contexts/AuthContext";
-import type { Profile } from "@/lib/types/user";
+import { ROLE_CONFIG } from "@/lib/constants/roles";
+import type { Profile, UserRole } from "@/lib/types";
+import type { AppRole } from "@/lib/types/enums";
 import type { EvaluationSummary } from "@/lib/types/evaluation";
 
 interface TeamMemberRowProps {
   profile: Profile;
   evaluationSummary?: EvaluationSummary;
+  additionalRoles?: UserRole[];
 }
 
-const roleLabels: Record<string, string> = {
-  superadmin: "Super Admin",
-  engineer: "AI Engineer",
-  pm: "Project Manager",
-  marketing: "Marketing",
-  bizdev: "Business Development",
-  admin: "Senior Management",
+const roleLabel = (role: string | null): string => {
+  return ROLE_CONFIG[role as AppRole]?.label ?? role ?? "Unknown";
 };
 
 const availabilityConfig = {
@@ -38,7 +36,7 @@ function canManageRole(actorRole: string | undefined, targetRole: string | null)
   return false;
 }
 
-export function TeamMemberRow({ profile, evaluationSummary }: TeamMemberRowProps) {
+export function TeamMemberRow({ profile, evaluationSummary, additionalRoles = [] }: TeamMemberRowProps) {
   const [rolesOpen, setRolesOpen] = useState(false);
   const { user } = useAuth();
   const isSuspended = profile.status === "suspended";
@@ -78,8 +76,8 @@ export function TeamMemberRow({ profile, evaluationSummary }: TeamMemberRowProps
           />
         </div>
 
-        <div className="flex-1 min-w-0 flex items-center gap-4">
-          <div className="min-w-[160px]">
+        <div className="flex-1 min-w-0 grid grid-cols-[160px_120px_150px_80px_90px_40px_1fr_auto] items-center gap-4">
+          <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <span className="text-sm font-medium text-foreground truncate">
                 {profile.full_name ?? "Unknown"}
@@ -92,40 +90,55 @@ export function TeamMemberRow({ profile, evaluationSummary }: TeamMemberRowProps
             </div>
           </div>
 
-          <span className="text-xs text-muted-foreground min-w-[120px]">
-            {roleLabels[profile.role ?? ""] ?? profile.role}
+          <span className="text-xs text-muted-foreground truncate">
+            {roleLabel(profile.role)}
           </span>
 
-          <span className="text-xs text-muted-foreground min-w-[80px]">
+          <div className="flex gap-1 min-w-0 overflow-hidden">
+            {additionalRoles.length > 0 ? (
+              <>
+                {additionalRoles.slice(0, 2).map((ur) => (
+                  <Badge key={ur.id} variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+                    {ROLE_CONFIG[ur.role as AppRole]?.label ?? ur.role}
+                  </Badge>
+                ))}
+                {additionalRoles.length > 2 && (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+                    +{additionalRoles.length - 2}
+                  </Badge>
+                )}
+              </>
+            ) : (
+              <span className="text-xs text-muted-foreground/50">—</span>
+            )}
+          </div>
+
+          <span className="text-xs text-muted-foreground">
             {availability.label}
           </span>
 
-          <span className="text-xs text-muted-foreground min-w-[80px]">
+          <span className="text-xs text-muted-foreground">
             {profile.current_projects ?? 0}/{profile.max_projects ?? 3} projects
           </span>
 
-          {evaluationSummary && (
-            <span className="text-xs font-medium tabular-nums min-w-[40px]">
-              {evaluationSummary.overall_score.toFixed(1)}
-            </span>
-          )}
+          <span className="text-xs font-medium tabular-nums">
+            {evaluationSummary ? evaluationSummary.overall_score.toFixed(1) : ""}
+          </span>
 
-          {profile.skills && profile.skills.length > 0 && (
-            <div className="flex gap-1 flex-1 min-w-0 overflow-hidden">
-              {profile.skills.slice(0, 3).map((skill) => (
-                <Badge key={skill} variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
-                  {skill}
-                </Badge>
-              ))}
-              {profile.skills.length > 3 && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
-                  +{profile.skills.length - 3}
-                </Badge>
-              )}
-            </div>
-          )}
+          <div className="flex gap-1 min-w-0 overflow-hidden">
+            {profile.skills?.slice(0, 3).map((skill) => (
+              <Badge key={skill} variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
+                {skill}
+              </Badge>
+            ))}
+            {(profile.skills?.length ?? 0) > 3 && (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+                +{(profile.skills?.length ?? 0) - 3}
+              </Badge>
+            )}
+          </div>
 
-          {showRoleManagement && (
+          {showRoleManagement ? (
             <button
               onClick={(e) => {
                 e.preventDefault();
@@ -137,6 +150,8 @@ export function TeamMemberRow({ profile, evaluationSummary }: TeamMemberRowProps
               <Shield className="h-3 w-3" />
               Roles
             </button>
+          ) : (
+            <span />
           )}
         </div>
       </Link>

@@ -25,39 +25,14 @@ export function TeamCapacityOverview({ profiles }: TeamCapacityOverviewProps) {
   }, [profiles]);
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <StatCard
-        icon={Users}
-        label="Total Members"
-        value={profiles.length}
-        color="text-foreground"
-      />
-      <StatCard
-        icon={UserCheck}
-        label="Available"
-        value={stats.available}
-        color="text-status-healthy"
-      />
-      <StatCard
-        icon={Clock}
-        label="Busy"
-        value={stats.busy}
-        color="text-status-warning"
-      />
-      <StatCard
-        icon={UserX}
-        label="Unavailable"
-        value={stats.unavailable}
-        color="text-status-critical"
-      />
-      <div className="col-span-2 md:col-span-4 rounded-lg border bg-card p-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium">Team Utilization</span>
-          <span className="text-sm text-muted-foreground">
-            {stats.usedCapacity}/{stats.totalCapacity} project slots ({stats.avgUtilization}%)
-          </span>
-        </div>
-        <div className="h-2 bg-secondary rounded-full overflow-hidden">
+    <div className="flex items-center gap-3 flex-wrap">
+      <StatChip icon={Users} label="Total Members" value={profiles.length} color="text-foreground" />
+      <StatChip icon={UserCheck} label="Available" value={stats.available} color="text-status-healthy" />
+      <StatChip icon={Clock} label="Busy" value={stats.busy} color="text-status-warning" />
+      <StatChip icon={UserX} label="Unavailable" value={stats.unavailable} color="text-status-critical" />
+      <div className="flex items-center gap-2 rounded-md border bg-card px-3 py-1.5 text-sm">
+        <span className="text-muted-foreground">Utilization</span>
+        <div className="h-1.5 w-24 bg-secondary rounded-full overflow-hidden">
           <div
             className={cn(
               "h-full rounded-full transition-all",
@@ -70,26 +45,28 @@ export function TeamCapacityOverview({ profiles }: TeamCapacityOverviewProps) {
             style={{ width: `${Math.min(100, stats.avgUtilization)}%` }}
           />
         </div>
+        <span className="font-medium">{stats.avgUtilization}%</span>
+        <span className="text-muted-foreground text-xs">
+          ({stats.usedCapacity}/{stats.totalCapacity})
+        </span>
       </div>
     </div>
   );
 }
 
-interface StatCardProps {
+interface StatChipProps {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: number;
   color: string;
 }
 
-function StatCard({ icon: Icon, label, value, color }: StatCardProps) {
+function StatChip({ icon: Icon, label, value, color }: StatChipProps) {
   return (
-    <div className="rounded-lg border bg-card p-4 flex items-center gap-3">
-      <Icon className={cn("h-5 w-5", color)} />
-      <div>
-        <p className="text-2xl font-semibold">{value}</p>
-        <p className="text-xs text-muted-foreground">{label}</p>
-      </div>
+    <div className="flex items-center gap-1.5 rounded-md border bg-card px-3 py-1.5 text-sm">
+      <Icon className={cn("h-3.5 w-3.5", color)} />
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium">{value}</span>
     </div>
   );
 }

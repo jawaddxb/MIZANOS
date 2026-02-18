@@ -68,10 +68,19 @@ class TeamService:
         return list(result.scalars().all())
 
     async def get_user_roles(self, user_id: str) -> list[str]:
-        """Get all roles for a user."""
+        """Get all roles for a user (primary profile role + additional roles)."""
+        roles: list[str] = []
+        profile_stmt = select(Profile.role).where(Profile.user_id == user_id)
+        profile_result = await self.session.execute(profile_stmt)
+        primary_role = profile_result.scalar_one_or_none()
+        if primary_role:
+            roles.append(primary_role)
         stmt = select(UserRole.role).where(UserRole.user_id == user_id)
         result = await self.session.execute(stmt)
-        return list(result.scalars().all())
+        for r in result.scalars().all():
+            if r not in roles:
+                roles.append(r)
+        return roles
 
     async def create_national_holiday(
         self, data: NationalHolidayCreate,

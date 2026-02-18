@@ -166,7 +166,7 @@ export function ActionItems({ metrics: metricsProp }: ActionItemsProps) {
               return (
                 <Link
                   key={item.id}
-                  href={`/products/${item.productId}`}
+                  href={`/projects/${item.productId}`}
                   className={cn("block p-2.5 rounded-lg border transition-all duration-200 group", styles.border, styles.bg)}
                   style={{ opacity: 0, animation: `fade-in 0.2s ease-out ${index * 50}ms forwards` }}
                 >

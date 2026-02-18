@@ -11,7 +11,9 @@ import { UserRolesDialog } from "./UserRolesDialog";
 import { useUpdateUserStatus } from "@/hooks/queries/useUserManagement";
 import { useResendInvite } from "@/hooks/mutations/useOrgChartMutations";
 import { useAuth } from "@/contexts/AuthContext";
+import { ROLE_CONFIG } from "@/lib/constants/roles";
 import type { Profile } from "@/lib/types/user";
+import type { AppRole } from "@/lib/types/enums";
 import type { EvaluationSummary } from "@/lib/types/evaluation";
 
 interface TeamMemberCardProps {
@@ -20,13 +22,8 @@ interface TeamMemberCardProps {
   compact?: boolean;
 }
 
-const roleLabels: Record<string, string> = {
-  superadmin: "Super Admin",
-  engineer: "AI Engineer",
-  pm: "Project Manager",
-  marketing: "Marketing",
-  bizdev: "Business Development",
-  admin: "Senior Management",
+const roleLabel = (role: string | null): string => {
+  return ROLE_CONFIG[role as AppRole]?.label ?? role ?? "Unknown";
 };
 
 function canManageUser(actorRole: string | undefined, targetRole: string | null): boolean {
@@ -99,7 +96,7 @@ export function TeamMemberCard({ profile, evaluationSummary, compact }: TeamMemb
               <p className="text-xs text-muted-foreground truncate">{profile.email}</p>
             )}
             <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-              {roleLabels[profile.role ?? ""] ?? profile.role}
+              {roleLabel(profile.role)}
             </Badge>
           </div>
         </div>
@@ -158,7 +155,7 @@ export function TeamMemberCard({ profile, evaluationSummary, compact }: TeamMemb
 
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                  {roleLabels[profile.role ?? ""] ?? profile.role}
+                  {roleLabel(profile.role)}
                 </Badge>
                 <StatusBadge status={profile.status} />
               </div>

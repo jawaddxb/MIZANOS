@@ -40,7 +40,7 @@ function ProductRow({ product }: ProductRowProps) {
 
   return (
     <Link
-      href={`/products/${product.id}`}
+      href={`/projects/${product.id}`}
       className={cn(
         "flex items-center gap-3 px-4 py-2.5 text-sm",
         "transition-colors hover:bg-secondary/30",

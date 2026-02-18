@@ -166,7 +166,7 @@ function ProjectRow({ project, index }: { project: Product; index: number }) {
 
   return (
     <Link
-      href={`/products/${project.id}`}
+      href={`/projects/${project.id}`}
       className="block p-2.5 rounded-lg border hover:border-border transition-all duration-200 group hover:bg-accent/30"
       style={{
         opacity: 0,

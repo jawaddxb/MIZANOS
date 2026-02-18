@@ -18,6 +18,7 @@ export type { Profile, UserRole, TeamHoliday, NationalHoliday } from "./user";
 
 export type {
   Product,
+  ProfileSummary,
   ProductMember,
   ProductMemberRole,
   ProductEnvironment,
@@ -142,3 +143,5 @@ export type {
 export type { OrgChartNode, UpdateReportingLineRequest } from "./org-chart";
 
 export type { GitHubPat, GitHubPatVerifyResult } from "./github-pat";
+
+export type { Job, JobStatus, JobCreateResponse } from "./job";

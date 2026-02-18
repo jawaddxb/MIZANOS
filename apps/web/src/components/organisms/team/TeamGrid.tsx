@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, Plus, Users, UserCheck, UserX, Briefcase, Crown, Megaphone, LayoutGrid, List } from "lucide-react";
+import { Search, Plus, Users, UserX, LayoutGrid, List } from "lucide-react";
 import { Button } from "@/components/molecules/buttons/Button";
 import { PageHeader } from "@/components/molecules/layout/PageHeader";
 import { Skeleton } from "@/components/atoms/display/Skeleton";
@@ -12,16 +12,17 @@ import { AddTeamMemberDialog } from "./AddTeamMemberDialog";
 import { SkillFilter } from "@/components/molecules/filters/SkillFilter";
 import { useProfiles } from "@/hooks/queries/useProfiles";
 import { useEvaluationSummaries } from "@/hooks/queries/useEvaluations";
-import type { Profile } from "@/lib/types/user";
+import { useAllUserRoles } from "@/hooks/queries/useUserRoles";
+import type { UserRole } from "@/lib/types";
 import type { EvaluationSummary } from "@/lib/types/evaluation";
 
-const ROLE_TABS = [
-  { id: "all", label: "All Team", icon: Users },
-  { id: "engineer", label: "AI Engineers", icon: Users },
-  { id: "pm", label: "Project Managers", icon: UserCheck },
-  { id: "marketing", label: "Marketing", icon: Megaphone },
-  { id: "bizdev", label: "Business Development", icon: Briefcase },
-  { id: "admin", label: "Senior Management", icon: Crown },
+const ROLE_CHIPS = [
+  { value: "all", label: "All" },
+  { value: "admin", label: "Leadership" },
+  { value: "pm", label: "PMs" },
+  { value: "bizdev", label: "Business Development" },
+  { value: "engineer", label: "Engineers" },
+  { value: "marketing", label: "Marketing" },
 ] as const;
 
 const SORT_OPTIONS = [
@@ -32,9 +33,10 @@ const SORT_OPTIONS = [
 export function TeamGrid() {
   const { data: profiles = [], isLoading } = useProfiles();
   const { data: summaries = [] } = useEvaluationSummaries();
+  const { data: allUserRoles = [] } = useAllUserRoles();
   const [searchQuery, setSearchQuery] = useState("");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
-  const [activeTab, setActiveTab] = useState("all");
+  const [roleFilter, setRoleFilter] = useState("all");
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("name");
@@ -46,12 +48,22 @@ export function TeamGrid() {
     return map;
   }, [summaries]);
 
+  const rolesMap = useMemo(() => {
+    const map = new Map<string, UserRole[]>();
+    allUserRoles.forEach((r) => {
+      const list = map.get(r.user_id) ?? [];
+      list.push(r);
+      map.set(r.user_id, list);
+    });
+    return map;
+  }, [allUserRoles]);
+
   const roleCounts = useMemo(() => {
     const counts: Record<string, number> = { all: profiles.length };
     profiles.forEach((p) => {
       const role = p.role ?? "unknown";
       counts[role] = (counts[role] ?? 0) + 1;
-      if (role === "superadmin") {
+      if (role === "superadmin" || role === "business_owner") {
         counts["admin"] = (counts["admin"] ?? 0) + 1;
       }
     });
@@ -67,9 +79,9 @@ export function TeamGrid() {
   const filteredTeam = useMemo(() => {
     const filtered = profiles.filter((member) => {
       const matchesRole =
-        activeTab === "all" ||
-        member.role === activeTab ||
-        (activeTab === "admin" && member.role === "superadmin");
+        roleFilter === "all" ||
+        member.role === roleFilter ||
+        (roleFilter === "admin" && (member.role === "superadmin" || member.role === "business_owner"));
       const matchesSearch =
         !searchQuery ||
         member.full_name?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -90,11 +102,7 @@ export function TeamGrid() {
     }
 
     return filtered;
-  }, [profiles, activeTab, searchQuery, availabilityFilter, selectedSkills, sortBy, summaryMap]);
-
-  const availableCount = filteredTeam.filter((m) => m.availability === "available").length;
-  const busyCount = filteredTeam.filter((m) => m.availability === "busy").length;
-  const unavailableCount = filteredTeam.filter((m) => m.availability === "unavailable").length;
+  }, [profiles, roleFilter, searchQuery, availabilityFilter, selectedSkills, sortBy, summaryMap]);
 
   return (
     <div className="space-y-6">
@@ -113,33 +121,23 @@ export function TeamGrid() {
         <TeamCapacityOverview profiles={profiles} />
       )}
 
-      <div className="flex gap-1 border-b overflow-x-auto">
-        {ROLE_TABS.map((tab) => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
-                activeTab === tab.id
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              {tab.label}
-              <span className="ml-1 text-xs bg-secondary px-1.5 py-0.5 rounded">
-                {roleCounts[tab.id] ?? 0}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="flex items-center gap-6 p-4 bg-card rounded-lg border">
-        <StatDot color="bg-status-healthy" label="Available" count={availableCount} />
-        <StatDot color="bg-status-warning" label="Busy" count={busyCount} />
-        <StatDot color="bg-status-critical" label="Unavailable" count={unavailableCount} />
+      <div className="flex items-center gap-2 flex-wrap">
+        {ROLE_CHIPS.map((chip) => (
+          <button
+            key={chip.value}
+            onClick={() => setRoleFilter(chip.value)}
+            className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors ${
+              roleFilter === chip.value
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-card text-muted-foreground hover:text-foreground hover:border-foreground/30"
+            }`}
+          >
+            {chip.label}
+            <span className={`text-xs ${roleFilter === chip.value ? "text-primary-foreground/70" : "text-muted-foreground/60"}`}>
+              {roleCounts[chip.value] ?? 0}
+            </span>
+          </button>
+        ))}
       </div>
 
       <div className="flex items-center gap-3 flex-wrap">
@@ -157,7 +155,7 @@ export function TeamGrid() {
           onChange={(e) => setAvailabilityFilter(e.target.value)}
           className="h-9 rounded-md border bg-background px-3 text-sm w-40"
         >
-          <option value="all">All</option>
+          <option value="all">All Availability</option>
           <option value="available">Available</option>
           <option value="busy">Busy</option>
           <option value="unavailable">Unavailable</option>
@@ -216,11 +214,25 @@ export function TeamGrid() {
         </div>
       ) : viewMode === "list" ? (
         <div className="rounded-lg border bg-card">
+          <div className="flex items-center gap-4 px-4 py-2 border-b border-border bg-muted/50">
+            <div className="shrink-0 w-8" />
+            <div className="flex-1 min-w-0 grid grid-cols-[160px_120px_150px_80px_90px_40px_1fr_auto] items-center gap-4">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Name</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Primary Role</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Additional Roles</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Projects</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Score</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Skills</span>
+              <span className="w-[52px]" />
+            </div>
+          </div>
           {filteredTeam.map((member) => (
             <TeamMemberRow
               key={member.id}
               profile={member}
               evaluationSummary={summaryMap.get(member.id)}
+              additionalRoles={(rolesMap.get(member.user_id) ?? []).filter(r => r.role !== member.role)}
             />
           ))}
         </div>
@@ -241,12 +253,3 @@ export function TeamGrid() {
   );
 }
 
-function StatDot({ color, label, count }: { color: string; label: string; count: number }) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className={`h-2 w-2 rounded-full ${color}`} />
-      <span className="text-sm text-muted-foreground">{label}:</span>
-      <span className="text-sm font-medium">{count}</span>
-    </div>
-  );
-}

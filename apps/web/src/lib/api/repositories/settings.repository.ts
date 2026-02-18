@@ -225,6 +225,13 @@ export class SettingsRepository {
     return response.data;
   }
 
+  async getAllUserRoles(): Promise<UserRole[]> {
+    const response = await this.client.get<UserRole[]>(
+      `${this.basePath}/user-roles`,
+    );
+    return response.data;
+  }
+
   async getUserRoles(userId: string): Promise<UserRole[]> {
     const response = await this.client.get<UserRole[]>(
       `${this.basePath}/users/${userId}/roles`,

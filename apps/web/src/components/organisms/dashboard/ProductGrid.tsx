@@ -32,7 +32,7 @@ export function ProductGrid({ products }: ProductGridProps) {
       {products.map((product) => (
         <Link
           key={product.id}
-          href={`/products/${product.id}`}
+          href={`/projects/${product.id}`}
           className={cn(
             "group block relative overflow-hidden bg-card rounded-lg border border-l-[3px] p-4",
             "transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-0.5",

@@ -37,6 +37,15 @@ class Task(Base, UUIDMixin, TimestampMixin):
     claude_code_prompt: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     domain_group: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     phase: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    is_draft: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false", nullable=False
+    )
+    approved_by: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("profiles.id"), nullable=True
+    )
+    approved_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
 
 class TaskTemplateGroup(Base, UUIDMixin, TimestampMixin):

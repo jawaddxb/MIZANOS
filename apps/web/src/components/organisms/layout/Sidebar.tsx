@@ -6,6 +6,7 @@ import { Button } from "@/components/molecules/buttons/Button";
 import { MizanLogo } from "@/components/atoms/brand/MizanLogo";
 import { SidebarNav } from "./SidebarNav";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
 import {
   Tooltip,
   TooltipContent,
@@ -31,6 +32,7 @@ interface SidebarProps {
 export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { primaryRole } = useRoleVisibility();
 
   const handleSignOut = async () => {
     await logout();
@@ -108,11 +110,22 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         userName={user?.full_name}
         userEmail={user?.email}
         avatarUrl={user?.avatar_url}
+        primaryRole={primaryRole}
         onSignOut={handleSignOut}
       />
     </aside>
   );
 }
+
+const ROLE_DISPLAY_LABELS: Record<string, string> = {
+  superadmin: "Super Admin",
+  admin: "Admin",
+  pm: "Project Manager",
+  marketing: "Marketing",
+  bizdev: "Business Dev",
+  engineer: "Engineer",
+  product_manager: "Product Manager",
+};
 
 interface UserSectionProps {
   collapsed: boolean;
@@ -120,6 +133,7 @@ interface UserSectionProps {
   userName?: string | null;
   userEmail?: string | null;
   avatarUrl?: string | null;
+  primaryRole: string | null;
   onSignOut: () => void;
 }
 
@@ -129,6 +143,7 @@ function UserSection({
   userName,
   userEmail,
   avatarUrl,
+  primaryRole,
   onSignOut,
 }: UserSectionProps) {
   const fullAvatarUrl = getAvatarUrl(avatarUrl);
@@ -160,6 +175,11 @@ function UserSection({
               {userName && userEmail && (
                 <p className="text-xs text-muted-foreground">{userEmail}</p>
               )}
+              {primaryRole && (
+                <p className="text-xs text-primary/70 font-medium">
+                  {ROLE_DISPLAY_LABELS[primaryRole] ?? primaryRole}
+                </p>
+              )}
             </TooltipContent>
           </Tooltip>
         ) : (
@@ -172,6 +192,11 @@ function UserSection({
               <p className="text-[11px] text-muted-foreground truncate">
                 {userEmail}
               </p>
+              {primaryRole && (
+                <p className="text-[10px] text-primary/70 font-medium truncate">
+                  {ROLE_DISPLAY_LABELS[primaryRole] ?? primaryRole}
+                </p>
+              )}
             </div>
             <Button
               variant="ghost"

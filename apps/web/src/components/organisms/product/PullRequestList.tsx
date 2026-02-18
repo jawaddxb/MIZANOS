@@ -68,7 +68,8 @@ export function PullRequestList({
   repositoryUrl,
 }: PullRequestListProps) {
   const { data: githubInfo, isLoading } = useGitHubInfo(repositoryUrl);
-  const pullRequests = githubInfo?.pullRequests ?? [];
+  // TODO: Pull requests are not yet returned by the repo-info endpoint
+  const pullRequests: GitHubPullRequest[] = [];
 
   if (isLoading) {
     return (

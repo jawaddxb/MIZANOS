@@ -23,8 +23,9 @@ export function useGeneratePortTasks(productId: string) {
       portGeneratorRepository.generateTasks(productId, sourcePath),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["tasks", productId] });
+      queryClient.invalidateQueries({ queryKey: ["tasks", productId, "drafts"] });
       toast.success(
-        `Generated ${data.tasks_created} tasks across ${data.domains.length} domains`
+        `Generated ${data.tasks_created} draft tasks — review in Drafts tab`
       );
     },
     onError: (error: Error) => {
