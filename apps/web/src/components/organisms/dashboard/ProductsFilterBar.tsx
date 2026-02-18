@@ -10,7 +10,15 @@ import {
 } from "@/components/atoms/inputs/BaseSelect";
 import { Button } from "@/components/molecules/buttons/Button";
 import { cn } from "@/lib/utils/cn";
+import type { ProfileSummary } from "@/lib/types";
 import { Search, Filter, X } from "lucide-react";
+
+interface RoleFilterConfig {
+  value: string;
+  onChange: (v: string) => void;
+  label: string;
+  profiles: ProfileSummary[];
+}
 
 interface ProductsFilterBarProps {
   searchQuery: string;
@@ -22,6 +30,7 @@ interface ProductsFilterBarProps {
   stageFilter: string;
   onStageChange: (v: string) => void;
   stages: string[];
+  roleFilters: RoleFilterConfig[];
   hasActiveFilters: boolean;
   onClearFilters: () => void;
 }
@@ -36,6 +45,7 @@ export function ProductsFilterBar({
   stageFilter,
   onStageChange,
   stages,
+  roleFilters,
   hasActiveFilters,
   onClearFilters,
 }: ProductsFilterBarProps) {
@@ -84,10 +94,10 @@ export function ProductsFilterBar({
             pillarFilter !== "all" && "border-primary/30",
           )}
         >
-          <SelectValue placeholder="Pillar" />
+          <SelectValue placeholder="Vertical" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All Pillars</SelectItem>
+          <SelectItem value="all">All Verticals</SelectItem>
           <SelectItem value="business">Business</SelectItem>
           <SelectItem value="marketing">Marketing</SelectItem>
           <SelectItem value="development">Development</SelectItem>
@@ -112,6 +122,26 @@ export function ProductsFilterBar({
           ))}
         </SelectContent>
       </Select>
+      {roleFilters.map((rf) => (
+        <Select key={rf.label} value={rf.value} onValueChange={rf.onChange}>
+          <SelectTrigger
+            className={cn(
+              "w-[150px] shrink-0 bg-card",
+              rf.value !== "all" && "border-primary/30",
+            )}
+          >
+            <SelectValue placeholder={rf.label} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All {rf.label}s</SelectItem>
+            {rf.profiles.map((p) => (
+              <SelectItem key={p.id} value={p.id}>
+                {p.full_name ?? p.email ?? "Unknown"}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ))}
       {hasActiveFilters && (
         <Button
           variant="ghost"

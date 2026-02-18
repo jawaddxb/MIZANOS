@@ -10,7 +10,7 @@ interface ProductTableProps {
 const COLUMNS = [
   { label: "Project", className: "flex-1" },
   { label: "Status", className: "w-[90px]" },
-  { label: "Pillar", className: "w-[100px]" },
+  { label: "Vertical", className: "w-[100px]" },
   { label: "Stage", className: "w-[90px]" },
   { label: "Progress", className: "w-[100px]" },
   { label: "Health", className: "w-[50px] text-right" },

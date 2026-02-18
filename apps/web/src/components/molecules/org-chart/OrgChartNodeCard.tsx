@@ -4,6 +4,7 @@ import { useRef, useState, useCallback, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/display/Avatar";
 import { BaseButton } from "@/components/atoms/buttons/BaseButton";
 import { MapPin, Send } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/atoms/feedback/Tooltip";
 import { cn } from "@/lib/utils/cn";
 import { getAvatarUrl } from "@/lib/utils/avatar";
 import type { OrgChartNode } from "@/lib/types";
@@ -131,7 +132,7 @@ export function OrgChartNodeCard({
       {...pointerProps}
       style={style}
       className={cn(
-        "inline-flex items-center gap-2 rounded-lg border bg-card shadow-sm max-w-[200px] px-2.5 py-2 hover:shadow-md transition-shadow overflow-hidden select-none",
+        "inline-flex items-center gap-2.5 rounded-lg border bg-card shadow-sm w-[210px] px-3 py-2.5 hover:shadow-md transition-shadow overflow-hidden select-none",
         canDrag ? "cursor-grab" : "cursor-default",
         dragging && "cursor-grabbing shadow-lg opacity-90",
       )}
@@ -146,27 +147,21 @@ export function OrgChartNodeCard({
         </AvatarFallback>
       </Avatar>
 
-      <div className="min-w-0 flex-1 text-left">
+      <div className="flex-1 min-w-0 text-left">
         <div className="flex items-center gap-1">
-          <p className="text-xs font-semibold text-foreground truncate flex-1">
+          <p className="text-xs font-semibold text-foreground truncate">
             {node.full_name ?? "Unnamed"}
           </p>
-          {isPending && canResendInvite && (
-            <BaseButton
-              variant="ghost"
-              size="icon"
-              className="h-4 w-4 shrink-0"
-              onClick={(e) => {
-                e.stopPropagation();
-                onResendInvite(node.id);
-              }}
-            >
-              <Send className="h-2.5 w-2.5" />
-            </BaseButton>
+          {node.office_location && (
+            <div className="flex items-center gap-0.5 shrink-0">
+              <MapPin className="h-2.5 w-2.5 text-muted-foreground" />
+              <span className="text-[10px] text-muted-foreground">
+                {node.office_location}
+              </span>
+            </div>
           )}
         </div>
-
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 mt-0.5">
           {node.roles.slice(0, 1).map((role) => (
             <span
               key={role}
@@ -180,11 +175,23 @@ export function OrgChartNodeCard({
               Pending
             </span>
           )}
-          {node.office_location && (
-            <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground">
-              <MapPin className="h-2 w-2 shrink-0" />
-              <span className="truncate max-w-[50px]">{node.office_location}</span>
-            </span>
+          {isPending && canResendInvite && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <BaseButton
+                  variant="ghost"
+                  size="icon"
+                  className="h-3 w-3 shrink-0 p-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onResendInvite(node.id);
+                  }}
+                >
+                  <Send className="h-1.5 w-1.5" />
+                </BaseButton>
+              </TooltipTrigger>
+              <TooltipContent side="top">Resend invitation</TooltipContent>
+            </Tooltip>
           )}
         </div>
       </div>

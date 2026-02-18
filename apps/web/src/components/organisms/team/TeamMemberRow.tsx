@@ -94,20 +94,13 @@ export function TeamMemberRow({ profile, evaluationSummary, additionalRoles = []
             {roleLabel(profile.role)}
           </span>
 
-          <div className="flex gap-1 min-w-0 overflow-hidden">
+          <div className="flex flex-wrap gap-1 min-w-0">
             {additionalRoles.length > 0 ? (
-              <>
-                {additionalRoles.slice(0, 2).map((ur) => (
-                  <Badge key={ur.id} variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
-                    {ROLE_CONFIG[ur.role as AppRole]?.label ?? ur.role}
-                  </Badge>
-                ))}
-                {additionalRoles.length > 2 && (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
-                    +{additionalRoles.length - 2}
-                  </Badge>
-                )}
-              </>
+              additionalRoles.map((ur) => (
+                <Badge key={ur.id} variant="outline" className="text-[10px] px-1.5 py-0">
+                  {ROLE_CONFIG[ur.role as AppRole]?.label ?? ur.role}
+                </Badge>
+              ))
             ) : (
               <span className="text-xs text-muted-foreground/50">—</span>
             )}

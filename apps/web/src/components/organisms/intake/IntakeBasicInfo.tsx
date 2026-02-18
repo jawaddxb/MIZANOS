@@ -67,8 +67,8 @@ export function IntakeBasicInfo({
           />
 
           <SelectField
-            label="Pillar *"
-            placeholder="Select pillar"
+            label="Business Vertical *"
+            placeholder="Select vertical"
             options={PILLAR_OPTIONS}
             value={pillar || undefined}
             onValueChange={(v) => onPillarChange(v as PillarType)}

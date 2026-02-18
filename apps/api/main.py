@@ -90,6 +90,8 @@ async def cors_http_exception_handler(
 
 # Register routers
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
+# product_members must come before products so /all-members isn't caught by /{product_id}
+app.include_router(product_members.router, prefix="/products", tags=["product-members"])
 app.include_router(products.router, prefix="/products", tags=["products"])
 app.include_router(tasks.router, prefix="/tasks", tags=["tasks"])
 app.include_router(qa.router, prefix="/qa", tags=["qa"])
@@ -112,7 +114,6 @@ app.include_router(transcription.router, prefix="/transcription", tags=["transcr
 app.include_router(system_documents.router, prefix="/system-documents", tags=["system-documents"])
 app.include_router(port_generator.router, prefix="/port-generator", tags=["port-generator"])
 app.include_router(repo_evaluator.router, prefix="/repo-evaluator", tags=["repo-evaluator"])
-app.include_router(product_members.router, prefix="/products", tags=["product-members"])
 app.include_router(deployment_checklist.router, prefix="/products", tags=["deployment-checklist"])
 app.include_router(stakeholders.router, prefix="/products", tags=["stakeholders"])
 app.include_router(integrations.router, prefix="/products", tags=["integrations"])

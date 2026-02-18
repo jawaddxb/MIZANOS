@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { TeamMemberCard } from "./TeamMemberCard";
-import { SearchableSelect } from "@/components/molecules/forms/SearchableSelect";
+import { TeamMemberSelect } from "./TeamMemberSelect";
 import type { ProductMember, Profile } from "@/lib/types";
 
 interface TeamRoleSectionProps {
@@ -13,7 +13,6 @@ interface TeamRoleSectionProps {
   allowMultiple: boolean;
   canManage: boolean;
   profiles: Profile[];
-  allMemberProfileIds: Set<string>;
   showPendingProfiles: boolean;
   onAdd: (profileId: string, role: string) => void;
   onRemove: (memberId: string) => void;
@@ -28,27 +27,19 @@ export function TeamRoleSection({
   allowMultiple,
   canManage,
   profiles,
-  allMemberProfileIds,
   showPendingProfiles,
   onAdd,
   onRemove,
-  isAdding,
   isRemoving,
 }: TeamRoleSectionProps) {
   const [showAddMore, setShowAddMore] = useState(false);
   const hasMembers = members.length > 0;
   const canAddMore = allowMultiple || !hasMembers;
 
-  const profileOptions = profiles
-    .filter((p) => !allMemberProfileIds.has(p.id))
-    .filter((p) => showPendingProfiles || p.status !== "pending")
-    .map((p) => ({
-      value: p.id,
-      label:
-        p.status === "pending"
-          ? `${p.full_name || p.email || "Unknown"} (Pending Activation)`
-          : (p.full_name || p.email || "Unknown"),
-    }));
+  const excludeProfileIds = useMemo(
+    () => new Set(members.map((m) => m.profile_id)),
+    [members],
+  );
 
   const handleSelect = (profileId: string) => {
     if (!profileId) return;
@@ -86,12 +77,13 @@ export function TeamRoleSection({
       )}
 
       {canManage && canAddMore && !hasMembers && (
-        <SearchableSelect
-          options={profileOptions}
-          value=""
-          onValueChange={handleSelect}
+        <TeamMemberSelect
+          profiles={profiles}
+          productRole={role}
+          excludeProfileIds={excludeProfileIds}
+          showPendingProfiles={showPendingProfiles}
           placeholder={`Select ${label}...`}
-          emptyLabel="No available members"
+          onSelect={handleSelect}
         />
       )}
 
@@ -108,12 +100,13 @@ export function TeamRoleSection({
 
       {showAddMore && (
         <div className="mt-2">
-          <SearchableSelect
-            options={profileOptions}
-            value=""
-            onValueChange={handleSelect}
+          <TeamMemberSelect
+            profiles={profiles}
+            productRole={role}
+            excludeProfileIds={excludeProfileIds}
+            showPendingProfiles={showPendingProfiles}
             placeholder={`Select ${label}...`}
-            emptyLabel="No available members"
+            onSelect={handleSelect}
           />
         </div>
       )}

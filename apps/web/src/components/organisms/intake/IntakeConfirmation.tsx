@@ -126,7 +126,7 @@ export function IntakeConfirmation({
         <CardContent className="space-y-3">
           <SummaryRow label="Project Name">{projectName}</SummaryRow>
           {description && <SummaryRow label="Description">{description}</SummaryRow>}
-          <SummaryRow label="Pillar">
+          <SummaryRow label="Business Vertical">
             <Badge variant="outline">{pillarLabel}</Badge>
           </SummaryRow>
           <SummaryRow label="Source Type">

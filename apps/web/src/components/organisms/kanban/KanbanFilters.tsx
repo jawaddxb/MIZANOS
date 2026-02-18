@@ -20,7 +20,7 @@ const PRIORITY_OPTIONS = [
 ];
 
 const PILLAR_OPTIONS = [
-  { value: "all", label: "All Pillars" },
+  { value: "all", label: "All Verticals" },
   ...PILLAR_ORDER.map((p) => ({
     value: p,
     label: p.charAt(0).toUpperCase() + p.slice(1),
@@ -95,10 +95,10 @@ export function KanbanFilters({
         />
       </div>
 
-      {/* Pillar filter */}
+      {/* Vertical filter */}
       <div className="w-40">
         <SelectField
-          placeholder="Pillar"
+          placeholder="Vertical"
           options={PILLAR_OPTIONS}
           value={pillar}
           onValueChange={(v) => onPillarChange(v as PillarType | "all")}

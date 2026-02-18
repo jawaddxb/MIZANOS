@@ -186,8 +186,8 @@ export function EditTaskDialog({
 
           <div className="grid grid-cols-3 gap-4">
             <SelectField
-              label="Pillar"
-              placeholder="Select pillar"
+              label="Business Vertical"
+              placeholder="Select vertical"
               options={PILLAR_OPTIONS}
               value={currentPillar}
               onValueChange={(v) => setValue("pillar", v as PillarType)}

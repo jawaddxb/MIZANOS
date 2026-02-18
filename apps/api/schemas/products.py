@@ -11,7 +11,7 @@ class ProductBase(BaseSchema):
 
     name: str
     status: str | None = "intake"
-    stage: str | None = None
+    stage: str | None = "Intake"
     pillar: str | None = None
     progress: float | None = 0
     health_score: float | None = None
@@ -22,10 +22,7 @@ class ProductBase(BaseSchema):
 class ProductCreate(ProductBase):
     """Product creation schema."""
 
-    pm_id: UUID | None = None
-    engineer_id: UUID | None = None
-    business_owner_id: UUID | None = None
-    marketing_manager_id: UUID | None = None
+    pass
 
 
 class ProductUpdate(BaseSchema):
@@ -39,20 +36,12 @@ class ProductUpdate(BaseSchema):
     health_score: float | None = None
     repository_url: str | None = None
     source_type: str | None = None
-    pm_id: UUID | None = None
-    engineer_id: UUID | None = None
-    business_owner_id: UUID | None = None
-    marketing_manager_id: UUID | None = None
 
 
 class ProductResponse(ProductBase):
     """Product response."""
 
     id: UUID
-    pm_id: UUID | None = None
-    engineer_id: UUID | None = None
-    business_owner_id: UUID | None = None
-    marketing_manager_id: UUID | None = None
     lovable_url: str | None = None
     logo_url: str | None = None
     archived_at: datetime | None = None

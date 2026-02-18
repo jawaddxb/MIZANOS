@@ -4,6 +4,14 @@ import { useQuery } from "@tanstack/react-query";
 import { productsRepository } from "@/lib/api/repositories";
 import type { ProductMember, TeamReadiness } from "@/lib/types";
 
+export function useAllProductMembers() {
+  return useQuery({
+    queryKey: ["product-members", "all"],
+    queryFn: (): Promise<ProductMember[]> =>
+      productsRepository.getAllMembers(),
+  });
+}
+
 export function useProductMembers(productId: string) {
   return useQuery({
     queryKey: ["product-members", productId],

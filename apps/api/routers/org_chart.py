@@ -22,7 +22,7 @@ def get_service(db: DbSession) -> OrgChartService:
 
 
 def require_admin(user: CurrentUser) -> None:
-    if not user.has_any_role(AppRole.SUPERADMIN, AppRole.ADMIN):
+    if not user.has_any_role(AppRole.SUPERADMIN, AppRole.ADMIN, AppRole.OPERATIONS):
         raise forbidden("Only admins can modify reporting lines")
 
 

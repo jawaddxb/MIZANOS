@@ -129,7 +129,7 @@ export function TaskTemplateEditor({
 
           <div className="grid grid-cols-2 gap-3">
             <FormSelect
-              label="Pillar"
+              label="Business Vertical"
               value={pillar}
               onValueChange={setPillar}
               options={PILLARS}

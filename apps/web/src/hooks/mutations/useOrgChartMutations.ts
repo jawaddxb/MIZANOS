@@ -18,10 +18,11 @@ export function useUpdateReportingLine() {
     }) => orgChartRepository.updateReportingLine(profileId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["org-chart"] });
+      queryClient.invalidateQueries({ queryKey: ["profiles"] });
       toast.success("Reporting line updated");
     },
-    onError: () => {
-      toast.error("Failed to update reporting line");
+    onError: (e: Error) => {
+      toast.error(e.message || "Failed to update reporting line");
     },
   });
 }
@@ -36,8 +37,8 @@ export function useResendInvite() {
       queryClient.invalidateQueries({ queryKey: ["org-chart"] });
       toast.success("Invitation resent");
     },
-    onError: () => {
-      toast.error("Failed to resend invitation");
+    onError: (e: Error) => {
+      toast.error(e.message || "Failed to resend invitation");
     },
   });
 }

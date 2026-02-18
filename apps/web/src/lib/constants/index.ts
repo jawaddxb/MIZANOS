@@ -25,6 +25,8 @@ export {
 
 export { ROUTE_LABELS, capitalizeSegment } from "./breadcrumbs";
 
+export { PRODUCT_STAGES, type ProductStage } from "./stages";
+
 export {
   TASK_STATUS_DISPLAY,
   TASK_PRIORITY_COLORS,

@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { X, Plus } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Star } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/atoms/layout/Dialog";
-import { Badge } from "@/components/atoms/display/Badge";
+import { BaseCheckbox } from "@/components/atoms/inputs/BaseCheckbox";
 import { Button } from "@/components/molecules/buttons/Button";
-import { ConfirmActionDialog } from "@/components/molecules/feedback/ConfirmActionDialog";
 import { useUserRoles } from "@/hooks/queries/useUserRoles";
 import {
   useAssignRole,
@@ -20,16 +20,12 @@ import {
 import { APP_ROLES, ROLE_CONFIG } from "@/lib/constants/roles";
 import type { Profile } from "@/lib/types/user";
 import type { AppRole } from "@/lib/types/enums";
+import { toast } from "sonner";
 
 interface UserRolesDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   profile: Profile;
-}
-
-interface PendingAction {
-  type: "assign" | "remove" | "primary";
-  role: string;
 }
 
 export function UserRolesDialog({ open, onOpenChange, profile }: UserRolesDialogProps) {
@@ -38,129 +34,145 @@ export function UserRolesDialog({ open, onOpenChange, profile }: UserRolesDialog
   const removeRole = useRemoveRole();
   const updatePrimaryRole = useUpdatePrimaryRole();
 
-  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
-  const [addRoleValue, setAddRoleValue] = useState("");
+  const dbRoles = useMemo(() => {
+    const set = new Set<AppRole>();
+    if (profile.role) set.add(profile.role as AppRole);
+    for (const ur of userRoles) set.add(ur.role as AppRole);
+    return set;
+  }, [profile.role, userRoles]);
 
-  const existingRoleValues = [...userRoles.map((r) => r.role), profile.role].filter(Boolean);
-  const availableRoles = APP_ROLES.filter((r) => !existingRoleValues.includes(r));
-  const secondaryRoles = userRoles.filter(r => r.role !== profile.role);
+  const dbPrimary = (profile.role ?? "") as AppRole;
 
-  const isPending = assignRole.isPending || removeRole.isPending || updatePrimaryRole.isPending;
+  const [selected, setSelected] = useState<Set<AppRole>>(new Set(dbRoles));
+  const [primary, setPrimary] = useState<AppRole>(dbPrimary);
+  const [saving, setSaving] = useState(false);
 
-  const handleConfirm = () => {
-    if (!pendingAction) return;
+  useEffect(() => {
+    if (open) {
+      setSelected(new Set(dbRoles));
+      setPrimary(dbPrimary);
+    }
+  }, [open, dbRoles, dbPrimary]);
+
+  const hasChanges = useMemo(() => {
+    if (primary !== dbPrimary) return true;
+    if (selected.size !== dbRoles.size) return true;
+    for (const r of selected) {
+      if (!dbRoles.has(r)) return true;
+    }
+    return false;
+  }, [selected, primary, dbRoles, dbPrimary]);
+
+  const toggleRole = useCallback((role: AppRole) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(role)) {
+        if (next.size <= 1) return prev;
+        next.delete(role);
+        if (primary === role) {
+          setPrimary([...next][0]);
+        }
+      } else {
+        next.add(role);
+      }
+      return next;
+    });
+  }, [primary]);
+
+  const handleSave = async () => {
+    setSaving(true);
     const userId = profile.id;
-    const onSuccess = () => setPendingAction(null);
+    const rolesToRemove = [...dbRoles].filter((r) => !selected.has(r));
+    const rolesToAdd = [...selected].filter((r) => !dbRoles.has(r));
+    const primaryChanged = primary !== dbPrimary;
 
-    if (pendingAction.type === "assign") {
-      assignRole.mutate({ userId, role: pendingAction.role }, { onSuccess });
-    } else if (pendingAction.type === "remove") {
-      removeRole.mutate({ userId, role: pendingAction.role }, { onSuccess });
-    } else if (pendingAction.type === "primary") {
-      updatePrimaryRole.mutate({ userId, role: pendingAction.role }, { onSuccess });
+    try {
+      for (const role of rolesToRemove) {
+        await removeRole.mutateAsync({ userId, role });
+      }
+      for (const role of rolesToAdd) {
+        await assignRole.mutateAsync({ userId, role });
+      }
+      if (primaryChanged) {
+        await updatePrimaryRole.mutateAsync({ userId, role: primary });
+      }
+      toast.success("Roles updated");
+      onOpenChange(false);
+    } catch {
+      toast.error("Failed to update roles");
+    } finally {
+      setSaving(false);
     }
   };
 
-  const confirmTitle = pendingAction?.type === "remove" ? "Remove Role" : "Confirm Role Change";
-  const confirmDescription = pendingAction
-    ? pendingAction.type === "remove"
-      ? `Remove the "${ROLE_CONFIG[pendingAction.role as AppRole]?.label ?? pendingAction.role}" role from ${profile.full_name}?`
-      : pendingAction.type === "assign"
-        ? `Assign the "${ROLE_CONFIG[pendingAction.role as AppRole]?.label ?? pendingAction.role}" role to ${profile.full_name}?`
-        : `Change ${profile.full_name}'s primary role to "${ROLE_CONFIG[pendingAction.role as AppRole]?.label ?? pendingAction.role}"?`
-    : "";
-
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Manage Roles — {profile.full_name}</DialogTitle>
-          </DialogHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md overflow-hidden">
+        <DialogHeader>
+          <DialogTitle>Manage Roles — {profile.full_name}</DialogTitle>
+          <ul className="text-xs text-muted-foreground mt-3 space-y-0.5 list-disc list-inside">
+            <li>Highlighted <Star className="inline h-3 w-3 fill-yellow-400 text-yellow-400 -mt-0.5" /> represents the primary role</li>
+            <li>Check roles to assign as secondary roles</li>
+          </ul>
+        </DialogHeader>
 
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Primary Role</label>
-              <select
-                value={profile.role ?? ""}
-                onChange={(e) =>
-                  setPendingAction({ type: "primary", role: e.target.value })
-                }
-                className="w-full h-9 rounded-md border bg-background px-3 text-sm"
+        <hr className="border-border -mt-1" />
+
+        <div className="space-y-1 py-2 max-h-[60vh] overflow-y-auto -mx-2 px-2">
+          {APP_ROLES.map((role) => {
+            const checked = selected.has(role);
+            const isPrimary = checked && primary === role;
+            const config = ROLE_CONFIG[role];
+
+            return (
+              <label
+                key={role}
+                className="flex items-center gap-3 rounded-md px-3 py-2.5 hover:bg-accent/50 cursor-pointer transition-colors"
               >
-                {APP_ROLES.map((r) => (
-                  <option key={r} value={r}>
-                    {ROLE_CONFIG[r].label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Additional Roles</label>
-              {secondaryRoles.length > 0 ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {secondaryRoles.map((ur) => (
-                    <Badge key={ur.id} variant="secondary" className="gap-1 pr-1">
-                      {ROLE_CONFIG[ur.role as AppRole]?.label ?? ur.role}
-                      <button
-                        onClick={() => setPendingAction({ type: "remove", role: ur.role })}
-                        className="ml-1 rounded-full hover:bg-muted p-0.5"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
+                <BaseCheckbox
+                  checked={checked}
+                  onCheckedChange={() => toggleRole(role)}
+                  className="shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-medium">{config.label}</span>
+                  <p className="text-xs text-muted-foreground leading-tight">{config.description}</p>
                 </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No additional roles</p>
-              )}
-            </div>
+                {checked ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setPrimary(role);
+                    }}
+                    className="shrink-0 p-1 rounded hover:bg-accent"
+                    title={isPrimary ? "Primary role" : "Set as primary role"}
+                  >
+                    <Star
+                      className={`h-4 w-4 ${isPrimary ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`}
+                    />
+                  </button>
+                ) : (
+                  <span className="shrink-0 w-6" />
+                )}
+              </label>
+            );
+          })}
+        </div>
 
-            {availableRoles.length > 0 && (
-              <div className="flex gap-2">
-                <select
-                  value={addRoleValue}
-                  onChange={(e) => setAddRoleValue(e.target.value)}
-                  className="flex-1 h-9 rounded-md border bg-background px-3 text-sm"
-                >
-                  <option value="">Select role to add...</option>
-                  {availableRoles.map((r) => (
-                    <option key={r} value={r}>
-                      {ROLE_CONFIG[r].label}
-                    </option>
-                  ))}
-                </select>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!addRoleValue}
-                  onClick={() => {
-                    if (addRoleValue) {
-                      setPendingAction({ type: "assign", role: addRoleValue });
-                      setAddRoleValue("");
-                    }
-                  }}
-                >
-                  <Plus className="h-4 w-4" />
-                  Add
-                </Button>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+        {hasChanges && (
+          <p className="text-xs text-amber-500 text-center">Unsaved changes</p>
+        )}
 
-      <ConfirmActionDialog
-        open={!!pendingAction}
-        onOpenChange={(v) => { if (!v) setPendingAction(null); }}
-        title={confirmTitle}
-        description={confirmDescription}
-        confirmLabel={pendingAction?.type === "remove" ? "Remove" : "Confirm"}
-        variant={pendingAction?.type === "remove" ? "destructive" : "default"}
-        onConfirm={handleConfirm}
-        isPending={isPending}
-      />
-    </>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={!hasChanges || saving}>
+            {saving ? "Saving..." : "Save"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

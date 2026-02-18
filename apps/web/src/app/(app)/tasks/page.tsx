@@ -10,6 +10,7 @@ import { PillarBadge } from "@/components/molecules/indicators/PillarBadge";
 import { TasksFilterBar } from "@/components/organisms/tasks/TasksFilterBar";
 import { useAllTasks } from "@/hooks/queries/useAllTasks";
 import { useProducts } from "@/hooks/queries/useProducts";
+import { useAllProductMembers } from "@/hooks/queries/useProductMembers";
 import { useProfiles } from "@/hooks/queries/useProfiles";
 import {
   TASK_STATUS_DISPLAY,
@@ -40,6 +41,7 @@ export default function TasksPage() {
 
   const { data: tasks, isLoading } = useAllTasks(filters);
   const { data: products = [] } = useProducts();
+  const { data: allMembers = [] } = useAllProductMembers();
   const { data: profiles = [] } = useProfiles();
 
   const productMap = useMemo(() => {
@@ -55,9 +57,11 @@ export default function TasksPage() {
   }, [profiles]);
 
   const pmProfiles = useMemo(() => {
-    const pmIds = new Set(products.map((p) => p.pm_id).filter(Boolean));
+    const pmIds = new Set(
+      allMembers.filter((m) => m.role === "pm").map((m) => m.profile_id),
+    );
     return profiles.filter((p) => pmIds.has(p.id));
-  }, [products, profiles]);
+  }, [allMembers, profiles]);
 
   const statusCounts = useMemo(() => {
     if (!tasks) return {};

@@ -175,11 +175,11 @@ export function AddTaskDialog({
             onValueChange={(v) => setValue("assignee_id", v)}
           />
 
-          {/* Pillar + Priority row */}
+          {/* Vertical + Priority row */}
           <div className="grid grid-cols-2 gap-4">
             <SelectField
-              label="Pillar"
-              placeholder="Select pillar"
+              label="Business Vertical"
+              placeholder="Select vertical"
               options={PILLAR_OPTIONS}
               value={currentPillar}
               onValueChange={(v) =>

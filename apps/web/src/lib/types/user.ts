@@ -13,6 +13,7 @@ export interface Profile {
   skills: string[] | null;
   current_projects: number | null;
   max_projects: number | null;
+  reports_to: string | null;
   must_reset_password: boolean | null;
   invited_at: string | null;
   invited_by: string | null;

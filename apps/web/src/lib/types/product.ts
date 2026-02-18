@@ -12,10 +12,6 @@ export interface Product {
   repository_url: string | null;
   lovable_url: string | null;
   source_type: ProjectSourceType | null;
-  pm_id: string | null;
-  engineer_id: string | null;
-  business_owner_id: string | null;
-  marketing_manager_id: string | null;
   archived_at: string | null;
   created_at: string;
   updated_at: string;

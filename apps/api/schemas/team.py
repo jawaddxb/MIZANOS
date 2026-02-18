@@ -24,6 +24,7 @@ class ProfileResponse(BaseSchema):
     availability: str | None = None
     max_projects: int | None = None
     last_login: datetime | None = None
+    reports_to: UUID | None = None
     created_at: datetime
 
     @field_validator("skills", mode="before")

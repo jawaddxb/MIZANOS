@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     # Database
-    database_url: str = "postgresql+asyncpg://mizan:mizan_dev_password@localhost:5433/mizan_flow"
+    database_url: str = "postgresql+asyncpg://mizan:mizan@localhost:5433/mizanos"
 
     # Redis
     redis_url: str = "redis://localhost:6379"

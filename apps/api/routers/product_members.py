@@ -20,6 +20,18 @@ def get_member_service(db: DbSession) -> ProductMemberService:
 
 
 @router.get(
+    "/all-members",
+    response_model=list[ProductMemberResponse],
+)
+async def list_all_product_members(
+    user: CurrentUser = None,
+    svc: ProductMemberService = Depends(get_member_service),
+):
+    """List all product members across all products."""
+    return await svc.get_all_members()
+
+
+@router.get(
     "/{product_id}/members",
     response_model=list[ProductMemberResponse],
 )

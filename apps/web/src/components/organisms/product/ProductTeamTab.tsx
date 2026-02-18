@@ -49,11 +49,6 @@ export function ProductTeamTab({ productId }: ProductTeamTabProps) {
     return grouped;
   }, [members]);
 
-  const allMemberProfileIds = useMemo(
-    () => new Set(members.map((m) => m.profile_id)),
-    [members],
-  );
-
   const handleAdd = (profileId: string, role: string) => {
     addMember.mutate({ profile_id: profileId, role });
   };
@@ -83,7 +78,6 @@ export function ProductTeamTab({ productId }: ProductTeamTabProps) {
             allowMultiple={role.allowMultiple}
             canManage={canManage}
             profiles={profiles}
-            allMemberProfileIds={allMemberProfileIds}
             showPendingProfiles={showPendingProfiles}
             onAdd={handleAdd}
             onRemove={(memberId) => removeMember.mutate(memberId)}

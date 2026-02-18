@@ -12,6 +12,7 @@ class AppRole(str, enum.Enum):
     BIZDEV = "bizdev"
     MARKETING = "marketing"
     PRODUCT_MANAGER = "product_manager"
+    OPERATIONS = "operations"
 
 
 class EnvironmentType(str, enum.Enum):

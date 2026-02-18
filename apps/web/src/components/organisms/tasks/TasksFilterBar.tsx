@@ -140,10 +140,10 @@ export function TasksFilterBar({
 
       <Select value={pillarFilter} onValueChange={onPillarChange}>
         <SelectTrigger className={cn("w-[130px] shrink-0 bg-card", pillarFilter !== "all" && "border-primary/30")}>
-          <SelectValue placeholder="Pillar" />
+          <SelectValue placeholder="Vertical" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All Pillars</SelectItem>
+          <SelectItem value="all">All Verticals</SelectItem>
           {TASK_PILLARS.map((p) => (
             <SelectItem key={p} value={p} className="capitalize">{p}</SelectItem>
           ))}

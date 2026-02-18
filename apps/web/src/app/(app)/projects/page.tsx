@@ -9,6 +9,8 @@ import { ProductCard } from "@/components/molecules/product/ProductCard";
 import { ProductTable } from "@/components/organisms/product/ProductTable";
 import { ProductsFilterBar } from "@/components/organisms/dashboard/ProductsFilterBar";
 import { useProducts } from "@/hooks/queries/useProducts";
+import { useProductRoleFilters } from "@/hooks/utils/useProductRoleFilters";
+import { PRODUCT_STAGES } from "@/lib/constants";
 import { cn } from "@/lib/utils/cn";
 import {
   FolderKanban,
@@ -28,6 +30,8 @@ export default function ProductsPage() {
   const [showArchived, setShowArchived] = useState(false);
 
   const { data: products = [], isLoading } = useProducts();
+  const { roleFilters, anyActive: anyRoleActive, matchesProduct, reset: resetRoles } =
+    useProductRoleFilters();
 
   const archivedCount = products.filter((p) => p.archived_at).length;
 
@@ -35,9 +39,7 @@ export default function ProductsPage() {
     ? products.filter((p) => p.archived_at)
     : products.filter((p) => !p.archived_at);
 
-  const stages = [
-    ...new Set(activeProducts.map((p) => p.stage).filter(Boolean)),
-  ] as string[];
+  const stages = [...PRODUCT_STAGES];
 
   const filteredProducts = activeProducts.filter((product) => {
     const matchesSearch = product.name
@@ -49,20 +51,22 @@ export default function ProductsPage() {
       pillarFilter === "all" || product.pillar === pillarFilter;
     const matchesStage =
       stageFilter === "all" || product.stage === stageFilter;
-    return matchesSearch && matchesStatus && matchesPillar && matchesStage;
+    return matchesSearch && matchesStatus && matchesPillar && matchesStage && matchesProduct(product.id);
   });
 
   const hasActiveFilters =
     statusFilter !== "all" ||
     pillarFilter !== "all" ||
     stageFilter !== "all" ||
-    searchQuery !== "";
+    searchQuery !== "" ||
+    anyRoleActive;
 
   const clearFilters = () => {
     setSearchQuery("");
     setStatusFilter("all");
     setPillarFilter("all");
     setStageFilter("all");
+    resetRoles();
   };
 
   return (
@@ -99,6 +103,7 @@ export default function ProductsPage() {
             stageFilter={stageFilter}
             onStageChange={setStageFilter}
             stages={stages}
+            roleFilters={roleFilters}
             hasActiveFilters={hasActiveFilters}
             onClearFilters={clearFilters}
           />

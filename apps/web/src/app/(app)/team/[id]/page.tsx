@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ClipboardEdit, CheckCircle2, Shield, Briefcase } from "lucide-react";
+import { ArrowLeft, ClipboardEdit, CheckCircle2, Shield, Briefcase, Users } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/atoms/display/Avatar";
 import { getAvatarUrl } from "@/lib/utils/avatar";
@@ -15,10 +15,13 @@ import { EvaluationBreakdown } from "@/components/organisms/team/EvaluationBreak
 import { ProjectCompletionTable } from "@/components/organisms/team/ProjectCompletionTable";
 import { RecordEvaluationDialog } from "@/components/organisms/team/RecordEvaluationDialog";
 import { RecordCompletionDialog } from "@/components/organisms/team/RecordCompletionDialog";
-import { useProfile } from "@/hooks/queries/useProfiles";
+import { SearchableSelect } from "@/components/molecules/forms/SearchableSelect";
+import { useProfile, useProfiles } from "@/hooks/queries/useProfiles";
 import { useEvaluations, useProjectCompletions } from "@/hooks/queries/useEvaluations";
 import { useUserRoles } from "@/hooks/queries/useUserRoles";
 import { useProfileProjects } from "@/hooks/queries/useProfileProjects";
+import { useUpdateReportingLine } from "@/hooks/mutations/useOrgChartMutations";
+import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
 import { ROLE_CONFIG } from "@/lib/constants/roles";
 import type { AppRole } from "@/lib/types/enums";
 
@@ -41,8 +44,12 @@ export default function EngineerDetailPage() {
   const { data: completions = [], isLoading: completionsLoading } = useProjectCompletions(id);
   const { data: userRoles = [] } = useUserRoles(id);
   const { data: assignedProjects = [] } = useProfileProjects(id);
+  const { data: allProfiles = [] } = useProfiles();
+  const { isAdmin, isOperations } = useRoleVisibility();
+  const updateReportingLine = useUpdateReportingLine();
 
   const [evalOpen, setEvalOpen] = useState(false);
+  const [editingManager, setEditingManager] = useState(false);
   const [completionOpen, setCompletionOpen] = useState(false);
   const [selectedEvalIdx, setSelectedEvalIdx] = useState(0);
 
@@ -78,6 +85,11 @@ export default function EngineerDetailPage() {
 
   const primaryRoleConfig = ROLE_CONFIG[profile.role as AppRole];
   const secondaryRoles = userRoles.filter(r => r.role !== profile.role);
+  const canEditReportingLine = isAdmin || isOperations;
+  const managerName = allProfiles.find((p) => p.id === profile.reports_to)?.full_name ?? null;
+  const managerOptions = allProfiles
+    .filter((p) => p.id !== id)
+    .map((p) => ({ value: p.id, label: p.full_name ?? p.email ?? "Unknown" }));
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
@@ -122,6 +134,43 @@ export default function EngineerDetailPage() {
             <CheckCircle2 className="h-4 w-4 mr-1" /> Complete
           </Button>
         </div>
+      </div>
+
+      {/* Reporting To */}
+      <div className="flex items-center gap-3 rounded-lg border bg-card px-5 py-3">
+        <Users className="h-4 w-4 text-primary shrink-0" />
+        <span className="text-sm font-medium text-muted-foreground">Reports to:</span>
+        {editingManager ? (
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <div className="flex-1 max-w-xs">
+              <SearchableSelect
+                options={managerOptions}
+                value={profile.reports_to ?? ""}
+                onValueChange={(val) => {
+                  updateReportingLine.mutate(
+                    { profileId: id, data: { manager_id: val || null } },
+                    { onSettled: () => setEditingManager(false) },
+                  );
+                }}
+                placeholder="Select manager..."
+                allowClear
+                clearLabel="No manager"
+              />
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => setEditingManager(false)}>
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <>
+            <span className="text-sm">{managerName ?? "Not assigned"}</span>
+            {canEditReportingLine && (
+              <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setEditingManager(true)}>
+                Change
+              </Button>
+            )}
+          </>
+        )}
       </div>
 
       {/* Roles & Projects */}

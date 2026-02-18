@@ -6,6 +6,8 @@ import { Badge } from "@/components/atoms/display/Badge";
 import { Button } from "@/components/molecules/buttons/Button";
 import { ProductsFilterBar } from "./ProductsFilterBar";
 import { useProducts } from "@/hooks/queries/useProducts";
+import { useProductRoleFilters } from "@/hooks/utils/useProductRoleFilters";
+import { PRODUCT_STAGES } from "@/lib/constants";
 import { cn } from "@/lib/utils/cn";
 import {
   FolderKanban,
@@ -23,10 +25,10 @@ export function ProductsSection() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const { data: products = [], isLoading } = useProducts();
+  const { roleFilters, anyActive: anyRoleActive, matchesProduct, reset: resetRoles } =
+    useProductRoleFilters();
 
-  const stages = [
-    ...new Set(products.map((p) => p.stage).filter(Boolean)),
-  ] as string[];
+  const stages = [...PRODUCT_STAGES];
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch = product.name
@@ -38,20 +40,22 @@ export function ProductsSection() {
       pillarFilter === "all" || product.pillar === pillarFilter;
     const matchesStage =
       stageFilter === "all" || product.stage === stageFilter;
-    return matchesSearch && matchesStatus && matchesPillar && matchesStage;
+    return matchesSearch && matchesStatus && matchesPillar && matchesStage && matchesProduct(product.id);
   });
 
   const hasActiveFilters =
     statusFilter !== "all" ||
     pillarFilter !== "all" ||
     stageFilter !== "all" ||
-    searchQuery !== "";
+    searchQuery !== "" ||
+    anyRoleActive;
 
   const clearFilters = () => {
     setSearchQuery("");
     setStatusFilter("all");
     setPillarFilter("all");
     setStageFilter("all");
+    resetRoles();
   };
 
   return (
@@ -76,6 +80,7 @@ export function ProductsSection() {
         stageFilter={stageFilter}
         onStageChange={setStageFilter}
         stages={stages}
+        roleFilters={roleFilters}
         hasActiveFilters={hasActiveFilters}
         onClearFilters={clearFilters}
       />

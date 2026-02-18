@@ -46,6 +46,16 @@ class ProductMemberService:
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
+    async def get_all_members(self) -> list[ProductMember]:
+        """Return all product members across all products."""
+        stmt = (
+            select(ProductMember)
+            .options(selectinload(ProductMember.profile))
+            .order_by(ProductMember.created_at.desc())
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
     async def add_member(
         self,
         product_id: UUID,

@@ -15,6 +15,13 @@ export class ProductsRepository extends BaseRepository<Product> {
     return this.getAll({ ...params, status });
   }
 
+  async getAllMembers(): Promise<ProductMember[]> {
+    const response = await this.client.get<ProductMember[]>(
+      `${this.basePath}/all-members`,
+    );
+    return response.data;
+  }
+
   async getMembers(productId: string): Promise<ProductMember[]> {
     const response = await this.client.get<ProductMember[]>(
       `${this.basePath}/${productId}/members`,

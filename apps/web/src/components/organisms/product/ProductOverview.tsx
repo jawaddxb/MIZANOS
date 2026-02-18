@@ -18,13 +18,12 @@ import { PortTaskGenerator } from "./PortTaskGenerator";
 import { DevelopmentHealthSection } from "./DevelopmentHealthSection";
 import { FunctionalSpecSection } from "./FunctionalSpecSection";
 import { ExternalDocumentsOverview } from "./ExternalDocumentsOverview";
+import { PRODUCT_STAGES } from "@/lib/constants";
 import { Clock, FileText, Users } from "lucide-react";
 
 interface ProductOverviewProps {
   productId: string;
 }
-
-const STAGES = ["Intake", "Development", "QA", "Security", "Deployment"] as const;
 
 function StageProgress({ currentStage }: { currentStage: string }) {
   return (
@@ -34,9 +33,9 @@ function StageProgress({ currentStage }: { currentStage: string }) {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {STAGES.map((stage, i) => {
-            const stageIndex = STAGES.indexOf(
-              currentStage as (typeof STAGES)[number],
+          {PRODUCT_STAGES.map((stage, i) => {
+            const stageIndex = PRODUCT_STAGES.indexOf(
+              currentStage as (typeof PRODUCT_STAGES)[number],
             );
             const isComplete = stageIndex >= 0 && i < stageIndex;
             const isCurrent = stage === currentStage;
@@ -93,7 +92,9 @@ function TeamCard({ members }: { members: ProductMember[] }) {
             key={member.id}
             className="flex items-center justify-between text-sm"
           >
-            <span className="text-muted-foreground">{member.profile_id}</span>
+            <span className="text-muted-foreground">
+              {member.profile?.full_name ?? member.profile?.email ?? "Unknown"}
+            </span>
             <Badge variant="outline">{member.role ?? "Member"}</Badge>
           </div>
         ))}
