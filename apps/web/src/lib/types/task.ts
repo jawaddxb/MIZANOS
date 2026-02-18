@@ -16,6 +16,9 @@ export interface Task {
   claude_code_prompt: string | null;
   domain_group: string | null;
   phase: string | null;
+  is_draft: boolean;
+  approved_by: string | null;
+  approved_at: string | null;
   created_at: string;
   updated_at: string;
 }

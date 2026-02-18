@@ -41,8 +41,9 @@ export function UserRolesDialog({ open, onOpenChange, profile }: UserRolesDialog
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [addRoleValue, setAddRoleValue] = useState("");
 
-  const existingRoleValues = userRoles.map((r) => r.role);
+  const existingRoleValues = [...userRoles.map((r) => r.role), profile.role].filter(Boolean);
   const availableRoles = APP_ROLES.filter((r) => !existingRoleValues.includes(r));
+  const secondaryRoles = userRoles.filter(r => r.role !== profile.role);
 
   const isPending = assignRole.isPending || removeRole.isPending || updatePrimaryRole.isPending;
 
@@ -97,9 +98,9 @@ export function UserRolesDialog({ open, onOpenChange, profile }: UserRolesDialog
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Additional Roles</label>
-              {userRoles.length > 0 ? (
+              {secondaryRoles.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
-                  {userRoles.map((ur) => (
+                  {secondaryRoles.map((ur) => (
                     <Badge key={ur.id} variant="secondary" className="gap-1 pr-1">
                       {ROLE_CONFIG[ur.role as AppRole]?.label ?? ur.role}
                       <button

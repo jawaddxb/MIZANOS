@@ -8,7 +8,8 @@ export const ROUTE_LABELS: Record<string, string> = {
   "/evaluator": "Evaluator",
   "/templates": "Templates",
   "/settings": "Settings",
-  "/products": "Products",
+  "/projects": "Projects",
+  "/tasks": "Tasks",
 };
 
 export function capitalizeSegment(segment: string): string {

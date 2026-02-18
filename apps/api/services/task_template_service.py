@@ -80,6 +80,7 @@ class TaskTemplateService(BaseService[TaskTemplate]):
                 priority=template.priority or "medium",
                 pillar=template.pillar,
                 generation_source="template",
+                is_draft=True,
             )
             self.repo.session.add(task)
             tasks.append(task)

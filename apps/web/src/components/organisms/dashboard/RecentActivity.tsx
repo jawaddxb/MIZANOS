@@ -85,7 +85,7 @@ export function RecentActivity() {
                 return (
                   <Link
                     key={activity.id}
-                    href={activity.product_id ? `/products/${activity.product_id}` : "#"}
+                    href={activity.product_id ? `/projects/${activity.product_id}` : "#"}
                     className="flex items-start gap-3 p-2 rounded-lg hover:bg-accent/50 transition-colors group"
                     style={{
                       opacity: 0,

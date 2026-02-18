@@ -20,6 +20,7 @@ class TaskBase(BaseSchema):
     claude_code_prompt: str | None = None
     domain_group: str | None = None
     phase: str | None = None
+    is_draft: bool = False
 
 
 class TaskCreate(TaskBase):
@@ -44,6 +45,9 @@ class TaskUpdate(BaseSchema):
     claude_code_prompt: str | None = None
     domain_group: str | None = None
     phase: str | None = None
+    is_draft: bool | None = None
+    approved_by: UUID | None = None
+    approved_at: datetime | None = None
 
 
 class TaskResponse(TaskBase):
@@ -52,6 +56,9 @@ class TaskResponse(TaskBase):
     id: UUID
     product_id: UUID
     assignee_id: UUID | None = None
+    is_draft: bool
+    approved_by: UUID | None = None
+    approved_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -60,3 +67,16 @@ class TaskListResponse(PaginatedResponse):
     """Paginated task list."""
 
     data: list[TaskResponse]
+
+
+class TaskBulkApproveRequest(BaseSchema):
+    """Request to bulk approve/reject tasks."""
+
+    task_ids: list[UUID]
+
+
+class TaskBulkApproveResponse(BaseSchema):
+    """Response from bulk approve."""
+
+    approved_count: int
+    task_ids: list[UUID]

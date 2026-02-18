@@ -91,7 +91,7 @@ export function ProductSettingsDialog({
     archiveProduct.mutate(productId, {
       onSuccess: () => {
         onOpenChange(false);
-        router.push("/products");
+        router.push("/projects");
       },
     });
   };

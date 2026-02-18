@@ -64,7 +64,7 @@ export function useIntakeSubmit() {
 
       setSubmitPhase("done");
       toast.success("Project created with specification and QA checklist!");
-      setTimeout(() => router.push(`/products/${product.id}`), 500);
+      setTimeout(() => router.push(`/projects/${product.id}`), 500);
     } catch {
       toast.error("Failed to create project");
       setSubmitPhase("idle");

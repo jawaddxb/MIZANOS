@@ -67,6 +67,7 @@ class PortTaskGenerator:
                 ),
                 domain_group="review",
                 phase="schema_review",
+                is_draft=True,
             )
             self.session.add(schema_review_task)
             tasks.append(schema_review_task)
@@ -91,6 +92,7 @@ class PortTaskGenerator:
             ),
             domain_group="setup",
             phase="scaffold",
+            is_draft=True,
         )
         self.session.add(setup_task)
         tasks.append(setup_task)
@@ -177,6 +179,7 @@ class PortTaskGenerator:
             claude_code_prompt=prompt,
             domain_group=domain,
             phase="backend_model",
+            is_draft=True,
         )
 
     def _build_service_task(
@@ -222,6 +225,7 @@ class PortTaskGenerator:
             ),
             domain_group=domain,
             phase="backend_service",
+            is_draft=True,
         )
 
     def _build_types_task(
@@ -260,6 +264,7 @@ class PortTaskGenerator:
             claude_code_prompt=prompt,
             domain_group=domain,
             phase="frontend_types",
+            is_draft=True,
         )
 
     def _build_hooks_task(
@@ -288,6 +293,7 @@ class PortTaskGenerator:
             claude_code_prompt=self.prompt_builder.build_hooks_prompt(domain, hooks),
             domain_group=domain,
             phase="frontend_hooks",
+            is_draft=True,
         )
 
     def _build_ui_task(
@@ -323,6 +329,7 @@ class PortTaskGenerator:
             ),
             domain_group=domain,
             phase="frontend_ui",
+            is_draft=True,
         )
 
     # ── Cross-cutting tasks ─────────────────────────────────────────
@@ -354,6 +361,7 @@ class PortTaskGenerator:
                 ),
                 domain_group="setup",
                 phase="auth",
+                is_draft=True,
             ))
             order += 1
 
@@ -378,6 +386,7 @@ class PortTaskGenerator:
                 ),
                 domain_group="infra",
                 phase="storage",
+                is_draft=True,
             ))
             order += 1
 
@@ -401,6 +410,7 @@ class PortTaskGenerator:
                 ),
                 domain_group="infra",
                 phase="realtime",
+                is_draft=True,
             ))
             order += 1
 
@@ -425,6 +435,7 @@ class PortTaskGenerator:
                 ),
                 domain_group="infra",
                 phase="rpc",
+                is_draft=True,
             ))
             order += 1
 
@@ -451,6 +462,7 @@ class PortTaskGenerator:
                 ),
                 domain_group="infra",
                 phase="env_audit",
+                is_draft=True,
             ))
             order += 1
 
@@ -468,6 +480,7 @@ class PortTaskGenerator:
             claude_code_prompt=self.prompt_builder.build_verify_prompt(),
             domain_group="verify",
             phase="verify",
+            is_draft=True,
         ))
 
         return tasks

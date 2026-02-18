@@ -25,3 +25,4 @@ export { TranscriptionRepository, transcriptionRepository } from "./transcriptio
 export { EvaluationRepository, evaluationRepository } from "./evaluation.repository";
 export { OrgChartRepository, orgChartRepository } from "./org-chart.repository";
 export { GitHubPatsRepository, githubPatsRepository } from "./github-pats.repository";
+export { JobsRepository, jobsRepository } from "./jobs.repository";

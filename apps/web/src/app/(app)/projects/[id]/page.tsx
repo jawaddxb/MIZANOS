@@ -54,8 +54,8 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   if (!product) {
     return (
       <div className="text-center py-24">
-        <h2 className="text-xl font-semibold">Product not found</h2>
-        <p className="text-muted-foreground mt-2">The requested product does not exist.</p>
+        <h2 className="text-xl font-semibold">Project not found</h2>
+        <p className="text-muted-foreground mt-2">The requested project does not exist.</p>
       </div>
     );
   }
@@ -90,7 +90,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-semibold">{productData?.name ?? "Product"}</h1>
+        <h1 className="text-2xl font-semibold">{productData?.name ?? "Project"}</h1>
         <div className="flex items-center gap-2">
           {!isArchived && (
             <Button variant="outline" size="sm" onClick={() => setLinkGitHubOpen(true)}>

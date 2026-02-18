@@ -107,6 +107,15 @@ class ProductMemberAddRequest(BaseSchema):
     role: str
 
 
+class ProfileSummary(BaseSchema):
+    """Embedded profile info for product member responses."""
+
+    id: UUID
+    full_name: str | None = None
+    email: str | None = None
+    avatar_url: str | None = None
+
+
 class ProductMemberResponse(BaseSchema):
     """Product member response."""
 
@@ -115,6 +124,7 @@ class ProductMemberResponse(BaseSchema):
     profile_id: UUID
     role: str | None = None
     created_at: datetime
+    profile: ProfileSummary | None = None
 
 
 class TeamReadinessResponse(BaseSchema):

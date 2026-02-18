@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { LayoutGrid, List, Sparkles, FileText, LayoutTemplate, Loader2 } from "lucide-react";
+import { LayoutGrid, List, Sparkles, FileText, LayoutTemplate, Loader2, ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/molecules/buttons/Button";
+import { Badge } from "@/components/atoms/display/Badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,20 +12,27 @@ import {
 } from "@/components/atoms/layout/DropdownMenu";
 import { KanbanBoard } from "@/components/organisms/kanban/KanbanBoard";
 import { TasksTab } from "@/components/organisms/product/TasksTab";
+import { DraftTaskReview } from "@/components/organisms/product/DraftTaskReview";
 import {
   useGenerateTasksFromSpec,
   useGenerateTasksFromTemplates,
 } from "@/hooks/mutations/useTaskGenerationMutations";
 import { useGeneratePortTasks } from "@/hooks/mutations/usePortGenerator";
 import { useProductDetail } from "@/hooks/queries/useProductDetail";
+import { useDraftTasks } from "@/hooks/queries/useDraftTasks";
+import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
+
+type ViewMode = "board" | "list" | "drafts";
 
 interface TasksViewToggleProps {
   productId: string;
 }
 
 export function TasksViewToggle({ productId }: TasksViewToggleProps) {
-  const [view, setView] = useState<"board" | "list">("board");
+  const [view, setView] = useState<ViewMode>("list");
   const { data: productData } = useProductDetail(productId);
+  const { data: drafts = [] } = useDraftTasks(productId);
+  const { isAdmin, isPM } = useRoleVisibility();
   const generateFromSpec = useGenerateTasksFromSpec(productId);
   const generateFromTemplates = useGenerateTasksFromTemplates(productId);
   const generateFromPort = useGeneratePortTasks(productId);
@@ -35,6 +43,8 @@ export function TasksViewToggle({ productId }: TasksViewToggleProps) {
     generateFromPort.isPending;
 
   const showLovable = productData?.product?.source_type?.includes("lovable");
+  const showDraftsTab = isAdmin || isPM;
+  const draftCount = drafts.length;
 
   return (
     <div className="space-y-4">
@@ -58,6 +68,22 @@ export function TasksViewToggle({ productId }: TasksViewToggleProps) {
             <List className="h-4 w-4 mr-1" />
             List
           </Button>
+          {showDraftsTab && (
+            <Button
+              variant={view === "drafts" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setView("drafts")}
+              className="h-8 px-3"
+            >
+              <ClipboardCheck className="h-4 w-4 mr-1" />
+              Drafts
+              {draftCount > 0 && (
+                <Badge variant="secondary" className="ml-1.5 h-5 min-w-5 px-1.5 text-xs">
+                  {draftCount}
+                </Badge>
+              )}
+            </Button>
+          )}
         </div>
 
         <DropdownMenu>
@@ -90,11 +116,9 @@ export function TasksViewToggle({ productId }: TasksViewToggleProps) {
         </DropdownMenu>
       </div>
 
-      {view === "board" ? (
-        <KanbanBoard productId={productId} />
-      ) : (
-        <TasksTab productId={productId} />
-      )}
+      {view === "board" && <KanbanBoard productId={productId} />}
+      {view === "list" && <TasksTab productId={productId} />}
+      {view === "drafts" && <DraftTaskReview productId={productId} />}
     </div>
   );
 }

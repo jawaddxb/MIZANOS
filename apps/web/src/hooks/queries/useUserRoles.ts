@@ -11,3 +11,10 @@ export function useUserRoles(userId: string) {
     enabled: !!userId,
   });
 }
+
+export function useAllUserRoles() {
+  return useQuery<UserRole[]>({
+    queryKey: ["user-roles"],
+    queryFn: () => settingsRepository.getAllUserRoles(),
+  });
+}

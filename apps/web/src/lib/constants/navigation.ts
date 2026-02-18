@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   FileInput,
   FolderKanban,
+  ClipboardCheck,
   Users,
   Network,
   BookOpen,
@@ -28,13 +29,14 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "MAIN",
     items: [
       { href: "/", icon: LayoutDashboard, label: "Dashboard" },
-      { href: "/products", icon: FolderKanban, label: "Products" },
+      { href: "/projects", icon: FolderKanban, label: "Projects" },
       { href: "/intake", icon: FileInput, label: "New Intake" },
     ],
   },
   {
     label: "MANAGE",
     items: [
+      { href: "/tasks", icon: ClipboardCheck, label: "Tasks" },
       { href: "/team", icon: Users, label: "Team" },
       { href: "/org-chart", icon: Network, label: "Organization Chart" },
       { href: "/knowledge", icon: BookOpen, label: "Knowledge Base" },

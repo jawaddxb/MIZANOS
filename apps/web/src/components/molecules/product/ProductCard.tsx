@@ -13,7 +13,7 @@ function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Link
-      href={`/products/${product.id}`}
+      href={`/projects/${product.id}`}
       className={cn(
         "group block bg-card rounded-lg border p-4",
         "transition-colors duration-150 hover:bg-accent/50",

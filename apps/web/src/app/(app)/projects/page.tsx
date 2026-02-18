@@ -68,7 +68,7 @@ export default function ProductsPage() {
   return (
     <div className="p-6 space-y-5">
       <PageHeader
-        title="Products"
+        title="Projects"
         subtitle="All projects across your organization"
         icon={<FolderKanban className="h-5 w-5 text-primary" />}
         badge={

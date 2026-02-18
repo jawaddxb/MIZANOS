@@ -18,7 +18,7 @@ interface SidebarNavProps {
   collapsed: boolean;
 }
 
-const PM_ALLOWED_HREFS = new Set(["/products", "/intake"]);
+const PM_ALLOWED_HREFS = new Set(["/projects", "/intake", "/tasks"]);
 
 export function SidebarNav({ collapsed }: SidebarNavProps) {
   const pathname = usePathname();

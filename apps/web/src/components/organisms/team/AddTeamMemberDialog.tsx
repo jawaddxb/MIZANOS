@@ -5,14 +5,9 @@ import { Button } from "@/components/molecules/buttons/Button";
 import { SearchableSelect } from "@/components/molecules/forms/SearchableSelect";
 import { useInviteUser } from "@/hooks/queries/useUserManagement";
 import { useProfiles } from "@/hooks/queries/useProfiles";
+import { APP_ROLES, ROLE_CONFIG } from "@/lib/constants/roles";
 
-const ROLES = [
-  { value: "admin", label: "Senior Management" },
-  { value: "pm", label: "Project Manager" },
-  { value: "engineer", label: "AI Engineer" },
-  { value: "bizdev", label: "Business Development" },
-  { value: "marketing", label: "Marketing" },
-] as const;
+const ROLES = APP_ROLES.map((r) => ({ value: r, label: ROLE_CONFIG[r].label }));
 
 const AVAILABILITY = [
   { value: "available", label: "Available" },
