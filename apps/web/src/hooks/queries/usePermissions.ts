@@ -4,6 +4,7 @@ import { useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { settingsRepository, teamRepository } from "@/lib/api/repositories";
 import { useAuth } from "@/contexts/AuthContext";
+import { DEFAULT_ROLE_PERMISSIONS } from "@/lib/constants/roles";
 import type {
   FeaturePermission,
   RolePermission,
@@ -69,9 +70,24 @@ export function useMyPermissions() {
   const permissionMap = useMemo(() => {
     const map = new Map<string, boolean>();
 
-    for (const rp of rolePermissions) {
-      if (userRoles.includes(rp.role) && rp.can_access) {
-        map.set(rp.feature_key, true);
+    // Use DB role_permissions if available, otherwise fall back to defaults
+    const hasDbPermissions = rolePermissions.length > 0;
+
+    if (hasDbPermissions) {
+      for (const rp of rolePermissions) {
+        if (userRoles.includes(rp.role) && rp.can_access) {
+          map.set(rp.feature_key, true);
+        }
+      }
+    } else {
+      for (const role of userRoles) {
+        const defaults = DEFAULT_ROLE_PERMISSIONS[role as keyof typeof DEFAULT_ROLE_PERMISSIONS];
+        if (!defaults) continue;
+        if (defaults.includes("*")) {
+          map.set("__wildcard__", true);
+        } else {
+          for (const key of defaults) map.set(key, true);
+        }
       }
     }
 
@@ -88,7 +104,7 @@ export function useMyPermissions() {
 
   const hasPermission = useCallback(
     (featureKey: FeatureKey): boolean =>
-      permissionMap.get(featureKey) ?? false,
+      permissionMap.get("__wildcard__") || permissionMap.get(featureKey) || false,
     [permissionMap],
   );
 
