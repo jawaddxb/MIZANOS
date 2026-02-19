@@ -15,7 +15,7 @@ class TaskBase(BaseSchema):
     priority: str = "medium"
     pillar: str | None = None
     estimated_hours: float | None = None
-    sort_order: int = 0
+    sort_order: int | None = 0
     generation_source: str | None = None
     claude_code_prompt: str | None = None
     domain_group: str | None = None

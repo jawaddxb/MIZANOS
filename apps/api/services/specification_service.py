@@ -311,6 +311,19 @@ class SpecificationService(BaseService[Specification]):
             await self.repo.session.flush()
             await self.repo.session.refresh(spec)
 
+            # Create SpecificationFeature rows from parsed features
+            raw_features = spec_data.get("features", [])
+            for idx, feat in enumerate(raw_features):
+                name = feat if isinstance(feat, str) else str(feat)
+                feature = SpecificationFeature(
+                    product_id=product_id,
+                    specification_id=spec.id,
+                    name=name,
+                    sort_order=idx,
+                )
+                self.repo.session.add(feature)
+            await self.repo.session.flush()
+
             return {
                 "message": "Specification generated",
                 "product_id": str(product_id),

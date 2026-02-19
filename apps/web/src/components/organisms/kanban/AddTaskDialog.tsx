@@ -16,7 +16,7 @@ import { BaseInput } from "@/components/atoms/inputs/BaseInput";
 import { BaseTextarea } from "@/components/atoms/inputs/BaseTextarea";
 import { BaseLabel } from "@/components/atoms/inputs/BaseLabel";
 import { SelectField } from "@/components/molecules/forms/SelectField";
-import { useProfiles } from "@/hooks/queries/useProfiles";
+import { useProductMembers } from "@/hooks/queries/useProductMembers";
 import type { TaskStatus, PillarType, TaskPriority } from "@/lib/types";
 
 /* ------------------------------------------------------------------ */
@@ -76,13 +76,13 @@ export function AddTaskDialog({
   isLoading,
   productId,
 }: AddTaskDialogProps) {
-  const { data: profiles = [] } = useProfiles();
+  const { data: members = [] } = useProductMembers(productId);
 
   const assigneeOptions = [
     { value: "__none__", label: "Unassigned" },
-    ...profiles.map((p) => ({
-      value: p.id,
-      label: p.full_name ?? p.email ?? "Unnamed",
+    ...members.map((m) => ({
+      value: m.profile_id,
+      label: `${m.profile?.full_name ?? m.profile?.email ?? "Unnamed"}${m.role ? ` — ${m.role}` : ""}`,
     })),
   ];
 
