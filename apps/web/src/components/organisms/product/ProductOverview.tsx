@@ -5,6 +5,7 @@ import { Badge } from "@/components/atoms/display/Badge";
 import { Skeleton } from "@/components/atoms/display/Skeleton";
 import { PillarBadge } from "@/components/molecules/indicators/PillarBadge";
 import { StatsGrid } from "@/components/molecules/indicators/StatsGrid";
+import { StageProgress } from "./StageProgress";
 import { useProductDetail } from "@/hooks/queries/useProductDetail";
 import { useTasks } from "@/hooks/queries/useTasks";
 import { useLatestSpecification } from "@/hooks/queries/useSpecifications";
@@ -18,62 +19,11 @@ import { PortTaskGenerator } from "./PortTaskGenerator";
 import { DevelopmentHealthSection } from "./DevelopmentHealthSection";
 import { FunctionalSpecSection } from "./FunctionalSpecSection";
 import { ExternalDocumentsOverview } from "./ExternalDocumentsOverview";
-import { PRODUCT_STAGES } from "@/lib/constants";
-import { Clock, FileText, Users } from "lucide-react";
+import type { ProductStage } from "@/lib/constants";
+import { FileText, Users } from "lucide-react";
 
 interface ProductOverviewProps {
   productId: string;
-}
-
-function StageProgress({ currentStage }: { currentStage: string }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Stage Progress</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {PRODUCT_STAGES.map((stage, i) => {
-            const stageIndex = PRODUCT_STAGES.indexOf(
-              currentStage as (typeof PRODUCT_STAGES)[number],
-            );
-            const isComplete = stageIndex >= 0 && i < stageIndex;
-            const isCurrent = stage === currentStage;
-            return (
-              <div key={stage} className="flex items-center gap-3">
-                <div
-                  className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                    isComplete
-                      ? "bg-primary text-primary-foreground"
-                      : isCurrent
-                        ? "bg-secondary text-secondary-foreground ring-2 ring-primary"
-                        : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {isComplete ? "\u2713" : i + 1}
-                </div>
-                <span
-                  className={`text-sm ${
-                    isCurrent
-                      ? "font-medium text-foreground"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {stage}
-                </span>
-                {isCurrent && (
-                  <span className="ml-auto flex items-center gap-1 text-xs text-primary">
-                    <Clock className="h-3 w-3" />
-                    Current
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
-  );
 }
 
 function TeamCard({ members }: { members: ProductMember[] }) {
@@ -103,9 +53,20 @@ function TeamCard({ members }: { members: ProductMember[] }) {
   );
 }
 
+function deriveStage(tasks: { status?: string | null }[]): ProductStage | null {
+  if (tasks.length === 0) return null;
+  const allDoneOrLive = tasks.every((t) => t.status === "done" || t.status === "live");
+  if (allDoneOrLive) return "Live";
+  const allReviewOrLater = tasks.every((t) => t.status === "review" || t.status === "done" || t.status === "live");
+  if (allReviewOrLater) return "QA";
+  const noneInBacklog = tasks.every((t) => t.status !== "backlog");
+  if (noneInBacklog) return "Development";
+  return null;
+}
+
 function ProductOverview({ productId }: ProductOverviewProps) {
   const { user } = useAuth();
-  const { canViewManagementNotes, canViewPartnerNotes, canManageStakeholders } =
+  const { canViewManagementNotes, canViewPartnerNotes, canManageStakeholders, isPM, isSuperAdmin } =
     useRoleVisibility();
   const { data, isLoading } = useProductDetail(productId);
   const { data: tasks } = useTasks(productId);
@@ -213,7 +174,12 @@ function ProductOverview({ productId }: ProductOverviewProps) {
           </CardContent>
         </Card>
 
-        <StageProgress currentStage={product.stage ?? "Intake"} />
+        <StageProgress
+          currentStage={product.stage ?? "Intake"}
+          productId={productId}
+          suggestedStage={tasks ? deriveStage(tasks) : null}
+          canChangeStage={isPM || isSuperAdmin}
+        />
       </div>
 
       <PortTaskGenerator productId={productId} sourceType={product.source_type ?? undefined} />
