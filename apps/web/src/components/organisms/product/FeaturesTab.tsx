@@ -104,9 +104,18 @@ export function FeaturesTab({ productId }: FeaturesTabProps) {
       if (!feature) return;
 
       const overId = over.id as string;
-      const targetColumn = COLUMNS.find((c) => c.id === overId);
-      const currentStatus = (feature.status as FeatureStatus) || "proposed";
+      let targetColumn = COLUMNS.find((c) => c.id === overId);
 
+      // If dropped onto a card (not a column), find which column contains that card
+      if (!targetColumn) {
+        const overFeature = rawFeatures.find((f) => f.id === overId);
+        if (overFeature) {
+          const overStatus = (overFeature.status as FeatureStatus) || "proposed";
+          targetColumn = COLUMNS.find((c) => c.id === overStatus);
+        }
+      }
+
+      const currentStatus = (feature.status as FeatureStatus) || "proposed";
       if (!targetColumn || currentStatus === targetColumn.id) return;
 
       if (targetColumn.id === "queued" && currentStatus !== "queued") {

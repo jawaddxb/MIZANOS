@@ -32,19 +32,19 @@ export class SpecificationsRepository extends BaseRepository<Specification> {
 
   async updateFeature(featureId: string, data: Partial<SpecificationFeature>): Promise<SpecificationFeature> {
     const response = await this.client.patch<SpecificationFeature>(
-      `/specification-features/${featureId}`,
+      `/specifications/features/${featureId}`,
       data,
     );
     return response.data;
   }
 
   async deleteFeature(featureId: string): Promise<void> {
-    await this.client.delete(`/specification-features/${featureId}`);
+    await this.client.delete(`/specifications/features/${featureId}`);
   }
 
   async getReusableFeatures(excludeProductId?: string): Promise<SpecificationFeature[]> {
     const response = await this.client.get<SpecificationFeature[]>(
-      "/specification-features/reusable",
+      "/specifications/features/library",
       excludeProductId ? { params: { exclude_product_id: excludeProductId } } : undefined,
     );
     return response.data;
