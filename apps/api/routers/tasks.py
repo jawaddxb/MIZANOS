@@ -62,7 +62,7 @@ async def bulk_approve_tasks(
     service: TaskService = Depends(get_service),
 ):
     """Approve multiple draft tasks."""
-    return await service.bulk_approve_tasks(body.task_ids, user["id"])
+    return await service.bulk_approve_tasks(body.task_ids, user.id)
 
 
 @router.post("/bulk-reject", status_code=204)
@@ -100,7 +100,7 @@ async def approve_task(
     service: TaskService = Depends(get_service),
 ):
     """Approve a single draft task."""
-    return await service.approve_task(task_id, user["id"])
+    return await service.approve_task(task_id, user.id)
 
 
 @router.delete("/{task_id}/reject", status_code=204)

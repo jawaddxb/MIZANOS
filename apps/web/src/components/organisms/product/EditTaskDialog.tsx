@@ -16,8 +16,7 @@ import { BaseInput } from "@/components/atoms/inputs/BaseInput";
 import { BaseTextarea } from "@/components/atoms/inputs/BaseTextarea";
 import { BaseLabel } from "@/components/atoms/inputs/BaseLabel";
 import { SelectField } from "@/components/molecules/forms/SelectField";
-import { useProfiles } from "@/hooks/queries/useProfiles";
-import { useShowPendingProfiles } from "@/hooks/queries/useOrgSettings";
+import { useProductMembers } from "@/hooks/queries/useProductMembers";
 import { useUpdateTask } from "@/hooks/mutations/useTaskMutations";
 import type { KanbanTask, TaskStatus, PillarType, TaskPriority } from "@/lib/types";
 
@@ -66,21 +65,15 @@ export function EditTaskDialog({
   task,
   productId,
 }: EditTaskDialogProps) {
-  const { data: profiles = [] } = useProfiles();
-  const showPending = useShowPendingProfiles();
+  const { data: members = [] } = useProductMembers(productId);
   const updateTask = useUpdateTask(productId);
 
   const assigneeOptions = [
     { value: "__none__", label: "Unassigned" },
-    ...profiles
-      .filter((p) => showPending || p.status !== "pending")
-      .map((p) => ({
-        value: p.id,
-        label:
-          p.status === "pending"
-            ? `${p.full_name ?? p.email ?? "Unnamed"} (Pending Activation)`
-            : (p.full_name ?? p.email ?? "Unnamed"),
-      })),
+    ...members.map((m) => ({
+      value: m.profile_id,
+      label: `${m.profile?.full_name ?? m.profile?.email ?? "Unnamed"}${m.role ? ` — ${m.role}` : ""}`,
+    })),
   ];
 
   const {
