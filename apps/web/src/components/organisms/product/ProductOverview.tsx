@@ -80,22 +80,22 @@ function TeamCard({ members }: { members: ProductMember[] }) {
   if (members.length === 0) return null;
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
           <Users className="h-4 w-4" />
           Team ({members.length})
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-1.5">
         {members.map((member) => (
           <div
             key={member.id}
-            className="flex items-center justify-between text-sm"
+            className="flex items-center justify-between text-xs"
           >
-            <span className="text-muted-foreground">
+            <span className="text-muted-foreground truncate mr-2">
               {member.profile?.full_name ?? member.profile?.email ?? "Unknown"}
             </span>
-            <Badge variant="outline">{member.role ?? "Member"}</Badge>
+            <Badge variant="outline" className="text-[10px] shrink-0">{member.role ?? "Member"}</Badge>
           </div>
         ))}
       </CardContent>
@@ -123,13 +123,27 @@ function ProductOverview({ productId }: ProductOverviewProps) {
   const { product, members } = data;
   const totalTasks = tasks?.length ?? 0;
   const tasksCompleted =
-    tasks?.filter((t) => t.status === "done").length ?? 0;
+    tasks?.filter((t) => t.status === "done" || t.status === "live").length ?? 0;
   const blockers =
-    tasks?.filter((t) => t.priority === "high" && t.status !== "done").length ??
-    0;
-  const specContent = specification?.content as
-    | Record<string, unknown>
-    | null;
+    tasks?.filter((t) => (t.priority === "critical" || t.priority === "high") && t.status === "backlog").length ?? 0;
+
+  // Weighted progress: backlog=0, in_progress=0.3, review=0.6, done=1, live=1
+  const STATUS_WEIGHT: Record<string, number> = {
+    backlog: 0, in_progress: 0.3, review: 0.6, done: 1, live: 1,
+  };
+  const progress = totalTasks > 0
+    ? Math.round((tasks!.reduce((sum, t) => sum + (STATUS_WEIGHT[t.status ?? "backlog"] ?? 0), 0) / totalTasks) * 100)
+    : 0;
+
+  // Health score (0-100): penalize blockers & overdue, reward progress
+  const overdueTasks = tasks?.filter(
+    (t) => t.due_date && new Date(t.due_date) < new Date() && t.status !== "done" && t.status !== "live",
+  ).length ?? 0;
+  const healthScore = totalTasks > 0
+    ? Math.max(0, Math.min(100, Math.round(progress - (blockers * 15) - (overdueTasks * 10))))
+    : 0;
+
+  const specContent = specification?.content as Record<string, unknown> | null;
   const overview = specContent?.overview as string | undefined;
 
   return (
@@ -161,8 +175,8 @@ function ProductOverview({ productId }: ProductOverviewProps) {
       ) : null}
 
       <StatsGrid
-        healthScore={product.health_score ?? 0}
-        progress={product.progress ?? 0}
+        healthScore={healthScore}
+        progress={progress}
         tasksCompleted={tasksCompleted}
         totalTasks={totalTasks}
         blockers={blockers}
@@ -204,7 +218,10 @@ function ProductOverview({ productId }: ProductOverviewProps) {
 
       <PortTaskGenerator productId={productId} sourceType={product.source_type ?? undefined} />
 
-      <TeamCard members={members} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <TeamCard members={members} />
+        <ExternalDocumentsOverview productId={productId} />
+      </div>
 
       {canManageStakeholders && <StakeholdersList productId={productId} />}
 
@@ -240,10 +257,6 @@ function ProductOverview({ productId }: ProductOverviewProps) {
           specificationId={specification?.id}
         />
       )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <ExternalDocumentsOverview productId={productId} />
-      </div>
     </div>
   );
 }

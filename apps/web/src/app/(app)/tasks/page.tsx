@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/atoms/display/Card";
 import { Badge } from "@/components/atoms/display/Badge";
 import { Skeleton } from "@/components/atoms/display/Skeleton";
 import { PageHeader } from "@/components/molecules/layout/PageHeader";
-import { PillarBadge } from "@/components/molecules/indicators/PillarBadge";
 import { TasksFilterBar } from "@/components/organisms/tasks/TasksFilterBar";
 import { EditTaskDialog } from "@/components/organisms/product/EditTaskDialog";
 import { toKanbanTask } from "@/components/organisms/kanban/kanban-utils";
@@ -222,8 +221,6 @@ function TaskRow({
       {assigneeName && (
         <span className="text-xs text-muted-foreground truncate max-w-[100px] shrink-0">{assigneeName}</span>
       )}
-
-      {task.pillar && <PillarBadge pillar={task.pillar} className="text-[10px] shrink-0" />}
 
       {task.priority && (
         <Badge variant="secondary" className={`text-[10px] shrink-0 capitalize ${TASK_PRIORITY_COLORS[task.priority] ?? ""}`}>
