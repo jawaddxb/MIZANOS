@@ -14,6 +14,7 @@ class TaskBase(BaseSchema):
     status: str = "backlog"
     priority: str = "medium"
     pillar: str | None = None
+    due_date: datetime | None = None
     estimated_hours: float | None = None
     sort_order: int | None = 0
     generation_source: str | None = None
@@ -39,6 +40,7 @@ class TaskUpdate(BaseSchema):
     priority: str | None = None
     pillar: str | None = None
     assignee_id: UUID | None = None
+    due_date: datetime | None = None
     estimated_hours: float | None = None
     sort_order: int | None = None
     generation_source: str | None = None
@@ -79,4 +81,18 @@ class TaskBulkApproveResponse(BaseSchema):
     """Response from bulk approve."""
 
     approved_count: int
+    task_ids: list[UUID]
+
+
+class TaskBulkAssignRequest(BaseSchema):
+    """Request to bulk assign/unassign tasks."""
+
+    task_ids: list[UUID]
+    assignee_id: UUID | None = None
+
+
+class TaskBulkAssignResponse(BaseSchema):
+    """Response from bulk assign."""
+
+    assigned_count: int
     task_ids: list[UUID]

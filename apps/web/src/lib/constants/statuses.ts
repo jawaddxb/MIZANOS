@@ -27,6 +27,11 @@ export const TASK_STATUS_CONFIG: Record<TaskStatus, StatusConfig> = {
     color: "var(--status-done)",
     bgColor: "var(--status-done-bg)",
   },
+  live: {
+    label: "Live",
+    color: "var(--status-live)",
+    bgColor: "var(--status-live-bg)",
+  },
 } as const;
 
 export const PRODUCT_STATUS_CONFIG: Record<string, StatusConfig> = {

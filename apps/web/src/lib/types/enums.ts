@@ -23,7 +23,7 @@ export type ProjectSourceType =
 
 export type PillarType = "business" | "marketing" | "development" | "product";
 
-export type TaskStatus = "backlog" | "in_progress" | "review" | "done";
+export type TaskStatus = "backlog" | "in_progress" | "review" | "done" | "live";
 
 export type TaskPriority = "low" | "medium" | "high";
 

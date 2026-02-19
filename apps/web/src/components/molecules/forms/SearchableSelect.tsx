@@ -50,7 +50,7 @@ export function SearchableSelect({
   return (
     <div className="space-y-1.5">
       {label && <label className="text-sm font-medium">{label}</label>}
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={setOpen} modal={false}>
         <PopoverTrigger asChild>
           <button
             type="button"

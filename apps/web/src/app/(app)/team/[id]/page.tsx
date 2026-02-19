@@ -20,6 +20,7 @@ import { useProfile, useProfiles } from "@/hooks/queries/useProfiles";
 import { useEvaluations, useProjectCompletions } from "@/hooks/queries/useEvaluations";
 import { useUserRoles } from "@/hooks/queries/useUserRoles";
 import { useProfileProjects } from "@/hooks/queries/useProfileProjects";
+import { useAllTasks } from "@/hooks/queries/useAllTasks";
 import { useUpdateReportingLine } from "@/hooks/mutations/useOrgChartMutations";
 import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
 import { ROLE_CONFIG } from "@/lib/constants/roles";
@@ -45,6 +46,7 @@ export default function EngineerDetailPage() {
   const { data: userRoles = [] } = useUserRoles(id);
   const { data: assignedProjects = [] } = useProfileProjects(id);
   const { data: allProfiles = [] } = useProfiles();
+  const { data: assignedTasks = [] } = useAllTasks({ assignee_id: id });
   const { isAdmin, isOperations } = useRoleVisibility();
   const updateReportingLine = useUpdateReportingLine();
 
@@ -122,7 +124,10 @@ export default function EngineerDetailPage() {
           <div className="flex items-center gap-3 mt-2">
             <Badge variant="secondary">{availability.label}</Badge>
             <span className="text-xs text-muted-foreground">
-              {profile.current_projects ?? 0}/{profile.max_projects ?? 3} projects
+              {assignedProjects.length}/{profile.max_projects ?? 10} projects
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {assignedTasks.length} task{assignedTasks.length !== 1 ? "s" : ""} assigned
             </span>
           </div>
         </div>

@@ -24,7 +24,7 @@ import type { ProjectSourceType } from "@/lib/types/enums";
 
 const PILLARS = ["development", "product", "business", "marketing"] as const;
 const PRIORITIES = ["low", "medium", "high"] as const;
-const STATUSES = ["backlog", "in_progress", "review", "done"] as const;
+const STATUSES = ["backlog", "in_progress", "review", "done", "live"] as const;
 
 const SOURCE_TYPES: ProjectSourceType[] = [
   "lovable_port",

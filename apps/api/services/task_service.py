@@ -12,7 +12,7 @@ from apps.api.models.task import Task
 from apps.api.models.user import Profile
 from apps.api.schemas.tasks import TaskCreate
 from apps.api.services.base_service import BaseService
-from packages.common.utils.error_handlers import bad_request
+from packages.common.utils.error_handlers import bad_request, forbidden
 
 
 class TaskService(BaseService[Task]):
@@ -117,6 +117,20 @@ class TaskService(BaseService[Task]):
         stmt = sa_delete(Task).where(Task.id.in_(task_ids))
         await self.repo.session.execute(stmt)
 
+    async def bulk_assign_tasks(
+        self, task_ids: list[UUID], assignee_id: UUID | None
+    ) -> dict:
+        """Assign (or unassign) multiple tasks to a team member."""
+        if assignee_id:
+            await self._validate_assignee(assignee_id)
+
+        assigned = []
+        for tid in task_ids:
+            task = await self.get_or_404(tid)
+            await self.repo.update(task, {"assignee_id": assignee_id})
+            assigned.append(tid)
+        return {"assigned_count": len(assigned), "task_ids": assigned}
+
     async def create_task(self, data: TaskCreate) -> Task:
         """Create a new task."""
         if data.assignee_id:
@@ -124,11 +138,39 @@ class TaskService(BaseService[Task]):
         task = Task(**data.model_dump())
         return await self.repo.create(task)
 
-    async def update(self, entity_id: UUID, data: dict) -> Task:
-        """Update a task with assignee validation."""
+    async def update(
+        self,
+        entity_id: UUID,
+        data: dict,
+        *,
+        user_id: UUID | None = None,
+        is_superadmin: bool = False,
+    ) -> Task:
+        """Update a task with assignee validation and status auth."""
         if "assignee_id" in data and data["assignee_id"]:
             await self._validate_assignee(UUID(str(data["assignee_id"])))
+        if "status" in data and user_id is not None and not is_superadmin:
+            task = await self.get_or_404(entity_id)
+            await self._authorize_status_change(task, user_id)
         return await super().update(entity_id, data)
+
+    async def _authorize_status_change(
+        self, task: Task, user_id: UUID
+    ) -> None:
+        """Only the assignee or product PM may change task status."""
+        if task.assignee_id == user_id:
+            return
+        stmt = select(ProductMember).where(
+            ProductMember.product_id == task.product_id,
+            ProductMember.profile_id == user_id,
+            ProductMember.role == "pm",
+        )
+        result = await self.repo.session.execute(stmt)
+        if result.scalar_one_or_none() is not None:
+            return
+        raise forbidden(
+            "Only the assignee or product PM can change task status"
+        )
 
     async def _validate_assignee(self, assignee_id: UUID) -> None:
         """Reject assigning to pending profiles when org setting is off."""

@@ -52,6 +52,22 @@ export function useDeleteTask(productId: string) {
   });
 }
 
+export function useBulkAssignTasks(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ taskIds, assigneeId }: { taskIds: string[]; assigneeId: string | null }) =>
+      tasksRepository.bulkAssignTasks(taskIds, assigneeId),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["tasks", productId] });
+      toast.success(`Assigned ${data.assigned_count} task${data.assigned_count !== 1 ? "s" : ""}`);
+    },
+    onError: (error: Error) => {
+      toast.error("Failed to assign tasks: " + error.message);
+    },
+  });
+}
+
 export function useReorderTask() {
   return useMutation({
     mutationFn: ({
