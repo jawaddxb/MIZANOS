@@ -40,10 +40,10 @@ export function OrgChartLines({ nodes, containerRef }: OrgChartLinesProps) {
         const chRect = posMap.get(child);
         if (!pRect || !chRect) return null;
         return {
-          x1: pRect.left + pRect.width / 2 - cRect.left + scrollLeft,
-          y1: pRect.bottom - cRect.top + scrollTop,
-          x2: chRect.left + chRect.width / 2 - cRect.left + scrollLeft,
-          y2: chRect.top - cRect.top + scrollTop,
+          x1: pRect.right - cRect.left + scrollLeft,
+          y1: pRect.top + pRect.height / 2 - cRect.top + scrollTop,
+          x2: chRect.left - cRect.left + scrollLeft,
+          y2: chRect.top + chRect.height / 2 - cRect.top + scrollTop,
         };
       })
       .filter(Boolean) as { x1: number; y1: number; x2: number; y2: number }[];
@@ -76,11 +76,11 @@ export function OrgChartLines({ nodes, containerRef }: OrgChartLinesProps) {
       className="absolute inset-0 pointer-events-none overflow-visible"
     >
       {lines.map((l, i) => {
-        const midY = (l.y1 + l.y2) / 2;
+        const midX = (l.x1 + l.x2) / 2;
         return (
           <path
             key={i}
-            d={`M${l.x1},${l.y1} C${l.x1},${midY} ${l.x2},${midY} ${l.x2},${l.y2}`}
+            d={`M${l.x1},${l.y1} C${midX},${l.y1} ${midX},${l.y2} ${l.x2},${l.y2}`}
             fill="none"
             stroke="hsl(var(--border))"
             strokeWidth="1.5"
