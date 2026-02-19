@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/organisms/layout/Sidebar";
 import { Header } from "@/components/organisms/layout/Header";
 import { ThemeToggle } from "@/components/molecules/navigation/ThemeToggle";
 import { NotificationDropdown } from "@/components/organisms/notifications/NotificationDropdown";
+import { AvatarPromptDialog } from "@/components/organisms/onboarding/AvatarPromptDialog";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -23,6 +24,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <main className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin">
           {children}
         </main>
+        <AvatarPromptDialog />
       </div>
     </div>
   );

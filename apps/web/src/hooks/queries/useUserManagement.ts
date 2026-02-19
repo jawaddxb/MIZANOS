@@ -20,6 +20,7 @@ export function useInviteUser() {
       email: string;
       full_name: string;
       role: string;
+      title?: string;
       skills?: string[];
       availability?: string;
       max_projects?: number;

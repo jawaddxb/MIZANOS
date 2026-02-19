@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Button } from "@/components/molecules/buttons/Button";
 import { SearchableSelect } from "@/components/molecules/forms/SearchableSelect";
 import { useInviteUser } from "@/hooks/queries/useUserManagement";
@@ -21,6 +21,15 @@ const OFFICES = [
   { value: "dubai", label: "Dubai" },
   { value: "uk", label: "UK" },
   { value: "europe", label: "Europe" },
+] as const;
+
+const TITLE_OPTIONS = [
+  "Chief Executive Officer", "Chief Operating Officer", "Chief Strategy Officer",
+  "Head of Marketing and Growth", "Head of Engineering", "Head of Operations",
+  "Project Manager", "Product Owner", "PM/PO",
+  "Business Development", "Software Engineer", "AI Engineer",
+  "Marketing Manager", "SEO Specialist", "Analytics",
+  "UI/UX Designer", "QA Engineer", "Content Creator", "Motion Designer",
 ] as const;
 
 const SKILL_OPTIONS = [
@@ -45,6 +54,7 @@ export function AddTeamMemberDialog({ open, onOpenChange }: AddTeamMemberDialogP
 
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
+  const [title, setTitle] = useState("");
   const [role, setRole] = useState("");
   const [skills, setSkills] = useState<string[]>([]);
   const [customSkillInput, setCustomSkillInput] = useState("");
@@ -58,6 +68,7 @@ export function AddTeamMemberDialog({ open, onOpenChange }: AddTeamMemberDialogP
   const resetForm = () => {
     setEmail("");
     setFullName("");
+    setTitle("");
     setRole("");
     setSkills([]);
     setCustomSkillInput("");
@@ -73,6 +84,7 @@ export function AddTeamMemberDialog({ open, onOpenChange }: AddTeamMemberDialogP
       {
         email,
         full_name: fullName,
+        title: title || undefined,
         role,
         skills,
         availability,
@@ -98,6 +110,22 @@ export function AddTeamMemberDialog({ open, onOpenChange }: AddTeamMemberDialogP
           <div className="grid grid-cols-2 gap-3">
             <FormField label="Email *" value={email} onChange={setEmail} type="email" required />
             <FormField label="Full Name *" value={fullName} onChange={setFullName} required />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Title</label>
+            <input
+              list="title-options"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Select or type a title..."
+              className="w-full h-9 rounded-md border bg-background px-3 text-sm"
+            />
+            <datalist id="title-options">
+              {TITLE_OPTIONS.map((t) => (
+                <option key={t} value={t} />
+              ))}
+            </datalist>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

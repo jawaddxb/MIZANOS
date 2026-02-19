@@ -172,6 +172,7 @@ class InviteUserRequest(BaseSchema):
     email: str
     full_name: str
     role: str
+    title: str | None = None
     skills: list[str] | None = None
     availability: str | None = None
     max_projects: int | None = None

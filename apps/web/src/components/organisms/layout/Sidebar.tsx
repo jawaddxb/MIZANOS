@@ -22,7 +22,9 @@ import {
   LogOut,
   PanelLeftClose,
   PanelLeft,
+  Settings,
 } from "lucide-react";
+import Link from "next/link";
 
 interface SidebarProps {
   collapsed?: boolean;
@@ -168,27 +170,62 @@ function UserSection({
         )}
       >
         {collapsed ? (
-          <Tooltip>
-            <TooltipTrigger asChild>{avatar}</TooltipTrigger>
-            <TooltipContent side="right">
-              <p className="font-medium">{userName ?? userEmail}</p>
-              {userName && userEmail && (
-                <p className="text-xs text-muted-foreground">{userEmail}</p>
-              )}
-              {primaryRole && (
-                <p className="text-xs text-primary/70 font-medium">
-                  {ROLE_DISPLAY_LABELS[primaryRole] ?? primaryRole}
-                </p>
-              )}
-            </TooltipContent>
-          </Tooltip>
+          <div className="flex flex-col items-center gap-1.5">
+            <Tooltip>
+              <TooltipTrigger asChild>{avatar}</TooltipTrigger>
+              <TooltipContent side="right">
+                <p className="font-medium">{userName ?? userEmail}</p>
+                {userName && userEmail && (
+                  <p className="text-xs text-muted-foreground">{userEmail}</p>
+                )}
+                {primaryRole && (
+                  <p className="text-xs text-primary/70 font-medium">
+                    {ROLE_DISPLAY_LABELS[primaryRole] ?? primaryRole}
+                  </p>
+                )}
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link href="/settings">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                  >
+                    <Settings className="h-3.5 w-3.5" />
+                  </Button>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">Settings</TooltipContent>
+            </Tooltip>
+          </div>
         ) : (
           <>
             {avatar}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">
-                {userName ?? userEmail}
-              </p>
+              <div className="flex items-center gap-1">
+                <p className="text-sm font-medium text-foreground truncate flex-1 min-w-0">
+                  {userName ?? userEmail}
+                </p>
+                <Link href="/settings">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5 shrink-0 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+                  >
+                    <Settings className="h-3 w-3" />
+                  </Button>
+                </Link>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 shrink-0 text-muted-foreground hover:bg-destructive/20 hover:text-destructive transition-colors"
+                  onClick={onSignOut}
+                >
+                  <LogOut className="h-3 w-3" />
+                </Button>
+              </div>
               <p className="text-[11px] text-muted-foreground truncate">
                 {userEmail}
               </p>
@@ -198,14 +235,6 @@ function UserSection({
                 </p>
               )}
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-destructive/20 hover:text-destructive transition-colors"
-              onClick={onSignOut}
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
           </>
         )}
       </div>
