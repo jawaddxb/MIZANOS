@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { BaseInput } from "@/components/atoms/inputs/BaseInput";
 import {
   Select,
@@ -8,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/atoms/inputs/BaseSelect";
+import { SearchableSelect } from "@/components/molecules/forms/SearchableSelect";
 import { Button } from "@/components/molecules/buttons/Button";
 import { TASK_STATUSES, TASK_PRIORITIES, TASK_PILLARS, TASK_STATUS_DISPLAY } from "@/lib/constants";
 import { cn } from "@/lib/utils/cn";
@@ -57,6 +59,15 @@ export function TasksFilterBar({
   hasActiveFilters,
   onClearFilters,
 }: TasksFilterBarProps) {
+  const assigneeOptions = useMemo(
+    () => profiles.map((p) => ({ value: p.id, label: p.full_name ?? p.email ?? "Unknown" })),
+    [profiles],
+  );
+  const pmOptions = useMemo(
+    () => pmProfiles.map((p) => ({ value: p.id, label: p.full_name ?? p.email ?? "Unknown" })),
+    [pmProfiles],
+  );
+
   return (
     <div className="flex items-center gap-2 flex-wrap">
       <div className="relative flex-1 min-w-[160px] max-w-sm">
@@ -89,29 +100,27 @@ export function TasksFilterBar({
         </SelectContent>
       </Select>
 
-      <Select value={assigneeFilter} onValueChange={onAssigneeChange}>
-        <SelectTrigger className={cn("w-[150px] shrink-0 bg-card", assigneeFilter !== "all" && "border-primary/30")}>
-          <SelectValue placeholder="Assignee" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Assignees</SelectItem>
-          {profiles.map((p) => (
-            <SelectItem key={p.id} value={p.id}>{p.full_name ?? p.email}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="w-[150px] shrink-0">
+        <SearchableSelect
+          options={assigneeOptions}
+          value={assigneeFilter === "all" ? "" : assigneeFilter}
+          onValueChange={(v) => onAssigneeChange(v || "all")}
+          placeholder="All Assignees"
+          allowClear
+          clearLabel="All Assignees"
+        />
+      </div>
 
-      <Select value={pmFilter} onValueChange={onPmChange}>
-        <SelectTrigger className={cn("w-[150px] shrink-0 bg-card", pmFilter !== "all" && "border-primary/30")}>
-          <SelectValue placeholder="PM" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All PMs</SelectItem>
-          {pmProfiles.map((p) => (
-            <SelectItem key={p.id} value={p.id}>{p.full_name ?? p.email}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="w-[150px] shrink-0">
+        <SearchableSelect
+          options={pmOptions}
+          value={pmFilter === "all" ? "" : pmFilter}
+          onValueChange={(v) => onPmChange(v || "all")}
+          placeholder="All PMs"
+          allowClear
+          clearLabel="All PMs"
+        />
+      </div>
 
       <Select value={statusFilter} onValueChange={onStatusChange}>
         <SelectTrigger className={cn("w-[140px] shrink-0 bg-card", statusFilter !== "all" && "border-primary/30")}>

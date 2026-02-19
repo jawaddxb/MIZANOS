@@ -57,10 +57,12 @@ export default function TasksPage() {
   }, [profiles]);
 
   const pmProfiles = useMemo(() => {
-    const pmIds = new Set(
+    const pmMemberIds = new Set(
       allMembers.filter((m) => m.role === "pm").map((m) => m.profile_id),
     );
-    return profiles.filter((p) => pmIds.has(p.id));
+    return profiles.filter(
+      (p) => pmMemberIds.has(p.id) || p.role === "product_manager" || p.role === "pm",
+    );
   }, [allMembers, profiles]);
 
   const statusCounts = useMemo(() => {

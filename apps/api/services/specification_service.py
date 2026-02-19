@@ -203,7 +203,6 @@ class SpecificationService(BaseService[Specification]):
         """Create tasks from the latest specification's features."""
         from apps.api.models.task import Task
 
-        # Get latest spec
         specs = await self.get_by_product(product_id)
         if not specs:
             raise HTTPException(
@@ -212,13 +211,7 @@ class SpecificationService(BaseService[Specification]):
             )
 
         latest_spec = specs[0]
-        features_stmt = (
-            select(SpecificationFeature)
-            .where(SpecificationFeature.specification_id == latest_spec.id)
-            .order_by(SpecificationFeature.sort_order)
-        )
-        features_result = await self.repo.session.execute(features_stmt)
-        features = list(features_result.scalars().all())
+        features = await self._get_or_create_features(latest_spec)
 
         if not features:
             raise HTTPException(
@@ -241,9 +234,6 @@ class SpecificationService(BaseService[Specification]):
             self.repo.session.add(task)
             tasks.append(task)
 
-            # Link feature to task
-            feature.task_id = None  # Will set after flush
-
         await self.repo.session.flush()
         for i, task in enumerate(tasks):
             await self.repo.session.refresh(task)
@@ -252,6 +242,47 @@ class SpecificationService(BaseService[Specification]):
 
         await self.repo.session.flush()
         return tasks
+
+    async def _get_or_create_features(
+        self, spec: Specification
+    ) -> list[SpecificationFeature]:
+        """Get feature rows, creating them from spec content if missing."""
+        stmt = (
+            select(SpecificationFeature)
+            .where(SpecificationFeature.specification_id == spec.id)
+            .order_by(SpecificationFeature.sort_order)
+        )
+        result = await self.repo.session.execute(stmt)
+        features = list(result.scalars().all())
+        if features:
+            return features
+
+        raw = (spec.content or {}).get("features", [])
+        if not raw:
+            return []
+
+        for idx, feat in enumerate(raw):
+            if isinstance(feat, dict):
+                name = feat.get("name") or feat.get("title") or str(feat)
+                desc = feat.get("description")
+                priority = feat.get("priority", "medium")
+            else:
+                name = str(feat)
+                desc = None
+                priority = "medium"
+            feature = SpecificationFeature(
+                product_id=spec.product_id,
+                specification_id=spec.id,
+                name=name,
+                description=desc,
+                priority=priority,
+                sort_order=idx,
+            )
+            self.repo.session.add(feature)
+            features.append(feature)
+
+        await self.repo.session.flush()
+        return features
 
     async def generate_specification(self, product_id: UUID) -> dict:
         """Generate specification using AI, incorporating saved sources."""
