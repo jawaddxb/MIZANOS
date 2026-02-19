@@ -20,8 +20,10 @@ const ROLE_CHIPS = [
   { value: "all", label: "All" },
   { value: "admin", label: "Leadership" },
   { value: "pm", label: "PMs" },
+  { value: "product_manager", label: "Product Managers" },
   { value: "bizdev", label: "Business Development" },
   { value: "engineer", label: "Engineers" },
+  { value: "operations", label: "Operations" },
   { value: "marketing", label: "Marketing" },
 ] as const;
 

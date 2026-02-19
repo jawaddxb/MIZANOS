@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useRef } from "react";
-import { Tree, TreeNode } from "react-organizational-chart";
 import { OrgChartNodeCard } from "@/components/molecules/org-chart/OrgChartNodeCard";
 import { OrgChartLines } from "@/components/molecules/org-chart/OrgChartLines";
 import { buildTree } from "./buildTree";
@@ -18,15 +17,7 @@ interface OrgChartTreeProps {
   draggable?: boolean;
 }
 
-function RenderTreeNode({
-  node,
-  canResendInvite,
-  canEditHierarchy,
-  onResendInvite,
-  onEditManager,
-  compact,
-  draggable,
-}: {
+interface BranchProps {
   node: TreeNodeData;
   canResendInvite: boolean;
   canEditHierarchy: boolean;
@@ -34,10 +25,20 @@ function RenderTreeNode({
   onEditManager: (node: OrgChartNode) => void;
   compact?: boolean;
   draggable?: boolean;
-}) {
+}
+
+function TreeBranch({
+  node,
+  canResendInvite,
+  canEditHierarchy,
+  onResendInvite,
+  onEditManager,
+  compact,
+  draggable,
+}: BranchProps) {
   return (
-    <TreeNode
-      label={
+    <div className="flex items-center">
+      <div className="shrink-0 py-1.5">
         <OrgChartNodeCard
           node={node}
           canResendInvite={canResendInvite}
@@ -47,21 +48,24 @@ function RenderTreeNode({
           compact={compact}
           draggable={draggable}
         />
-      }
-    >
-      {node.children.map((child) => (
-        <RenderTreeNode
-          key={child.id}
-          node={child}
-          canResendInvite={canResendInvite}
-          canEditHierarchy={canEditHierarchy}
-          onResendInvite={onResendInvite}
-          onEditManager={onEditManager}
-          compact={compact}
-          draggable={draggable}
-        />
-      ))}
-    </TreeNode>
+      </div>
+      {node.children.length > 0 && (
+        <div className="flex flex-col ml-10">
+          {node.children.map((child) => (
+            <TreeBranch
+              key={child.id}
+              node={child}
+              canResendInvite={canResendInvite}
+              canEditHierarchy={canEditHierarchy}
+              onResendInvite={onResendInvite}
+              onEditManager={onEditManager}
+              compact={compact}
+              draggable={draggable}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -82,59 +86,22 @@ export function OrgChartTree({
   }
 
   return (
-    <div ref={containerRef} className="overflow-auto py-4 relative">
-      {draggable && <OrgChartLines nodes={nodes} containerRef={containerRef} />}
-      {roots.length === 1 ? (
-        <Tree
-          lineWidth={draggable ? "0px" : "1px"}
-          lineColor={draggable ? "transparent" : "hsl(var(--border))"}
-          lineBorderRadius="6px"
-          label={
-            <OrgChartNodeCard
-              node={roots[0]}
-              canResendInvite={canResendInvite}
-              canEditHierarchy={canEditHierarchy}
-              onResendInvite={onResendInvite}
-              onEditManager={onEditManager}
-              compact={compact}
-              draggable={draggable}
-            />
-          }
-        >
-          {roots[0].children.map((child) => (
-            <RenderTreeNode
-              key={child.id}
-              node={child}
-              canResendInvite={canResendInvite}
-              canEditHierarchy={canEditHierarchy}
-              onResendInvite={onResendInvite}
-              onEditManager={onEditManager}
-              compact={compact}
-              draggable={draggable}
-            />
-          ))}
-        </Tree>
-      ) : (
-        <Tree
-          lineWidth={draggable ? "0px" : "1px"}
-          lineColor={draggable ? "transparent" : "hsl(var(--border))"}
-          lineBorderRadius="6px"
-          label={<span />}
-        >
-          {roots.map((root) => (
-            <RenderTreeNode
-              key={root.id}
-              node={root}
-              canResendInvite={canResendInvite}
-              canEditHierarchy={canEditHierarchy}
-              onResendInvite={onResendInvite}
-              onEditManager={onEditManager}
-              compact={compact}
-              draggable={draggable}
-            />
-          ))}
-        </Tree>
-      )}
+    <div ref={containerRef} className="overflow-auto py-4 px-4 relative">
+      <OrgChartLines nodes={nodes} containerRef={containerRef} />
+      <div className="flex flex-col gap-6">
+        {roots.map((root) => (
+          <TreeBranch
+            key={root.id}
+            node={root}
+            canResendInvite={canResendInvite}
+            canEditHierarchy={canEditHierarchy}
+            onResendInvite={onResendInvite}
+            onEditManager={onEditManager}
+            compact={compact}
+            draggable={draggable}
+          />
+        ))}
+      </div>
     </div>
   );
 }
