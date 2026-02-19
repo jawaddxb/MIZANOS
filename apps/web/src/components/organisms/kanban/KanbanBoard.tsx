@@ -20,6 +20,7 @@ import { COLUMN_DEFINITIONS, toKanbanTask } from "./kanban-utils";
 import { AddTaskDialog } from "./AddTaskDialog";
 import { EditTaskDialog } from "@/components/organisms/product/EditTaskDialog";
 import { useTasks } from "@/hooks/queries/useTasks";
+import { useProductMembers } from "@/hooks/queries/useProductMembers";
 import {
   useCreateTask,
   useUpdateTask,
@@ -44,7 +45,22 @@ interface KanbanBoardProps {
 
 export function KanbanBoard({ productId }: KanbanBoardProps) {
   const { data: rawTasks = [] } = useTasks(productId);
-  const kanbanTasks = useMemo(() => rawTasks.map(toKanbanTask), [rawTasks]);
+  const { data: members = [] } = useProductMembers(productId);
+
+  const assigneeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const m of members) {
+      if (m.profile?.full_name) {
+        map.set(m.profile_id, m.profile.full_name);
+      }
+    }
+    return map;
+  }, [members]);
+
+  const kanbanTasks = useMemo(
+    () => rawTasks.map((t) => toKanbanTask(t, assigneeMap)),
+    [rawTasks, assigneeMap],
+  );
 
   const [localTasks, setLocalTasks] = useState<KanbanTask[]>([]);
   const tasks = localTasks.length > 0 ? localTasks : kanbanTasks;
@@ -157,11 +173,14 @@ export function KanbanBoard({ productId }: KanbanBoardProps) {
 
       const movedTask = findTask(activeId);
       if (movedTask) {
-        updateTask.mutate({
-          id: activeId,
-          status: movedTask.status,
-          pillar: movedTask.pillar,
-        });
+        updateTask.mutate(
+          {
+            id: activeId,
+            status: movedTask.status,
+            pillar: movedTask.pillar,
+          },
+          { onError: () => setLocalTasks([]) },
+        );
       }
 
       /* Reorder within same column */

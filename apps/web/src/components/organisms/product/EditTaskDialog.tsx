@@ -25,7 +25,7 @@ const taskSchema = z.object({
   description: z.string().optional(),
   pillar: z.enum(["business", "marketing", "development", "product"]),
   priority: z.enum(["low", "medium", "high"]),
-  status: z.enum(["backlog", "in_progress", "review", "done"]),
+  status: z.enum(["backlog", "in_progress", "review", "done", "live"]),
   due_date: z.string().optional(),
   assignee_id: z.string().optional(),
 });
@@ -50,6 +50,7 @@ const STATUS_OPTIONS = [
   { value: "in_progress", label: "In Progress" },
   { value: "review", label: "Review" },
   { value: "done", label: "Done" },
+  { value: "live", label: "Live" },
 ];
 
 interface EditTaskDialogProps {

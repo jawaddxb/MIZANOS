@@ -80,3 +80,17 @@ class TaskBulkApproveResponse(BaseSchema):
 
     approved_count: int
     task_ids: list[UUID]
+
+
+class TaskBulkAssignRequest(BaseSchema):
+    """Request to bulk assign/unassign tasks."""
+
+    task_ids: list[UUID]
+    assignee_id: UUID | None = None
+
+
+class TaskBulkAssignResponse(BaseSchema):
+    """Response from bulk assign."""
+
+    assigned_count: int
+    task_ids: list[UUID]

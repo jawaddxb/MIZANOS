@@ -6,6 +6,11 @@ interface BulkApproveResponse {
   task_ids: string[];
 }
 
+interface BulkAssignResponse {
+  assigned_count: number;
+  task_ids: string[];
+}
+
 export class TasksRepository extends BaseRepository<Task> {
   protected readonly basePath = "/tasks";
 
@@ -64,6 +69,14 @@ export class TasksRepository extends BaseRepository<Task> {
 
   async bulkRejectTasks(taskIds: string[]): Promise<void> {
     await this.client.post(`${this.basePath}/bulk-reject`, { task_ids: taskIds });
+  }
+
+  async bulkAssignTasks(taskIds: string[], assigneeId: string | null): Promise<BulkAssignResponse> {
+    const response = await this.client.post<BulkAssignResponse>(
+      `${this.basePath}/bulk-assign`,
+      { task_ids: taskIds, assignee_id: assigneeId },
+    );
+    return response.data;
   }
 }
 

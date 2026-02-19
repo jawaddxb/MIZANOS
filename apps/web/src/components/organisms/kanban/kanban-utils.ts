@@ -9,9 +9,13 @@ export const COLUMN_DEFINITIONS: { id: TaskStatus; title: string }[] = [
   { id: "in_progress", title: "In Progress" },
   { id: "review", title: "Review" },
   { id: "done", title: "Done" },
+  { id: "live", title: "Live" },
 ];
 
-export function toKanbanTask(task: Task): KanbanTask {
+export function toKanbanTask(
+  task: Task,
+  assigneeMap?: Map<string, string>,
+): KanbanTask {
   return {
     id: task.id,
     title: task.title,
@@ -19,7 +23,9 @@ export function toKanbanTask(task: Task): KanbanTask {
     pillar: (task.pillar ?? "development") as PillarType,
     priority: (task.priority ?? "medium") as TaskPriority,
     status: (task.status ?? "backlog") as TaskStatus,
-    assignee: undefined,
+    assignee: task.assignee_id
+      ? assigneeMap?.get(task.assignee_id)
+      : undefined,
     assigneeId: task.assignee_id ?? undefined,
     dueDate: task.due_date ?? undefined,
     createdAt: task.created_at,

@@ -5,9 +5,12 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 
 from apps.api.dependencies import CurrentUser, DbSession
+from apps.api.models.enums import AppRole
 from apps.api.schemas.tasks import (
     TaskBulkApproveRequest,
     TaskBulkApproveResponse,
+    TaskBulkAssignRequest,
+    TaskBulkAssignResponse,
     TaskCreate,
     TaskListResponse,
     TaskResponse,
@@ -65,6 +68,16 @@ async def bulk_approve_tasks(
     return await service.bulk_approve_tasks(body.task_ids, user.id)
 
 
+@router.post("/bulk-assign", response_model=TaskBulkAssignResponse)
+async def bulk_assign_tasks(
+    body: TaskBulkAssignRequest,
+    user: CurrentUser = None,
+    service: TaskService = Depends(get_service),
+):
+    """Bulk assign/unassign tasks to a team member."""
+    return await service.bulk_assign_tasks(body.task_ids, body.assignee_id)
+
+
 @router.post("/bulk-reject", status_code=204)
 async def bulk_reject_tasks(
     body: TaskBulkApproveRequest,
@@ -120,7 +133,12 @@ async def update_task(
     user: CurrentUser = None,
     service: TaskService = Depends(get_service),
 ):
-    return await service.update(task_id, body.model_dump(exclude_unset=True))
+    return await service.update(
+        task_id,
+        body.model_dump(exclude_unset=True),
+        user_id=user.id,
+        is_superadmin=user.has_role(AppRole.SUPERADMIN),
+    )
 
 
 @router.delete("/{task_id}", status_code=204)
@@ -140,4 +158,9 @@ async def reorder_task(
     service: TaskService = Depends(get_service),
 ):
     """Update task sort order for kanban drag-drop."""
-    return await service.update(task_id, {"sort_order": sort_order})
+    return await service.update(
+        task_id,
+        {"sort_order": sort_order},
+        user_id=user.id,
+        is_superadmin=user.has_role(AppRole.SUPERADMIN),
+    )
