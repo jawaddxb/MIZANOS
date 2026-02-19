@@ -209,6 +209,7 @@ class SettingsService:
             email=data.email,
             full_name=data.full_name,
             role=data.role,
+            title=getattr(data, "title", None),
             office_location=getattr(data, "office_location", None),
             status="pending",
             invited_at=datetime.now(timezone.utc),
