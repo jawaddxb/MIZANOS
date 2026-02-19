@@ -1,23 +1,20 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Link from "next/link";
 import { Card, CardContent } from "@/components/atoms/display/Card";
 import { Badge } from "@/components/atoms/display/Badge";
 import { Skeleton } from "@/components/atoms/display/Skeleton";
 import { PageHeader } from "@/components/molecules/layout/PageHeader";
 import { PillarBadge } from "@/components/molecules/indicators/PillarBadge";
 import { TasksFilterBar } from "@/components/organisms/tasks/TasksFilterBar";
+import { EditTaskDialog } from "@/components/organisms/product/EditTaskDialog";
+import { toKanbanTask } from "@/components/organisms/kanban/kanban-utils";
 import { useAllTasks } from "@/hooks/queries/useAllTasks";
 import { useProducts } from "@/hooks/queries/useProducts";
 import { useAllProductMembers } from "@/hooks/queries/useProductMembers";
 import { useProfiles } from "@/hooks/queries/useProfiles";
-import {
-  TASK_STATUS_DISPLAY,
-  TASK_PRIORITY_COLORS,
-  TASK_STATUSES,
-} from "@/lib/constants";
-import type { Task } from "@/lib/types";
+import { TASK_STATUS_DISPLAY, TASK_PRIORITY_COLORS, TASK_STATUSES } from "@/lib/constants";
+import type { Task, KanbanTask } from "@/lib/types";
 import { ClipboardCheck, ListTodo } from "lucide-react";
 
 export default function TasksPage() {
@@ -28,6 +25,8 @@ export default function TasksPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [pillarFilter, setPillarFilter] = useState("all");
+  const [editTask, setEditTask] = useState<KanbanTask | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const filters = {
     product_id: projectFilter !== "all" ? projectFilter : undefined,
@@ -157,6 +156,10 @@ export default function TasksPage() {
               task={task}
               projectName={productMap.get(task.product_id)}
               assigneeName={task.assignee_id ? profileMap.get(task.assignee_id) : undefined}
+              onClick={() => {
+                setEditTask(toKanbanTask(task, profileMap));
+                setEditDialogOpen(true);
+              }}
             />
           ))}
         </div>
@@ -173,6 +176,13 @@ export default function TasksPage() {
           </p>
         </div>
       )}
+
+      <EditTaskDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        task={editTask}
+        productId={editTask?.productId ?? ""}
+      />
     </div>
   );
 }
@@ -181,18 +191,20 @@ function TaskRow({
   task,
   projectName,
   assigneeName,
+  onClick,
 }: {
   task: Task;
   projectName?: string;
   assigneeName?: string;
+  onClick: () => void;
 }) {
   const config = TASK_STATUS_DISPLAY[task.status ?? "backlog"] ?? TASK_STATUS_DISPLAY.backlog;
   const Icon = config.icon;
 
   return (
-    <Link
-      href={`/projects/${task.product_id}`}
-      className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+    <div
+      onClick={onClick}
+      className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
     >
       <Icon className={`h-5 w-5 shrink-0 ${config.color}`} />
 
@@ -228,7 +240,7 @@ function TaskRow({
       <Badge variant="outline" className="shrink-0 text-xs">
         {config.label}
       </Badge>
-    </Link>
+    </div>
   );
 }
 

@@ -63,6 +63,7 @@ export interface KanbanTask {
   status: TaskStatus;
   assignee?: string;
   assigneeId?: string;
+  productId?: string;
   dueDate?: string;
   createdAt: string;
 }

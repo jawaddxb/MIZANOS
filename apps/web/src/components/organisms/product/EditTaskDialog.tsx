@@ -105,7 +105,7 @@ export function EditTaskDialog({
         pillar: task.pillar,
         priority: task.priority,
         status: task.status,
-        due_date: task.dueDate ?? "",
+        due_date: task.dueDate?.slice(0, 10) ?? "",
         assignee_id: task.assigneeId ?? "__none__",
       });
     }
