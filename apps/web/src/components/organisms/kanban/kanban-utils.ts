@@ -27,6 +27,7 @@ export function toKanbanTask(
       ? assigneeMap?.get(task.assignee_id)
       : undefined,
     assigneeId: task.assignee_id ?? undefined,
+    productId: task.product_id,
     dueDate: task.due_date ?? undefined,
     createdAt: task.created_at,
   };

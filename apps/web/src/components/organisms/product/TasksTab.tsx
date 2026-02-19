@@ -6,22 +6,20 @@ import { Badge } from "@/components/atoms/display/Badge";
 import { Skeleton } from "@/components/atoms/display/Skeleton";
 import { Button } from "@/components/molecules/buttons/Button";
 import { BaseCheckbox } from "@/components/atoms/inputs/BaseCheckbox";
-import { PillarBadge } from "@/components/molecules/indicators/PillarBadge";
 import { BulkAssignToolbar } from "@/components/molecules/tasks/BulkAssignToolbar";
-import { useTasks } from "@/hooks/queries/useTasks";
-import { useProductMembers } from "@/hooks/queries/useProductMembers";
 import { ClaudeCodePrompt } from "@/components/molecules/tasks/ClaudeCodePrompt";
 import { EditTaskDialog } from "@/components/organisms/product/EditTaskDialog";
+import { AddTaskDialog } from "@/components/organisms/kanban/AddTaskDialog";
 import { toKanbanTask } from "@/components/organisms/kanban/kanban-utils";
+import { useTasks } from "@/hooks/queries/useTasks";
+import { useProductMembers } from "@/hooks/queries/useProductMembers";
+import { useCreateTask } from "@/hooks/mutations/useTaskMutations";
 import { TASK_STATUS_DISPLAY, TASK_PRIORITY_COLORS } from "@/lib/constants";
 import type { Task, KanbanTask, TaskStatus, TaskPriority } from "@/lib/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/inputs/BaseSelect";
-import { Filter, ListTodo, User } from "lucide-react";
+import { Filter, ListTodo, Plus, User } from "lucide-react";
 
-interface TasksTabProps {
-  productId: string;
-}
-
+interface TasksTabProps { productId: string }
 type FilterStatus = TaskStatus | "all";
 type FilterPriority = TaskPriority | "all";
 
@@ -56,7 +54,6 @@ function TaskRow({ task, selected, assigneeName, onToggle, onClick }: TaskRowPro
             </p>
           )}
           <div className="flex items-center gap-2 mt-1.5">
-            {task.pillar && <PillarBadge pillar={task.pillar} className="text-[10px]" />}
             {task.priority && (
               <Badge
                 variant="secondary"
@@ -106,6 +103,8 @@ function TasksTab({ productId }: TasksTabProps) {
   const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
   const [editTask, setEditTask] = useState<KanbanTask | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const createTask = useCreateTask(productId);
 
   const assigneeMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -170,12 +169,21 @@ function TasksTab({ productId }: TasksTabProps) {
       <Card>
         <CardContent className="py-12 text-center">
           <ListTodo className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
-          <h3 className="text-lg font-medium text-foreground mb-2">
-            No Tasks Yet
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            Tasks will appear here once they are created for this product.
-          </p>
+          <h3 className="text-lg font-medium text-foreground mb-2">No Tasks Yet</h3>
+          <p className="text-sm text-muted-foreground mb-4">Create your first task to get started.</p>
+          <Button size="sm" onClick={() => setAddDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Add Task
+          </Button>
+          <AddTaskDialog
+            open={addDialogOpen}
+            onOpenChange={setAddDialogOpen}
+            defaultStatus="backlog"
+            productId={productId}
+            isLoading={createTask.isPending}
+            onSubmit={(data) => {
+              createTask.mutate(data, { onSuccess: () => setAddDialogOpen(false) });
+            }}
+          />
         </CardContent>
       </Card>
     );
@@ -183,43 +191,22 @@ function TasksTab({ productId }: TasksTabProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-4">
-        <div className="grid grid-cols-5 gap-2 flex-1">
-          {(["backlog", "in_progress", "review", "done", "live"] as TaskStatus[]).map(
-            (status) => {
-              const config = TASK_STATUS_DISPLAY[status];
-              const Icon = config.icon;
-              const count = statusCounts[status] ?? 0;
-              return (
-                <Card
-                  key={status}
-                  className="cursor-pointer hover:bg-accent/50 transition-colors"
-                  onClick={() =>
-                    setStatusFilter(statusFilter === status ? "all" : status)
-                  }
-                >
-                  <CardContent className="p-3 flex items-center gap-2">
-                    <Icon
-                      className={`h-4 w-4 ${
-                        statusFilter === status
-                          ? config.color
-                          : "text-muted-foreground"
-                      }`}
-                    />
-                    <div>
-                      <p className="text-lg font-semibold tabular-nums">
-                        {count}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {config.label}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            },
-          )}
-        </div>
+      <div className="grid grid-cols-5 gap-2">
+        {(["backlog", "in_progress", "review", "done", "live"] as TaskStatus[]).map((status) => {
+          const config = TASK_STATUS_DISPLAY[status];
+          const Icon = config.icon;
+          return (
+            <Card key={status} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setStatusFilter(statusFilter === status ? "all" : status)}>
+              <CardContent className="p-3 flex items-center gap-2">
+                <Icon className={`h-4 w-4 ${statusFilter === status ? config.color : "text-muted-foreground"}`} />
+                <div>
+                  <p className="text-lg font-semibold tabular-nums">{statusCounts[status] ?? 0}</p>
+                  <p className="text-xs text-muted-foreground">{config.label}</p>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       <div className="flex items-center gap-2">
@@ -255,6 +242,9 @@ function TasksTab({ productId }: TasksTabProps) {
           <span className="text-sm text-muted-foreground">
             {filteredTasks.length} task{filteredTasks.length !== 1 ? "s" : ""}
           </span>
+          <Button size="sm" onClick={() => setAddDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Add Task
+          </Button>
         </div>
       </div>
 
@@ -287,6 +277,16 @@ function TasksTab({ productId }: TasksTabProps) {
         onOpenChange={setEditDialogOpen}
         task={editTask}
         productId={productId}
+      />
+      <AddTaskDialog
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        defaultStatus="backlog"
+        productId={productId}
+        isLoading={createTask.isPending}
+        onSubmit={(data) => {
+          createTask.mutate(data, { onSuccess: () => setAddDialogOpen(false) });
+        }}
       />
     </div>
   );

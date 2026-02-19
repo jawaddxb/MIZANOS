@@ -13,6 +13,7 @@ export function useCreateTask(productId: string) {
       tasksRepository.create({ ...input, product_id: productId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", productId] });
+      queryClient.invalidateQueries({ queryKey: ["tasks", "all"] });
       toast.success("Task created");
     },
     onError: (error: Error) => {
@@ -29,6 +30,7 @@ export function useUpdateTask(productId: string) {
       tasksRepository.update(id, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", productId] });
+      queryClient.invalidateQueries({ queryKey: ["tasks", "all"] });
     },
     onError: (error: Error) => {
       toast.error("Failed to update task: " + error.message);
@@ -44,6 +46,7 @@ export function useDeleteTask(productId: string) {
       tasksRepository.delete(taskId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", productId] });
+      queryClient.invalidateQueries({ queryKey: ["tasks", "all"] });
       toast.success("Task deleted");
     },
     onError: (error: Error) => {
@@ -60,6 +63,7 @@ export function useBulkAssignTasks(productId: string) {
       tasksRepository.bulkAssignTasks(taskIds, assigneeId),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["tasks", productId] });
+      queryClient.invalidateQueries({ queryKey: ["tasks", "all"] });
       toast.success(`Assigned ${data.assigned_count} task${data.assigned_count !== 1 ? "s" : ""}`);
     },
     onError: (error: Error) => {

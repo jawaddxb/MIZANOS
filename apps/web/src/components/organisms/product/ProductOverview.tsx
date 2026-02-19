@@ -5,6 +5,7 @@ import { Badge } from "@/components/atoms/display/Badge";
 import { Skeleton } from "@/components/atoms/display/Skeleton";
 import { PillarBadge } from "@/components/molecules/indicators/PillarBadge";
 import { StatsGrid } from "@/components/molecules/indicators/StatsGrid";
+import { StageProgress } from "./StageProgress";
 import { useProductDetail } from "@/hooks/queries/useProductDetail";
 import { useTasks } from "@/hooks/queries/useTasks";
 import { useLatestSpecification } from "@/hooks/queries/useSpecifications";
@@ -18,84 +19,33 @@ import { PortTaskGenerator } from "./PortTaskGenerator";
 import { DevelopmentHealthSection } from "./DevelopmentHealthSection";
 import { FunctionalSpecSection } from "./FunctionalSpecSection";
 import { ExternalDocumentsOverview } from "./ExternalDocumentsOverview";
-import { PRODUCT_STAGES } from "@/lib/constants";
-import { Clock, FileText, Users } from "lucide-react";
+import type { ProductStage } from "@/lib/constants";
+import { FileText, Users } from "lucide-react";
 
 interface ProductOverviewProps {
   productId: string;
-}
-
-function StageProgress({ currentStage }: { currentStage: string }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Stage Progress</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {PRODUCT_STAGES.map((stage, i) => {
-            const stageIndex = PRODUCT_STAGES.indexOf(
-              currentStage as (typeof PRODUCT_STAGES)[number],
-            );
-            const isComplete = stageIndex >= 0 && i < stageIndex;
-            const isCurrent = stage === currentStage;
-            return (
-              <div key={stage} className="flex items-center gap-3">
-                <div
-                  className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                    isComplete
-                      ? "bg-primary text-primary-foreground"
-                      : isCurrent
-                        ? "bg-secondary text-secondary-foreground ring-2 ring-primary"
-                        : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {isComplete ? "\u2713" : i + 1}
-                </div>
-                <span
-                  className={`text-sm ${
-                    isCurrent
-                      ? "font-medium text-foreground"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {stage}
-                </span>
-                {isCurrent && (
-                  <span className="ml-auto flex items-center gap-1 text-xs text-primary">
-                    <Clock className="h-3 w-3" />
-                    Current
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
-  );
 }
 
 function TeamCard({ members }: { members: ProductMember[] }) {
   if (members.length === 0) return null;
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
           <Users className="h-4 w-4" />
           Team ({members.length})
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-1.5">
         {members.map((member) => (
           <div
             key={member.id}
-            className="flex items-center justify-between text-sm"
+            className="flex items-center justify-between text-xs"
           >
-            <span className="text-muted-foreground">
+            <span className="text-muted-foreground truncate mr-2">
               {member.profile?.full_name ?? member.profile?.email ?? "Unknown"}
             </span>
-            <Badge variant="outline">{member.role ?? "Member"}</Badge>
+            <Badge variant="outline" className="text-[10px] shrink-0">{member.role ?? "Member"}</Badge>
           </div>
         ))}
       </CardContent>
@@ -103,9 +53,20 @@ function TeamCard({ members }: { members: ProductMember[] }) {
   );
 }
 
+function deriveStage(tasks: { status?: string | null }[]): ProductStage | null {
+  if (tasks.length === 0) return null;
+  const allDoneOrLive = tasks.every((t) => t.status === "done" || t.status === "live");
+  if (allDoneOrLive) return "Live";
+  const allReviewOrLater = tasks.every((t) => t.status === "review" || t.status === "done" || t.status === "live");
+  if (allReviewOrLater) return "QA";
+  const noneInBacklog = tasks.every((t) => t.status !== "backlog");
+  if (noneInBacklog) return "Development";
+  return null;
+}
+
 function ProductOverview({ productId }: ProductOverviewProps) {
   const { user } = useAuth();
-  const { canViewManagementNotes, canViewPartnerNotes, canManageStakeholders } =
+  const { canViewManagementNotes, canViewPartnerNotes, canManageStakeholders, isPM, isSuperAdmin } =
     useRoleVisibility();
   const { data, isLoading } = useProductDetail(productId);
   const { data: tasks } = useTasks(productId);
@@ -123,13 +84,27 @@ function ProductOverview({ productId }: ProductOverviewProps) {
   const { product, members } = data;
   const totalTasks = tasks?.length ?? 0;
   const tasksCompleted =
-    tasks?.filter((t) => t.status === "done").length ?? 0;
+    tasks?.filter((t) => t.status === "done" || t.status === "live").length ?? 0;
   const blockers =
-    tasks?.filter((t) => t.priority === "high" && t.status !== "done").length ??
-    0;
-  const specContent = specification?.content as
-    | Record<string, unknown>
-    | null;
+    tasks?.filter((t) => (t.priority === "critical" || t.priority === "high") && t.status === "backlog").length ?? 0;
+
+  // Weighted progress: backlog=0, in_progress=0.3, review=0.6, done=1, live=1
+  const STATUS_WEIGHT: Record<string, number> = {
+    backlog: 0, in_progress: 0.3, review: 0.6, done: 1, live: 1,
+  };
+  const progress = totalTasks > 0
+    ? Math.round((tasks!.reduce((sum, t) => sum + (STATUS_WEIGHT[t.status ?? "backlog"] ?? 0), 0) / totalTasks) * 100)
+    : 0;
+
+  // Health score (0-100): penalize blockers & overdue, reward progress
+  const overdueTasks = tasks?.filter(
+    (t) => t.due_date && new Date(t.due_date) < new Date() && t.status !== "done" && t.status !== "live",
+  ).length ?? 0;
+  const healthScore = totalTasks > 0
+    ? Math.max(0, Math.min(100, Math.round(progress - (blockers * 15) - (overdueTasks * 10))))
+    : 0;
+
+  const specContent = specification?.content as Record<string, unknown> | null;
   const overview = specContent?.overview as string | undefined;
 
   return (
@@ -161,8 +136,8 @@ function ProductOverview({ productId }: ProductOverviewProps) {
       ) : null}
 
       <StatsGrid
-        healthScore={product.health_score ?? 0}
-        progress={product.progress ?? 0}
+        healthScore={healthScore}
+        progress={progress}
         tasksCompleted={tasksCompleted}
         totalTasks={totalTasks}
         blockers={blockers}
@@ -199,12 +174,20 @@ function ProductOverview({ productId }: ProductOverviewProps) {
           </CardContent>
         </Card>
 
-        <StageProgress currentStage={product.stage ?? "Intake"} />
+        <StageProgress
+          currentStage={product.stage ?? "Intake"}
+          productId={productId}
+          suggestedStage={tasks ? deriveStage(tasks) : null}
+          canChangeStage={isPM || isSuperAdmin}
+        />
       </div>
 
       <PortTaskGenerator productId={productId} sourceType={product.source_type ?? undefined} />
 
-      <TeamCard members={members} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <TeamCard members={members} />
+        <ExternalDocumentsOverview productId={productId} />
+      </div>
 
       {canManageStakeholders && <StakeholdersList productId={productId} />}
 
@@ -240,10 +223,6 @@ function ProductOverview({ productId }: ProductOverviewProps) {
           specificationId={specification?.id}
         />
       )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <ExternalDocumentsOverview productId={productId} />
-      </div>
     </div>
   );
 }

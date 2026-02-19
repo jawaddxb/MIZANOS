@@ -10,7 +10,6 @@ import {
   AvatarFallback,
 } from "@/components/atoms/display/Avatar";
 import { Badge } from "@/components/atoms/display/Badge";
-import { PillarBadge } from "@/components/molecules/indicators/PillarBadge";
 import type { KanbanTask } from "@/lib/types";
 import type { PillarType, TaskPriority } from "@/lib/types";
 
@@ -122,7 +121,6 @@ export function KanbanCard({ task, isOverlay, onClick }: KanbanCardProps) {
 
       {/* Badges row */}
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        <PillarBadge pillar={task.pillar} className="text-[10px]" />
         <Badge variant="outline" className="text-[10px]">
           {PRIORITY_LABEL[task.priority]}
         </Badge>
@@ -151,7 +149,7 @@ export function KanbanCard({ task, isOverlay, onClick }: KanbanCardProps) {
         {task.dueDate && (
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Calendar className="h-3 w-3" />
-            <span className="font-mono">{task.dueDate}</span>
+            <span className="font-mono">{new Date(task.dueDate).toLocaleDateString()}</span>
           </div>
         )}
       </div>
