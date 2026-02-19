@@ -18,8 +18,6 @@ interface SidebarNavProps {
   collapsed: boolean;
 }
 
-const PM_ALLOWED_HREFS = new Set(["/projects", "/intake", "/tasks"]);
-
 export function SidebarNav({ collapsed }: SidebarNavProps) {
   const pathname = usePathname();
   const { isProductManager } = useRoleVisibility();
@@ -46,6 +44,8 @@ export function SidebarNav({ collapsed }: SidebarNavProps) {
     </Link>
   );
 
+  const visibleGroups = NAV_GROUPS;
+
   return (
     <nav
       className={cn(
@@ -54,10 +54,7 @@ export function SidebarNav({ collapsed }: SidebarNavProps) {
       )}
     >
       <div className="space-y-5">
-        {(isProductManager
-          ? [{ label: "MAIN", items: NAV_GROUPS[0].items.filter((i) => PM_ALLOWED_HREFS.has(i.href)) }]
-          : NAV_GROUPS
-        ).map((group) => (
+        {visibleGroups.map((group) => (
           <NavGroup key={group.label} group={group} collapsed={collapsed} />
         ))}
       </div>
