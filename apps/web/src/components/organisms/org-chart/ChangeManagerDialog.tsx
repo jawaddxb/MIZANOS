@@ -11,6 +11,7 @@ import {
 } from "@/components/atoms/layout/Dialog";
 import { BaseButton } from "@/components/atoms/buttons/BaseButton";
 import { SearchableSelect } from "@/components/molecules/forms/SearchableSelect";
+import { useShowPendingProfiles } from "@/hooks/queries/useOrgSettings";
 import type { OrgChartNode } from "@/lib/types";
 
 interface ChangeManagerDialogProps {
@@ -31,10 +32,18 @@ export function ChangeManagerDialog({
   isPending,
 }: ChangeManagerDialogProps) {
   const [selectedManagerId, setSelectedManagerId] = useState<string>("");
+  const showPending = useShowPendingProfiles();
 
   const managerOptions = allNodes
-    .filter((n) => n.id !== targetNode?.id && n.status === "active")
-    .map((n) => ({ value: n.id, label: n.full_name ?? n.email ?? n.id }));
+    .filter(
+      (n) =>
+        n.id !== targetNode?.id &&
+        (n.status === "active" || (showPending && n.status === "pending")),
+    )
+    .map((n) => ({
+      value: n.id,
+      label: `${n.full_name ?? n.email ?? n.id} — ${n.roles.length ? n.roles.join(", ") : "no role"}${n.status === "pending" ? " (pending activation)" : ""}`,
+    }));
 
   const handleConfirm = () => {
     if (!targetNode) return;
