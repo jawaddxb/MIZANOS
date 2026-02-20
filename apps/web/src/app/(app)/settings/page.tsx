@@ -201,7 +201,7 @@ function PermissionMatrixTabWrapper() {
         }
         auditLogPanel={<PermissionAuditLog />}
       />
-      <AddOverrideDialog open={addOverrideOpen} onOpenChange={setAddOverrideOpen} />
+      {addOverrideOpen && <AddOverrideDialog open={addOverrideOpen} onOpenChange={setAddOverrideOpen} />}
     </>
   );
 }
