@@ -15,6 +15,7 @@ const OrgChartTree = dynamic(
   { ssr: false },
 );
 import { AddTeamMemberDialog } from "@/components/organisms/team/AddTeamMemberDialog";
+import { ConfirmDialog } from "@/components/molecules/feedback/ConfirmDialog";
 import { useOrgChart } from "@/hooks/queries/useOrgChart";
 import { useUpdateReportingLine, useResendInvite } from "@/hooks/mutations/useOrgChartMutations";
 import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
@@ -29,6 +30,7 @@ export default function OrgChartPage() {
   const [managerDialogOpen, setManagerDialogOpen] = useState(false);
   const [selectedNode, setSelectedNode] = useState<OrgChartNode | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [resendTarget, setResendTarget] = useState<OrgChartNode | null>(null);
   const [showDetails, setShowDetails] = useState(true);
   const [cardsMoved, setCardsMoved] = useState(false);
 
@@ -113,7 +115,7 @@ export default function OrgChartPage() {
               nodes={nodes ?? []}
               canResendInvite={isAdmin || isPM}
               canEditHierarchy={isAdmin}
-              onResendInvite={(id) => resendInvite.mutate(id)}
+              onResendInvite={(id) => { const n = (nodes ?? []).find((nd) => nd.id === id); setResendTarget(n ?? null); }}
               onEditManager={handleEditManager}
               compact={!showDetails}
               draggable
@@ -123,7 +125,7 @@ export default function OrgChartPage() {
             orphans={orphans}
             canResendInvite={isAdmin || isPM}
             canEditHierarchy={isAdmin}
-            onResendInvite={(id) => resendInvite.mutate(id)}
+            onResendInvite={(id) => { const n = (nodes ?? []).find((nd) => nd.id === id); setResendTarget(n ?? null); }}
             onEditManager={handleEditManager}
             compact={!showDetails}
           />
@@ -150,6 +152,15 @@ export default function OrgChartPage() {
       />
 
       <AddTeamMemberDialog open={inviteOpen} onOpenChange={setInviteOpen} />
+      <ConfirmDialog
+        open={!!resendTarget}
+        onOpenChange={(open) => { if (!open) setResendTarget(null); }}
+        title="Resend Invitation"
+        description={`Send a new invitation email to ${resendTarget?.full_name ?? "this member"}?`}
+        confirmLabel="Send Invite"
+        onConfirm={() => { if (resendTarget) resendInvite.mutate(resendTarget.id); }}
+        loading={resendInvite.isPending}
+      />
     </div>
   );
 }

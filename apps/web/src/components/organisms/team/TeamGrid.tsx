@@ -218,15 +218,15 @@ export function TeamGrid() {
         <div className="rounded-lg border bg-card">
           <div className="flex items-center gap-4 px-4 py-2 border-b border-border bg-muted/50">
             <div className="shrink-0 w-8" />
-            <div className="flex-1 min-w-0 grid grid-cols-[160px_120px_150px_80px_90px_40px_1fr_auto] items-center gap-4">
+            <div className="flex-1 min-w-0 grid grid-cols-[160px_120px_150px_80px_90px_1fr_100px_auto] items-center gap-4">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Name</span>
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Primary Role</span>
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Additional Roles</span>
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Availability</span>
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Projects</span>
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Score</span>
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Skills</span>
-              <span className="w-[52px]" />
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Activation</span>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</span>
             </div>
           </div>
           {filteredTeam.map((member) => (
