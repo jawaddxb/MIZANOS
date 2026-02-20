@@ -132,7 +132,7 @@ async def upload_document(
     service: DocumentService = Depends(get_service),
 ):
     """Upload a document file."""
-    return await service.upload_document(product_id, file, user.id if user else None)
+    return await service.upload_document(product_id, file, user.profile_id if user else None)
 
 
 @router.get("/shared/{token}", response_model=SharedDocumentsResponse)

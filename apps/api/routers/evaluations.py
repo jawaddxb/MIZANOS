@@ -40,7 +40,7 @@ async def create_evaluation(
     user: CurrentUser = None,
     service: EvaluationService = Depends(get_service),
 ):
-    evaluated_by = UUID(user.id) if user else None
+    evaluated_by = user.profile_id if user else None
     return await service.create_evaluation(profile_id, evaluated_by, body)
 
 
@@ -88,7 +88,7 @@ async def create_project_completion(
     user: CurrentUser = None,
     service: EvaluationService = Depends(get_service),
 ):
-    created_by = UUID(user.id) if user else None
+    created_by = user.profile_id if user else None
     return await service.create_project_completion(profile_id, created_by, body)
 
 

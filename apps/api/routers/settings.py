@@ -141,7 +141,7 @@ async def list_standards_repositories(user: CurrentUser = None, service: Setting
 
 @router.post("/standards-repositories", response_model=StandardsRepositoryResponse, status_code=201)
 async def create_standards_repository(body: StandardsRepositoryCreate, user: CurrentUser, service: SettingsService = Depends(get_service)):
-    return await service.create_standards_repository(body, user.id)
+    return await service.create_standards_repository(body, user.profile_id)
 
 
 @router.patch("/standards-repositories/{repo_id}", response_model=StandardsRepositoryResponse)

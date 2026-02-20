@@ -41,7 +41,7 @@ async def create_external_document(
     user: CurrentUser = None,
     service: ExternalDocumentService = Depends(get_service),
 ):
-    created_by = UUID(user.id) if user else None
+    created_by = user.profile_id if user else None
     return await service.create(product_id, created_by, body)
 
 
