@@ -23,20 +23,16 @@ class RolePermissionResponse(BaseSchema):
 
     id: UUID
     role: str
-    feature_id: UUID
-    can_create: bool = False
-    can_read: bool = True
-    can_update: bool = False
-    can_delete: bool = False
+    feature_key: str
+    can_access: bool = False
+    updated_at: datetime | None = None
+    updated_by: UUID | None = None
 
 
 class RolePermissionUpdate(BaseSchema):
     """Role permission update."""
 
-    can_create: bool | None = None
-    can_read: bool | None = None
-    can_update: bool | None = None
-    can_delete: bool | None = None
+    can_access: bool | None = None
 
 
 class IntegrationBase(BaseSchema):
