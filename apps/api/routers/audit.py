@@ -28,7 +28,7 @@ async def list_audits(
 
 @router.post("/run", response_model=AuditResponse)
 async def run_audit(body: RunAuditRequest, user: CurrentUser = None, service: AuditService = Depends(get_service)):
-    return await service.run_audit(body.product_id, user.id)
+    return await service.run_audit(body.product_id, user.profile_id)
 
 
 @router.get("/compare", response_model=CompareResponse)
