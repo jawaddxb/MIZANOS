@@ -65,7 +65,7 @@ async def bulk_approve_tasks(
     service: TaskService = Depends(get_service),
 ):
     """Approve multiple draft tasks."""
-    return await service.bulk_approve_tasks(body.task_ids, user.id)
+    return await service.bulk_approve_tasks(body.task_ids, user.profile_id)
 
 
 @router.post("/bulk-assign", response_model=TaskBulkAssignResponse)
@@ -113,7 +113,7 @@ async def approve_task(
     service: TaskService = Depends(get_service),
 ):
     """Approve a single draft task."""
-    return await service.approve_task(task_id, user.id)
+    return await service.approve_task(task_id, user.profile_id)
 
 
 @router.delete("/{task_id}/reject", status_code=204)
@@ -136,7 +136,7 @@ async def update_task(
     return await service.update(
         task_id,
         body.model_dump(exclude_unset=True),
-        user_id=user.id,
+        user_id=user.profile_id,
         is_superadmin=user.has_role(AppRole.SUPERADMIN),
     )
 
@@ -161,6 +161,6 @@ async def reorder_task(
     return await service.update(
         task_id,
         {"sort_order": sort_order},
-        user_id=user.id,
+        user_id=user.profile_id,
         is_superadmin=user.has_role(AppRole.SUPERADMIN),
     )
