@@ -26,32 +26,32 @@ def get_service(db: DbSession) -> SpecificationService:
 
 
 @router.get("", response_model=list[SpecificationResponse])
-async def list_specs(product_id: UUID, user: CurrentUser = None, service: SpecificationService = Depends(get_service)):
+async def list_specs(product_id: UUID, user: CurrentUser, service: SpecificationService = Depends(get_service)):
     return await service.get_by_product(product_id)
 
 
 @router.get("/{spec_id}", response_model=SpecificationResponse)
-async def get_spec(spec_id: UUID, user: CurrentUser = None, service: SpecificationService = Depends(get_service)):
+async def get_spec(spec_id: UUID, user: CurrentUser, service: SpecificationService = Depends(get_service)):
     return await service.get_or_404(spec_id)
 
 
 @router.post("", response_model=SpecificationResponse, status_code=201)
-async def create_spec(body: SpecificationCreate, user: CurrentUser = None, service: SpecificationService = Depends(get_service)):
+async def create_spec(body: SpecificationCreate, user: CurrentUser, service: SpecificationService = Depends(get_service)):
     return await service.create_spec(body)
 
 
 @router.patch("/{spec_id}", response_model=SpecificationResponse)
-async def update_spec(spec_id: UUID, body: SpecificationUpdate, user: CurrentUser = None, service: SpecificationService = Depends(get_service)):
+async def update_spec(spec_id: UUID, body: SpecificationUpdate, user: CurrentUser, service: SpecificationService = Depends(get_service)):
     return await service.update(spec_id, body.model_dump(exclude_unset=True))
 
 
 @router.get("/{spec_id}/features", response_model=list[SpecFeatureResponse])
-async def list_features(spec_id: UUID, user: CurrentUser = None, service: SpecificationService = Depends(get_service)):
+async def list_features(spec_id: UUID, user: CurrentUser, service: SpecificationService = Depends(get_service)):
     return await service.get_features(spec_id)
 
 
 @router.post("/features", response_model=SpecFeatureResponse, status_code=201)
-async def create_feature(body: SpecFeatureCreate, user: CurrentUser = None, service: SpecificationService = Depends(get_service)):
+async def create_feature(body: SpecFeatureCreate, user: CurrentUser, service: SpecificationService = Depends(get_service)):
     return await service.create_feature(body)
 
 
@@ -59,7 +59,7 @@ async def create_feature(body: SpecFeatureCreate, user: CurrentUser = None, serv
 async def update_feature(
     feature_id: UUID,
     body: SpecFeatureUpdate,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: SpecificationService = Depends(get_service),
 ):
     """Update a specification feature."""
@@ -75,7 +75,7 @@ async def update_feature(
 @router.delete("/features/{feature_id}", status_code=204)
 async def delete_feature(
     feature_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: SpecificationService = Depends(get_service),
 ):
     """Delete a specification feature."""
@@ -86,7 +86,7 @@ async def delete_feature(
 
 @router.get("/features/library", response_model=list[LibraryFeatureResponse])
 async def list_library_features(
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: SpecificationService = Depends(get_service),
 ):
     """Get all reusable features in the library."""
@@ -100,7 +100,7 @@ async def list_library_features(
 async def mark_reusable(
     feature_id: UUID,
     body: MarkReusableRequest,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: SpecificationService = Depends(get_service),
 ):
     """Mark a feature as reusable with a category."""
@@ -117,7 +117,7 @@ async def mark_reusable(
 async def import_feature(
     feature_id: UUID,
     body: ImportFeatureRequest,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: SpecificationService = Depends(get_service),
 ):
     """Import a reusable feature to a target product."""
@@ -127,7 +127,7 @@ async def import_feature(
 @router.get("/features/{feature_id}/import-count")
 async def get_import_count(
     feature_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: SpecificationService = Depends(get_service),
 ):
     """Get how many times a feature has been imported."""
@@ -141,7 +141,7 @@ async def get_import_count(
 )
 async def queue_feature(
     feature_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: SpecificationService = Depends(get_service),
 ):
     """Create a task from feature data and link it."""
@@ -154,7 +154,7 @@ async def queue_feature(
 )
 async def unqueue_feature(
     feature_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: SpecificationService = Depends(get_service),
 ):
     """Remove task link from feature."""
@@ -162,7 +162,7 @@ async def unqueue_feature(
 
 
 @router.post("/generate")
-async def generate_spec(product_id: UUID, user: CurrentUser = None, service: SpecificationService = Depends(get_service)):
+async def generate_spec(product_id: UUID, user: CurrentUser, service: SpecificationService = Depends(get_service)):
     """AI-generate specification from product context."""
     return await service.generate_specification(product_id)
 
@@ -170,7 +170,7 @@ async def generate_spec(product_id: UUID, user: CurrentUser = None, service: Spe
 @router.post("/{product_id}/generate-tasks")
 async def generate_tasks_from_spec(
     product_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: SpecificationService = Depends(get_service),
 ):
     """Generate tasks from specification features."""

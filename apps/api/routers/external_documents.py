@@ -24,7 +24,7 @@ def get_service(db: DbSession) -> ExternalDocumentService:
 )
 async def list_external_documents(
     product_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ExternalDocumentService = Depends(get_service),
 ):
     return await service.get_by_product(product_id)
@@ -38,7 +38,7 @@ async def list_external_documents(
 async def create_external_document(
     product_id: UUID,
     body: ExternalDocumentCreate,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ExternalDocumentService = Depends(get_service),
 ):
     created_by = UUID(user.id) if user else None
@@ -52,7 +52,7 @@ async def create_external_document(
 async def delete_external_document(
     product_id: UUID,
     document_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ExternalDocumentService = Depends(get_service),
 ):
     await service.delete(document_id)

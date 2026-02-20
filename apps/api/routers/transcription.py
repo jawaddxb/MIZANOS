@@ -9,7 +9,7 @@ router = APIRouter()
 
 
 @router.post("")
-async def transcribe_audio(file: UploadFile, user: CurrentUser = None):
+async def transcribe_audio(file: UploadFile, user: CurrentUser):
     """Transcribe an uploaded audio file using OpenAI Whisper."""
     content_type = file.content_type or ""
     if not content_type.startswith("audio/"):

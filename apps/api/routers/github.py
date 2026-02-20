@@ -25,7 +25,7 @@ def get_service(db: DbSession) -> GitHubService:
 
 
 @router.get("/connections", response_model=list[GitHubConnectionResponse])
-async def list_connections(user: CurrentUser = None, service: GitHubService = Depends(get_service)):
+async def list_connections(user: CurrentUser, service: GitHubService = Depends(get_service)):
     return await service.get_connections(user.id)
 
 
@@ -35,46 +35,46 @@ async def get_oauth_url(service: GitHubService = Depends(get_service)):
 
 
 @router.post("/oauth/callback")
-async def oauth_callback(body: GitHubOAuthCallback, user: CurrentUser = None, service: GitHubService = Depends(get_service)):
+async def oauth_callback(body: GitHubOAuthCallback, user: CurrentUser, service: GitHubService = Depends(get_service)):
     return await service.handle_callback(user.id, body.code, body.state)
 
 
 @router.delete("/disconnect")
-async def disconnect(user: CurrentUser = None, service: GitHubService = Depends(get_service)):
+async def disconnect(user: CurrentUser, service: GitHubService = Depends(get_service)):
     await service.disconnect(user.id)
     return {"message": "Disconnected"}
 
 
 @router.get("/repos")
-async def list_repos(user: CurrentUser = None, service: GitHubService = Depends(get_service)):
+async def list_repos(user: CurrentUser, service: GitHubService = Depends(get_service)):
     return await service.list_repos(user.id)
 
 
 @router.delete("/connections/{connection_id}", status_code=204)
-async def disconnect_by_id(connection_id: UUID, user: CurrentUser = None, service: GitHubService = Depends(get_service)):
+async def disconnect_by_id(connection_id: UUID, user: CurrentUser, service: GitHubService = Depends(get_service)):
     await service.disconnect_by_id(connection_id)
 
 
 @router.post("/analyze", response_model=RepoAnalysisResponse)
-async def analyze_repo(body: RepoAnalysisRequest, user: CurrentUser = None, service: GitHubService = Depends(get_service)):
+async def analyze_repo(body: RepoAnalysisRequest, user: CurrentUser, service: GitHubService = Depends(get_service)):
     return await service.analyze_repo(body.product_id, body.repository_url)
 
 
 @router.get("/scans", response_model=list[RepoScanHistoryResponse])
-async def list_scans(product_id: UUID, user: CurrentUser = None, service: GitHubService = Depends(get_service)):
+async def list_scans(product_id: UUID, user: CurrentUser, service: GitHubService = Depends(get_service)):
     return await service.get_scan_history(product_id)
 
 
 @router.get("/analysis/{product_id}", response_model=RepoAnalysisResponse | None)
-async def get_analysis(product_id: UUID, user: CurrentUser = None, service: GitHubService = Depends(get_service)):
+async def get_analysis(product_id: UUID, user: CurrentUser, service: GitHubService = Depends(get_service)):
     return await service.get_latest_analysis(product_id)
 
 
 @router.post("/repo-info", response_model=RepoInfoResponse)
-async def get_repo_info(body: RepoInfoRequest, user: CurrentUser = None, service: GitHubService = Depends(get_service)):
+async def get_repo_info(body: RepoInfoRequest, user: CurrentUser, service: GitHubService = Depends(get_service)):
     return await service.get_repo_info(body.repository_url, body.github_token, body.pat_id)
 
 
 @router.post("/scan")
-async def trigger_scan(body: ScanRequest, user: CurrentUser = None, service: GitHubService = Depends(get_service)):
+async def trigger_scan(body: ScanRequest, user: CurrentUser, service: GitHubService = Depends(get_service)):
     return await service.trigger_scan(body.product_id)

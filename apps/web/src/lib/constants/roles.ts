@@ -42,11 +42,6 @@ export const ROLE_CONFIG: Record<AppRole, RoleConfig> = {
     description: "Marketing campaigns, domains, and social media",
     color: "var(--role-marketing)",
   },
-  product_manager: {
-    label: "Product Manager",
-    description: "Product intake, project overview, dashboard, and tasks",
-    color: "var(--role-pm)",
-  },
   operations: {
     label: "Operations",
     description: "Operational workflows, processes, and org-level coordination",
@@ -62,7 +57,6 @@ export const APP_ROLES: AppRole[] = [
   "engineer",
   "bizdev",
   "marketing",
-  "product_manager",
   "operations",
 ];
 
@@ -103,17 +97,6 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AppRole, string[]> = {
     "dashboard_view", "project_overview",
     "marketing_tab", "marketing_credentials",
     "documents_view",
-  ],
-  product_manager: [
-    "intake_access", "dashboard_view", "project_overview", "sources_tab",
-    "kanban_view", "kanban_edit",
-    "specification_view", "specification_edit",
-    "qa_manage", "audit_view", "environments_view",
-    "documents_view", "documents_edit",
-    "marketing_tab", "marketing_credentials",
-    "management_notes", "partner_notes", "stakeholders_manage",
-    "team_view", "team_manage",
-    "credential_vault",
   ],
   operations: [
     "dashboard_view", "project_overview",

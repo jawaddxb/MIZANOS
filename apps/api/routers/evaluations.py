@@ -23,7 +23,7 @@ def get_service(db: DbSession) -> EvaluationService:
 
 @router.get("/summaries", response_model=list[EvaluationSummary])
 async def list_all_summaries(
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: EvaluationService = Depends(get_service),
 ):
     return await service.get_all_latest_evaluations()
@@ -37,7 +37,7 @@ async def list_all_summaries(
 async def create_evaluation(
     profile_id: UUID,
     body: EvaluationCreate,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: EvaluationService = Depends(get_service),
 ):
     evaluated_by = UUID(user.id) if user else None
@@ -50,7 +50,7 @@ async def create_evaluation(
 )
 async def list_evaluations(
     profile_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: EvaluationService = Depends(get_service),
 ):
     return await service.get_evaluations(profile_id)
@@ -62,7 +62,7 @@ async def list_evaluations(
 )
 async def get_latest_evaluation(
     profile_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: EvaluationService = Depends(get_service),
 ):
     return await service.get_latest_evaluation(profile_id)
@@ -71,7 +71,7 @@ async def get_latest_evaluation(
 @router.get("/{profile_id}/summary")
 async def get_evaluation_summary(
     profile_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: EvaluationService = Depends(get_service),
 ):
     return await service.get_evaluation_summary(profile_id)
@@ -85,7 +85,7 @@ async def get_evaluation_summary(
 async def create_project_completion(
     profile_id: UUID,
     body: ProjectCompletionCreate,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: EvaluationService = Depends(get_service),
 ):
     created_by = UUID(user.id) if user else None
@@ -98,7 +98,7 @@ async def create_project_completion(
 )
 async def list_project_completions(
     profile_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: EvaluationService = Depends(get_service),
 ):
     return await service.get_project_completions(profile_id)

@@ -120,13 +120,14 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 }
 
 const ROLE_DISPLAY_LABELS: Record<string, string> = {
+  business_owner: "Business Owner",
   superadmin: "Super Admin",
   admin: "Admin",
   pm: "Project Manager",
   marketing: "Marketing",
   bizdev: "Business Dev",
   engineer: "Engineer",
-  product_manager: "Product Manager",
+  operations: "Operations",
 };
 
 interface UserSectionProps {

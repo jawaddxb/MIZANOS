@@ -3,10 +3,14 @@
 from packages.common.utils.error_handlers import forbidden
 
 INVITE_MATRIX: dict[str, set[str]] = {
-    "super_admin": {"admin", "pm"},
-    "admin": {"pm", "member"},
-    "pm": {"member"},
-    "member": set(),
+    "business_owner": {"superadmin", "admin", "pm", "engineer", "bizdev", "marketing", "operations"},
+    "superadmin": {"admin", "pm", "engineer", "bizdev", "marketing", "operations"},
+    "admin": {"pm", "engineer", "bizdev", "marketing", "operations"},
+    "pm": {"engineer"},
+    "engineer": set(),
+    "bizdev": set(),
+    "marketing": set(),
+    "operations": set(),
 }
 
 

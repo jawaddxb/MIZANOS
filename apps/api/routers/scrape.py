@@ -20,7 +20,7 @@ def get_service(db: DbSession) -> ScrapeService:
 @router.post("", response_model=ScrapeResponse)
 async def scrape_url(
     body: ScrapeRequest,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ScrapeService = Depends(get_service),
 ):
     """Scrape a URL for content extraction."""
@@ -43,7 +43,7 @@ async def scrape_url(
 @router.post("/analyze", response_model=ScrapeAnalyzeResponse)
 async def analyze_scraped_content(
     body: ScrapeAnalyzeRequest,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ScrapeService = Depends(get_service),
 ):
     """Analyze scraped content to extract structured product info."""

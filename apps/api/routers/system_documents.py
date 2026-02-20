@@ -24,7 +24,7 @@ router = APIRouter()
 async def list_system_documents(
     product_id: UUID,
     db: DbSession,
-    user: CurrentUser = None,
+    user: CurrentUser,
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
 ):
@@ -46,7 +46,7 @@ async def list_system_documents(
 
 @router.get("/{doc_id}", response_model=SystemDocumentResponse)
 async def get_system_document(
-    doc_id: UUID, db: DbSession, user: CurrentUser = None
+    doc_id: UUID, db: DbSession, user: CurrentUser
 ):
     """Get a single system document."""
     doc = await db.get(SystemDocument, doc_id)
@@ -57,7 +57,7 @@ async def get_system_document(
 
 @router.get("/{doc_id}/versions")
 async def get_versions(
-    doc_id: UUID, db: DbSession, user: CurrentUser = None
+    doc_id: UUID, db: DbSession, user: CurrentUser
 ):
     """Get version history for a document type."""
     doc = await db.get(SystemDocument, doc_id)
@@ -81,7 +81,7 @@ async def generate_docs(
     product_id: UUID,
     body: GenerateDocsRequest,
     db: DbSession,
-    user: CurrentUser = None,
+    user: CurrentUser,
 ):
     """Generate all system documents for a product."""
     try:
@@ -103,7 +103,7 @@ async def generate_docs(
 async def regenerate_docs(
     product_id: UUID,
     db: DbSession,
-    user: CurrentUser = None,
+    user: CurrentUser,
 ):
     """Regenerate system documents from current state."""
     try:

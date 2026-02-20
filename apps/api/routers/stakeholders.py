@@ -25,7 +25,7 @@ def get_service(db: DbSession) -> StakeholderService:
 )
 async def list_stakeholders(
     product_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: StakeholderService = Depends(get_service),
 ):
     return await service.get_by_product(product_id)
@@ -39,7 +39,7 @@ async def list_stakeholders(
 async def create_stakeholder(
     product_id: UUID,
     body: StakeholderCreate,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: StakeholderService = Depends(get_service),
 ):
     return await service.create(product_id, body)
@@ -52,7 +52,7 @@ async def create_stakeholder(
 async def update_stakeholder(
     stakeholder_id: UUID,
     body: StakeholderUpdate,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: StakeholderService = Depends(get_service),
 ):
     return await service.update(stakeholder_id, body)
@@ -61,7 +61,7 @@ async def update_stakeholder(
 @router.delete("/stakeholders/{stakeholder_id}", status_code=204)
 async def delete_stakeholder(
     stakeholder_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: StakeholderService = Depends(get_service),
 ):
     await service.delete(stakeholder_id)

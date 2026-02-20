@@ -19,7 +19,7 @@ router = APIRouter()
 
 @router.post("/extract", response_model=LovableManifest)
 async def extract_manifest(
-    body: ExtractRequest, user: CurrentUser = None
+    body: ExtractRequest, user: CurrentUser
 ) -> LovableManifest:
     """Extract manifest from a Lovable project source path."""
     extractor = LovableExtractor()
@@ -35,7 +35,7 @@ async def generate_tasks(
     product_id: UUID,
     body: GenerateRequest,
     db: DbSession,
-    user: CurrentUser = None,
+    user: CurrentUser,
 ) -> GenerateResponse:
     """Generate porting tasks for a product from its Lovable source."""
     # Get product

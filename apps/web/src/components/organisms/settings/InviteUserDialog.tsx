@@ -14,6 +14,7 @@ import { Button } from "@/components/molecules/buttons/Button";
 import { SelectField } from "@/components/molecules/forms/SelectField";
 import { SearchableSelect } from "@/components/molecules/forms/SearchableSelect";
 import { useInviteUser } from "@/hooks/queries/useUserManagement";
+import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
 import { Loader2 } from "lucide-react";
 
 interface InviteUserDialogProps {
@@ -22,13 +23,28 @@ interface InviteUserDialogProps {
   managerOptions?: { value: string; label: string }[];
 }
 
-const ROLE_OPTIONS = [
+const ALL_ROLE_OPTIONS = [
   { value: "admin", label: "Admin" },
   { value: "pm", label: "PM" },
   { value: "engineer", label: "Engineer" },
   { value: "bizdev", label: "BizDev" },
   { value: "marketing", label: "Marketing" },
+  { value: "operations", label: "Operations" },
 ];
+
+const INVITE_MATRIX: Record<string, Set<string>> = {
+  business_owner: new Set(["superadmin", "admin", "pm", "engineer", "bizdev", "marketing", "operations"]),
+  superadmin: new Set(["admin", "pm", "engineer", "bizdev", "marketing", "operations"]),
+  admin: new Set(["pm", "engineer", "bizdev", "marketing", "operations"]),
+  pm: new Set(["engineer"]),
+};
+
+function getAvailableRoles(primaryRole: string | null): { value: string; label: string }[] {
+  if (!primaryRole) return [];
+  const allowed = INVITE_MATRIX[primaryRole];
+  if (!allowed) return [];
+  return ALL_ROLE_OPTIONS.filter((o) => allowed.has(o.value));
+}
 
 const OFFICE_OPTIONS = [
   { value: "lahore", label: "Lahore" },
@@ -71,6 +87,8 @@ const INITIAL_STATE: InviteFormState = {
 export function InviteUserDialog({ open, onOpenChange, managerOptions }: InviteUserDialogProps) {
   const [form, setForm] = useState<InviteFormState>(INITIAL_STATE);
   const inviteUser = useInviteUser();
+  const { primaryRole } = useRoleVisibility();
+  const roleOptions = getAvailableRoles(primaryRole);
 
   const handleClose = useCallback(
     (v: boolean) => {
@@ -147,7 +165,7 @@ export function InviteUserDialog({ open, onOpenChange, managerOptions }: InviteU
           <div className="grid grid-cols-2 gap-4">
             <SelectField
               label="Role *"
-              options={ROLE_OPTIONS}
+              options={roleOptions}
               value={form.role}
               onValueChange={(v) => setForm({ ...form, role: v })}
               placeholder="Select role"

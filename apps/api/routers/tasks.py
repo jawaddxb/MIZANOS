@@ -4,7 +4,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 
-from apps.api.dependencies import CurrentUser, DbSession
+from apps.api.auth import require_roles
+from apps.api.dependencies import AuthenticatedUser, CurrentUser, DbSession
 from apps.api.models.enums import AppRole
 from apps.api.schemas.tasks import (
     TaskBulkApproveRequest,
@@ -37,7 +38,7 @@ async def list_tasks(
     include_drafts: bool = Query(False),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: TaskService = Depends(get_service),
 ):
     """List tasks with filtering. Excludes drafts by default."""
@@ -51,7 +52,7 @@ async def list_tasks(
 @router.get("/drafts", response_model=list[TaskResponse])
 async def list_drafts(
     product_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: TaskService = Depends(get_service),
 ):
     """List draft tasks for a product."""
@@ -61,7 +62,7 @@ async def list_drafts(
 @router.post("/bulk-approve", response_model=TaskBulkApproveResponse)
 async def bulk_approve_tasks(
     body: TaskBulkApproveRequest,
-    user: CurrentUser = None,
+    user: AuthenticatedUser = require_roles(AppRole.PM),
     service: TaskService = Depends(get_service),
 ):
     """Approve multiple draft tasks."""
@@ -71,7 +72,7 @@ async def bulk_approve_tasks(
 @router.post("/bulk-assign", response_model=TaskBulkAssignResponse)
 async def bulk_assign_tasks(
     body: TaskBulkAssignRequest,
-    user: CurrentUser = None,
+    user: AuthenticatedUser = require_roles(AppRole.PM),
     service: TaskService = Depends(get_service),
 ):
     """Bulk assign/unassign tasks to a team member."""
@@ -81,7 +82,7 @@ async def bulk_assign_tasks(
 @router.post("/bulk-reject", status_code=204)
 async def bulk_reject_tasks(
     body: TaskBulkApproveRequest,
-    user: CurrentUser = None,
+    user: AuthenticatedUser = require_roles(AppRole.PM),
     service: TaskService = Depends(get_service),
 ):
     """Reject (delete) multiple draft tasks."""
@@ -91,7 +92,7 @@ async def bulk_reject_tasks(
 @router.get("/{task_id}", response_model=TaskResponse)
 async def get_task(
     task_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: TaskService = Depends(get_service),
 ):
     return await service.get_or_404(task_id)
@@ -100,7 +101,7 @@ async def get_task(
 @router.post("", response_model=TaskResponse, status_code=201)
 async def create_task(
     body: TaskCreate,
-    user: CurrentUser = None,
+    user: AuthenticatedUser = require_roles(AppRole.PM),
     service: TaskService = Depends(get_service),
 ):
     return await service.create_task(body)
@@ -109,7 +110,7 @@ async def create_task(
 @router.post("/{task_id}/approve", response_model=TaskResponse)
 async def approve_task(
     task_id: UUID,
-    user: CurrentUser = None,
+    user: AuthenticatedUser = require_roles(AppRole.PM),
     service: TaskService = Depends(get_service),
 ):
     """Approve a single draft task."""
@@ -119,7 +120,7 @@ async def approve_task(
 @router.delete("/{task_id}/reject", status_code=204)
 async def reject_task(
     task_id: UUID,
-    user: CurrentUser = None,
+    user: AuthenticatedUser = require_roles(AppRole.PM),
     service: TaskService = Depends(get_service),
 ):
     """Reject (delete) a single draft task."""
@@ -130,7 +131,7 @@ async def reject_task(
 async def update_task(
     task_id: UUID,
     body: TaskUpdate,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: TaskService = Depends(get_service),
 ):
     return await service.update(
@@ -144,7 +145,7 @@ async def update_task(
 @router.delete("/{task_id}", status_code=204)
 async def delete_task(
     task_id: UUID,
-    user: CurrentUser = None,
+    user: AuthenticatedUser = require_roles(AppRole.PM),
     service: TaskService = Depends(get_service),
 ):
     await service.delete(task_id)
@@ -154,7 +155,7 @@ async def delete_task(
 async def reorder_task(
     task_id: UUID,
     sort_order: int,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: TaskService = Depends(get_service),
 ):
     """Update task sort order for kanban drag-drop."""

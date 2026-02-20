@@ -4,7 +4,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 
-from apps.api.dependencies import CurrentUser, DbSession
+from apps.api.auth import require_admin, require_roles
+from apps.api.dependencies import AuthenticatedUser, CurrentUser, DbSession
+from apps.api.models.enums import AppRole
 from apps.api.schemas.products import (
     ManagementNoteCreate,
     ManagementNoteResponse,
@@ -35,7 +37,7 @@ async def list_products(
     status: str | None = None,
     search: str | None = None,
     include_archived: bool = Query(False),
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ProductService = Depends(get_service),
 ):
     """List products with pagination and filtering."""
@@ -51,7 +53,7 @@ async def list_products(
 @router.get("/{product_id}", response_model=ProductResponse)
 async def get_product(
     product_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ProductService = Depends(get_service),
 ):
     """Get a product by ID."""
@@ -64,7 +66,7 @@ async def get_product(
 )
 async def list_product_environments(
     product_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ProductService = Depends(get_service),
 ):
     """List environments for a product."""
@@ -78,7 +80,7 @@ async def list_product_environments(
 async def upsert_product_environment(
     product_id: UUID,
     body: ProductEnvironmentUpsert,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ProductService = Depends(get_service),
 ):
     """Create or update an environment for a product."""
@@ -92,7 +94,7 @@ async def upsert_product_environment(
 async def delete_product_environment(
     product_id: UUID,
     env_type: str,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ProductService = Depends(get_service),
 ):
     """Delete an environment by type."""
@@ -102,7 +104,7 @@ async def delete_product_environment(
 @router.post("", response_model=ProductResponse, status_code=201)
 async def create_product(
     body: ProductCreate,
-    user: CurrentUser = None,
+    user: AuthenticatedUser = require_roles(AppRole.PM),
     service: ProductService = Depends(get_service),
 ):
     """Create a new product."""
@@ -113,7 +115,7 @@ async def create_product(
 async def update_product(
     product_id: UUID,
     body: ProductUpdate,
-    user: CurrentUser = None,
+    user: AuthenticatedUser = require_roles(AppRole.PM),
     service: ProductService = Depends(get_service),
 ):
     """Update a product."""
@@ -123,7 +125,7 @@ async def update_product(
 @router.post("/{product_id}/archive", response_model=ProductResponse)
 async def archive_product(
     product_id: UUID,
-    user: CurrentUser = None,
+    user: AuthenticatedUser = require_admin(),
     service: ProductService = Depends(get_service),
 ):
     """Archive a product (soft-delete)."""
@@ -133,7 +135,7 @@ async def archive_product(
 @router.post("/{product_id}/unarchive", response_model=ProductResponse)
 async def unarchive_product(
     product_id: UUID,
-    user: CurrentUser = None,
+    user: AuthenticatedUser = require_admin(),
     service: ProductService = Depends(get_service),
 ):
     """Restore an archived product."""
@@ -146,7 +148,7 @@ async def unarchive_product(
 )
 async def list_management_notes(
     product_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ProductService = Depends(get_service),
 ):
     """List management notes for a product."""
@@ -161,7 +163,7 @@ async def list_management_notes(
 async def create_management_note(
     product_id: UUID,
     body: ManagementNoteCreate,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ProductService = Depends(get_service),
 ):
     """Create a management note."""
@@ -171,7 +173,7 @@ async def create_management_note(
 @router.delete("/management-notes/{note_id}", status_code=204)
 async def delete_management_note(
     note_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ProductService = Depends(get_service),
 ):
     """Delete a management note."""
@@ -184,7 +186,7 @@ async def delete_management_note(
 )
 async def toggle_pin_management_note(
     note_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ProductService = Depends(get_service),
 ):
     """Toggle pin status of a management note."""
@@ -197,7 +199,7 @@ async def toggle_pin_management_note(
 )
 async def list_partner_notes(
     product_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ProductService = Depends(get_service),
 ):
     """List partner notes for a product."""
@@ -212,7 +214,7 @@ async def list_partner_notes(
 async def create_partner_note(
     product_id: UUID,
     body: PartnerNoteCreate,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ProductService = Depends(get_service),
 ):
     """Create a partner note."""
@@ -222,7 +224,7 @@ async def create_partner_note(
 @router.delete("/partner-notes/{note_id}", status_code=204)
 async def delete_partner_note(
     note_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ProductService = Depends(get_service),
 ):
     """Delete a partner note."""
@@ -232,7 +234,7 @@ async def delete_partner_note(
 @router.get("/{product_id}/specification-features")
 async def list_product_features(
     product_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ProductService = Depends(get_service),
 ):
     """Get all specification features for a product."""
@@ -245,7 +247,7 @@ async def list_product_features(
 )
 async def list_product_sources(
     product_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ProductService = Depends(get_service),
 ):
     """Get all specification sources for a product."""
@@ -260,7 +262,7 @@ async def list_product_sources(
 async def create_product_source(
     product_id: UUID,
     body: SpecificationSourceCreate,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ProductService = Depends(get_service),
 ):
     """Create a specification source for a product."""
@@ -270,7 +272,7 @@ async def create_product_source(
 @router.delete("/specification-sources/{source_id}", status_code=204)
 async def delete_product_source(
     source_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ProductService = Depends(get_service),
 ):
     """Delete a specification source."""

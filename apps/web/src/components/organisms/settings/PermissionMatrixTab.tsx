@@ -10,7 +10,7 @@ import { settingsRepository } from "@/lib/api/repositories";
 import type { FeaturePermission } from "@/lib/types";
 import type { AppRole } from "@/lib/types/enums";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Search, Shield, Users, History } from "lucide-react";
+import { Lock, Search, Shield, Users, History } from "lucide-react";
 
 interface PermissionMatrixTabProps {
   className?: string;
@@ -19,11 +19,14 @@ interface PermissionMatrixTabProps {
 }
 
 const ROLES: { key: AppRole; label: string; tier: number }[] = [
+  { key: "business_owner", label: "Owner", tier: 0 },
+  { key: "superadmin", label: "Super Admin", tier: 0 },
   { key: "admin", label: "Admin", tier: 1 },
   { key: "pm", label: "PM", tier: 2 },
+  { key: "engineer", label: "Engineer", tier: 3 },
   { key: "bizdev", label: "BizDev", tier: 3 },
-  { key: "marketing", label: "Marketing", tier: 4 },
-  { key: "engineer", label: "Engineer", tier: 5 },
+  { key: "marketing", label: "Marketing", tier: 3 },
+  { key: "operations", label: "Operations", tier: 3 },
 ];
 
 const CAT_LABELS: Record<string, string> = {
@@ -118,7 +121,11 @@ export function PermissionMatrixTab({ className, overridesPanel, auditLogPanel }
                           <th key={r.key} className="text-center py-3 px-3 font-medium">
                             <div className="flex flex-col items-center gap-1">
                               <span>{r.label}</span>
-                              <Badge variant="outline" className="text-[10px] px-1.5">Tier {r.tier}</Badge>
+                              {r.tier === 0 ? (
+                                <Badge variant="outline" className="text-[10px] px-1.5 text-green-600 border-green-300">Full Access</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-[10px] px-1.5">Tier {r.tier}</Badge>
+                              )}
                             </div>
                           </th>
                         ))}
@@ -166,6 +173,13 @@ function CategoryRows({ category, features, getPerm, onToggle, isPending }: {
             {f.description && <div className="text-xs text-muted-foreground">{f.description}</div>}
           </td>
           {ROLES.map((r) => {
+            if (r.tier === 0) {
+              return (
+                <td key={r.key} className="text-center py-3 px-3">
+                  <Lock className="h-3.5 w-3.5 text-green-500 mx-auto" />
+                </td>
+              );
+            }
             const p = getPerm(r.key, f.feature_key);
             const on = p?.canAccess ?? false;
             return (

@@ -23,7 +23,7 @@ def get_service(db: DbSession) -> TaskTemplateService:
 @router.get("", response_model=list[TaskTemplateResponse])
 async def list_templates(
     source_type: str | None = None,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: TaskTemplateService = Depends(get_service),
 ):
     """List task templates, optionally filtered by source_type."""
@@ -35,7 +35,7 @@ async def list_templates(
 @router.put("/reorder", status_code=204)
 async def reorder_templates(
     body: TaskTemplateReorder,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: TaskTemplateService = Depends(get_service),
 ):
     """Bulk reorder templates by source_type."""
@@ -45,7 +45,7 @@ async def reorder_templates(
 @router.post("/apply")
 async def apply_templates(
     product_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: TaskTemplateService = Depends(get_service),
     db: DbSession = None,
 ):
@@ -64,7 +64,7 @@ async def apply_templates(
 @router.post("", response_model=TaskTemplateResponse, status_code=201)
 async def create_template(
     body: TaskTemplateCreate,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: TaskTemplateService = Depends(get_service),
 ):
     """Create a new task template."""
@@ -75,7 +75,7 @@ async def create_template(
 async def update_template(
     template_id: UUID,
     body: TaskTemplateUpdate,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: TaskTemplateService = Depends(get_service),
 ):
     """Update a task template."""
@@ -87,7 +87,7 @@ async def update_template(
 @router.delete("/{template_id}", status_code=204)
 async def delete_template(
     template_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: TaskTemplateService = Depends(get_service),
 ):
     """Delete a task template."""

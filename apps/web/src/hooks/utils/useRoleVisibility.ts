@@ -13,7 +13,6 @@ export function useRoleVisibility() {
   const isMarketing = userRoles.includes("marketing");
   const isEngineer = userRoles.includes("engineer");
   const isBizDev = userRoles.includes("bizdev");
-  const isProductManager = userRoles.includes("product_manager");
   const isOperations = userRoles.includes("operations");
 
   const canViewMarketingTab = hasPermission("marketing_tab");
@@ -60,11 +59,9 @@ export function useRoleVisibility() {
           ? "bizdev"
           : isEngineer
             ? "engineer"
-            : isProductManager
-              ? "product_manager"
-              : isOperations
-                ? "operations"
-                : null;
+            : isOperations
+              ? "operations"
+              : null;
 
   return {
     isLoading,
@@ -77,7 +74,6 @@ export function useRoleVisibility() {
     isMarketing,
     isEngineer,
     isBizDev,
-    isProductManager,
     isOperations,
     primaryRole,
     canViewMarketingTab,

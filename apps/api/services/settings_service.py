@@ -11,13 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.api.config import settings
 from apps.api.models.settings import (
     FeaturePermission,
-    GlobalIntegration,
     Module,
     OrgSetting,
     PermissionAuditLog,
-    ProjectIntegration,
     RolePermission,
-    StandardsRepository,
 )
 from apps.api.models.user import (
     InvitationToken,
@@ -25,6 +22,8 @@ from apps.api.models.user import (
     UserPermissionOverride,
     UserRole,
 )
+from apps.api.dependencies import AuthenticatedUser
+from apps.api.services.invite_service import validate_invite_permission
 from packages.common.utils.error_handlers import bad_request, forbidden, not_found
 
 
@@ -44,60 +43,27 @@ class SettingsService:
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def update_permission(self, perm_id: UUID, data: dict) -> RolePermission:
+    async def update_permission(
+        self, perm_id: UUID, data: dict, user: AuthenticatedUser | None = None,
+    ) -> RolePermission:
         perm = await self.session.get(RolePermission, perm_id)
         if not perm:
             raise not_found("Permission")
+        old_access = perm.can_access
         for key, value in data.items():
             if hasattr(perm, key):
                 setattr(perm, key, value)
         await self.session.flush()
         await self.session.refresh(perm)
+        if user:
+            await self._log_audit(
+                "role_permission_updated", perm.feature_key,
+                target_role=perm.role,
+                old_value={"can_access": old_access},
+                new_value={"can_access": perm.can_access},
+                changed_by=user.profile_id,
+            )
         return perm
-
-    async def get_global_integrations(self) -> list[GlobalIntegration]:
-        stmt = select(GlobalIntegration)
-        result = await self.session.execute(stmt)
-        return list(result.scalars().all())
-
-    async def create_global_integration(self, data) -> GlobalIntegration:
-        integration = GlobalIntegration(**data.model_dump())
-        self.session.add(integration)
-        await self.session.flush()
-        await self.session.refresh(integration)
-        return integration
-
-    async def get_project_integrations(self, product_id: UUID) -> list[ProjectIntegration]:
-        stmt = select(ProjectIntegration).where(ProjectIntegration.product_id == product_id)
-        result = await self.session.execute(stmt)
-        return list(result.scalars().all())
-
-    async def create_project_integration(self, data) -> ProjectIntegration:
-        integration = ProjectIntegration(**data.model_dump())
-        self.session.add(integration)
-        await self.session.flush()
-        await self.session.refresh(integration)
-        return integration
-
-    async def update_global_integration(
-        self, integration_id: UUID, data: dict,
-    ) -> GlobalIntegration:
-        integration = await self.session.get(GlobalIntegration, integration_id)
-        if not integration:
-            raise not_found("Integration")
-        for key, value in data.items():
-            if hasattr(integration, key):
-                setattr(integration, key, value)
-        await self.session.flush()
-        await self.session.refresh(integration)
-        return integration
-
-    async def delete_global_integration(self, integration_id: UUID) -> None:
-        integration = await self.session.get(GlobalIntegration, integration_id)
-        if not integration:
-            raise not_found("Integration")
-        await self.session.delete(integration)
-        await self.session.flush()
 
     async def get_all_permissions(self) -> list[RolePermission]:
         stmt = select(RolePermission)
@@ -118,32 +84,62 @@ class SettingsService:
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def create_user_override(self, data) -> UserPermissionOverride:
+    async def create_user_override(
+        self, data, user: AuthenticatedUser | None = None,
+    ) -> UserPermissionOverride:
         override = UserPermissionOverride(**data.model_dump())
         self.session.add(override)
         await self.session.flush()
         await self.session.refresh(override)
+        if user:
+            await self._log_audit(
+                "user_override_created", override.feature_key,
+                target_user_id=override.user_id,
+                new_value={"override_type": override.override_type},
+                changed_by=user.profile_id,
+            )
         return override
 
     async def update_user_override(
-        self, override_id: UUID, data: dict,
+        self, override_id: UUID, data: dict, user: AuthenticatedUser | None = None,
     ) -> UserPermissionOverride:
         override = await self.session.get(UserPermissionOverride, override_id)
         if not override:
             raise not_found("User override")
+        old_type = override.override_type
         for key, value in data.items():
             if hasattr(override, key):
                 setattr(override, key, value)
         await self.session.flush()
         await self.session.refresh(override)
+        if user:
+            await self._log_audit(
+                "user_override_updated", override.feature_key,
+                target_user_id=override.user_id,
+                old_value={"override_type": old_type},
+                new_value={"override_type": override.override_type},
+                changed_by=user.profile_id,
+            )
         return override
 
-    async def delete_user_override(self, override_id: UUID) -> None:
+    async def delete_user_override(
+        self, override_id: UUID, user: AuthenticatedUser | None = None,
+    ) -> None:
         override = await self.session.get(UserPermissionOverride, override_id)
         if not override:
             raise not_found("User override")
+        feature_key = override.feature_key
+        user_id = override.user_id
+        override_type = override.override_type
         await self.session.delete(override)
         await self.session.flush()
+        if user:
+            await self._log_audit(
+                "user_override_deleted", feature_key,
+                target_user_id=user_id,
+                old_value={"override_type": override_type},
+                changed_by=user.profile_id,
+            )
 
     async def get_permission_audit_log(
         self, limit: int = 50,
@@ -156,47 +152,18 @@ class SettingsService:
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_standards_repositories(self) -> list[StandardsRepository]:
-        stmt = select(StandardsRepository).order_by(StandardsRepository.name)
-        result = await self.session.execute(stmt)
-        return list(result.scalars().all())
-
-    async def create_standards_repository(
-        self, data, created_by: UUID,
-    ) -> StandardsRepository:
-        repo = StandardsRepository(**data.model_dump(), created_by=created_by)
-        self.session.add(repo)
-        await self.session.flush()
-        await self.session.refresh(repo)
-        return repo
-
-    async def update_standards_repository(
-        self, repo_id: UUID, data: dict,
-    ) -> StandardsRepository:
-        repo = await self.session.get(StandardsRepository, repo_id)
-        if not repo:
-            raise not_found("Standards repository")
-        for key, value in data.items():
-            if hasattr(repo, key):
-                setattr(repo, key, value)
-        await self.session.flush()
-        await self.session.refresh(repo)
-        return repo
-
-    async def delete_standards_repository(self, repo_id: UUID) -> None:
-        repo = await self.session.get(StandardsRepository, repo_id)
-        if not repo:
-            raise not_found("Standards repository")
-        await self.session.delete(repo)
-        await self.session.flush()
-
     async def get_users(self) -> list[Profile]:
         stmt = select(Profile).order_by(Profile.full_name)
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def invite_user(self, data) -> dict:
+    async def invite_user(self, data, user: AuthenticatedUser | None = None) -> dict:
         from apps.api.services.email_service import EmailService
+
+        if user:
+            inviter_roles = [user.role] if user.role else []
+            inviter_roles.extend(user.additional_roles)
+            validate_invite_permission(inviter_roles, data.role)
 
         existing = await self.session.execute(
             select(Profile).where(func.lower(Profile.email) == data.email.lower())
@@ -280,6 +247,28 @@ class SettingsService:
         await self.session.flush()
         await self.session.refresh(target)
         return {"message": "Status updated"}
+
+    async def _log_audit(
+        self,
+        action_type: str,
+        feature_key: str,
+        target_role: str | None = None,
+        target_user_id: str | None = None,
+        old_value: dict | None = None,
+        new_value: dict | None = None,
+        changed_by: UUID | None = None,
+    ) -> None:
+        entry = PermissionAuditLog(
+            action_type=action_type,
+            feature_key=feature_key,
+            target_role=target_role,
+            target_user_id=target_user_id,
+            old_value=old_value,
+            new_value=new_value,
+            changed_by=changed_by,
+        )
+        self.session.add(entry)
+        await self.session.flush()
 
     async def _get_profile_by_user_id(self, user_id: str) -> Profile | None:
         stmt = select(Profile).where(Profile.user_id == user_id)

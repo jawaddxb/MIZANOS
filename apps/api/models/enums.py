@@ -11,7 +11,6 @@ class AppRole(str, enum.Enum):
     ENGINEER = "engineer"
     BIZDEV = "bizdev"
     MARKETING = "marketing"
-    PRODUCT_MANAGER = "product_manager"
     OPERATIONS = "operations"
 
 

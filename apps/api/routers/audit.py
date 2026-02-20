@@ -20,17 +20,17 @@ async def list_audits(
     product_id: UUID,
     page: int = 1,
     page_size: int = 50,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: AuditService = Depends(get_service),
 ):
     return await service.get_by_product(product_id, page=page, page_size=page_size)
 
 
 @router.post("/run", response_model=AuditResponse)
-async def run_audit(body: RunAuditRequest, user: CurrentUser = None, service: AuditService = Depends(get_service)):
+async def run_audit(body: RunAuditRequest, user: CurrentUser, service: AuditService = Depends(get_service)):
     return await service.run_audit(body.product_id, user.id)
 
 
 @router.get("/compare", response_model=CompareResponse)
-async def compare_audits(product_id: UUID, user: CurrentUser = None, service: AuditService = Depends(get_service)):
+async def compare_audits(product_id: UUID, user: CurrentUser, service: AuditService = Depends(get_service)):
     return await service.compare(product_id)

@@ -25,39 +25,39 @@ def get_service(db: DbSession) -> KnowledgeService:
 async def list_entries(
     category: str | None = None,
     search: str | None = None,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: KnowledgeService = Depends(get_service),
 ):
     return await service.list_entries(category=category, search=search)
 
 
 @router.get("/{entry_id}", response_model=KnowledgeResponse)
-async def get_entry(entry_id: UUID, user: CurrentUser = None, service: KnowledgeService = Depends(get_service)):
+async def get_entry(entry_id: UUID, user: CurrentUser, service: KnowledgeService = Depends(get_service)):
     return await service.get_or_404(entry_id)
 
 
 @router.post("", response_model=KnowledgeResponse, status_code=201)
-async def create_entry(body: KnowledgeCreate, user: CurrentUser = None, service: KnowledgeService = Depends(get_service)):
+async def create_entry(body: KnowledgeCreate, user: CurrentUser, service: KnowledgeService = Depends(get_service)):
     return await service.create_entry(body)
 
 
 @router.patch("/{entry_id}", response_model=KnowledgeResponse)
-async def update_entry(entry_id: UUID, body: KnowledgeUpdate, user: CurrentUser = None, service: KnowledgeService = Depends(get_service)):
+async def update_entry(entry_id: UUID, body: KnowledgeUpdate, user: CurrentUser, service: KnowledgeService = Depends(get_service)):
     return await service.update(entry_id, body.model_dump(exclude_unset=True))
 
 
 @router.delete("/{entry_id}", status_code=204)
-async def delete_entry(entry_id: UUID, user: CurrentUser = None, service: KnowledgeService = Depends(get_service)):
+async def delete_entry(entry_id: UUID, user: CurrentUser, service: KnowledgeService = Depends(get_service)):
     await service.delete(entry_id)
 
 
 @router.post("/upload-file", response_model=KnowledgeResponse, status_code=201)
-async def upload_file(body: FileUploadCreate, user: CurrentUser = None, service: KnowledgeService = Depends(get_service)):
+async def upload_file(body: FileUploadCreate, user: CurrentUser, service: KnowledgeService = Depends(get_service)):
     """Create a knowledge entry from file upload metadata (placeholder)."""
     return await service.upload_file(body)
 
 
 @router.post("/transcribe-audio", response_model=KnowledgeResponse, status_code=201)
-async def transcribe_audio(body: TranscribeCreate, user: CurrentUser = None, service: KnowledgeService = Depends(get_service)):
+async def transcribe_audio(body: TranscribeCreate, user: CurrentUser, service: KnowledgeService = Depends(get_service)):
     """Create a knowledge entry for audio transcription (placeholder)."""
     return await service.transcribe_audio(body)

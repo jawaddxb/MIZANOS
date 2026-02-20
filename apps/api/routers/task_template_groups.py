@@ -24,7 +24,7 @@ def get_service(db: DbSession) -> TaskTemplateGroupService:
 @router.get("", response_model=list[TaskTemplateGroupResponse])
 async def list_groups(
     source_type: str | None = None,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: TaskTemplateGroupService = Depends(get_service),
 ):
     """List template groups with item counts."""
@@ -34,7 +34,7 @@ async def list_groups(
 @router.post("", response_model=TaskTemplateGroupResponse, status_code=201)
 async def create_group(
     body: TaskTemplateGroupCreate,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: TaskTemplateGroupService = Depends(get_service),
 ):
     """Create a new template group."""
@@ -45,7 +45,7 @@ async def create_group(
 @router.get("/{group_id}", response_model=TaskTemplateGroupDetailResponse)
 async def get_group(
     group_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: TaskTemplateGroupService = Depends(get_service),
 ):
     """Get a group with its items."""
@@ -56,7 +56,7 @@ async def get_group(
 async def update_group(
     group_id: UUID,
     body: TaskTemplateGroupUpdate,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: TaskTemplateGroupService = Depends(get_service),
 ):
     """Update a template group."""
@@ -69,7 +69,7 @@ async def update_group(
 @router.delete("/{group_id}", status_code=204)
 async def delete_group(
     group_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: TaskTemplateGroupService = Depends(get_service),
 ):
     """Delete a template group."""
@@ -79,7 +79,7 @@ async def delete_group(
 @router.put("/reorder", status_code=204)
 async def reorder_groups(
     body: TaskTemplateGroupReorder,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: TaskTemplateGroupService = Depends(get_service),
 ):
     """Bulk reorder groups."""
@@ -90,7 +90,7 @@ async def reorder_groups(
 async def apply_group(
     group_id: UUID,
     product_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: TaskTemplateGroupService = Depends(get_service),
 ):
     """Apply a group's templates to create tasks for a product."""

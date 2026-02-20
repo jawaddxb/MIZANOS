@@ -59,7 +59,7 @@ export default function TasksPage() {
       allMembers.filter((m) => m.role === "pm").map((m) => m.profile_id),
     );
     return profiles.filter(
-      (p) => pmMemberIds.has(p.id) || p.role === "product_manager" || p.role === "pm",
+      (p) => pmMemberIds.has(p.id) || p.role === "pm",
     );
   }, [allMembers, profiles]);
 

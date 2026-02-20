@@ -24,7 +24,7 @@ def get_member_service(db: DbSession) -> ProductMemberService:
     response_model=list[ProductMemberResponse],
 )
 async def list_all_product_members(
-    user: CurrentUser = None,
+    user: CurrentUser,
     svc: ProductMemberService = Depends(get_member_service),
 ):
     """List all product members across all products."""
@@ -37,7 +37,7 @@ async def list_all_product_members(
 )
 async def list_product_members(
     product_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     svc: ProductMemberService = Depends(get_member_service),
 ):
     """List members for a product."""
@@ -52,7 +52,7 @@ async def list_product_members(
 async def add_product_member(
     product_id: UUID,
     body: ProductMemberAddRequest,
-    user: CurrentUser = None,
+    user: CurrentUser,
     svc: ProductMemberService = Depends(get_member_service),
 ):
     """Add a member to a product."""
@@ -68,7 +68,7 @@ async def add_product_member(
 async def remove_product_member(
     product_id: UUID,
     member_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     svc: ProductMemberService = Depends(get_member_service),
 ):
     """Remove a member from a product."""
@@ -81,7 +81,7 @@ async def remove_product_member(
 )
 async def get_team_readiness(
     product_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     svc: ProductMemberService = Depends(get_member_service),
 ):
     """Check team composition readiness for a product."""

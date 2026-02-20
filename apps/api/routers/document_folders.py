@@ -23,7 +23,7 @@ async def update_folder(
     product_id: UUID,
     folder_id: UUID,
     body: FolderUpdate,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: DocumentFolderService = Depends(get_service),
 ):
     return await service.update(folder_id, body)
@@ -36,7 +36,7 @@ async def update_folder(
 async def delete_folder(
     product_id: UUID,
     folder_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: DocumentFolderService = Depends(get_service),
 ):
     await service.delete(folder_id)

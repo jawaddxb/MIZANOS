@@ -24,7 +24,7 @@ def get_service(db: DbSession) -> ChecklistService:
 )
 async def get_checklist(
     product_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ChecklistService = Depends(get_service),
 ):
     return await service.get_checklist(product_id)
@@ -37,7 +37,7 @@ async def get_checklist(
 )
 async def seed_checklist(
     product_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ChecklistService = Depends(get_service),
 ):
     return await service.seed_checklist(product_id)
@@ -50,7 +50,7 @@ async def seed_checklist(
 async def update_checklist_item(
     item_id: UUID,
     body: DeploymentChecklistUpdate,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ChecklistService = Depends(get_service),
 ):
     return await service.update_item(item_id, body.model_dump(exclude_unset=True))

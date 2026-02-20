@@ -25,7 +25,7 @@ def get_service(db: DbSession) -> IntegrationService:
 )
 async def list_integrations(
     product_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: IntegrationService = Depends(get_service),
 ):
     return await service.get_by_product(product_id)
@@ -39,7 +39,7 @@ async def list_integrations(
 async def create_integration(
     product_id: UUID,
     body: ProjectIntegrationCreate,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: IntegrationService = Depends(get_service),
 ):
     return await service.create(product_id, body)
@@ -52,7 +52,7 @@ async def create_integration(
 async def update_integration(
     integration_id: UUID,
     body: ProjectIntegrationUpdate,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: IntegrationService = Depends(get_service),
 ):
     return await service.update(integration_id, body)
@@ -61,7 +61,7 @@ async def update_integration(
 @router.delete("/project-integrations/{integration_id}", status_code=204)
 async def delete_integration(
     integration_id: UUID,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: IntegrationService = Depends(get_service),
 ):
     await service.delete(integration_id)
