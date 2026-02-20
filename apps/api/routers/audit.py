@@ -18,9 +18,9 @@ def get_service(db: DbSession) -> AuditService:
 @router.get("", response_model=AuditListResponse)
 async def list_audits(
     product_id: UUID,
+    user: CurrentUser,
     page: int = 1,
     page_size: int = 50,
-    user: CurrentUser,
     service: AuditService = Depends(get_service),
 ):
     return await service.get_by_product(product_id, page=page, page_size=page_size)

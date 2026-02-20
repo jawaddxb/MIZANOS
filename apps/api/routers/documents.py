@@ -29,9 +29,9 @@ def get_service(db: DbSession) -> DocumentService:
 @router.get("", response_model=DocumentListResponse)
 async def list_documents(
     product_id: UUID,
+    user: CurrentUser,
     page: int = 1,
     page_size: int = 50,
-    user: CurrentUser,
     service: DocumentService = Depends(get_service),
 ):
     return await service.get_by_product(product_id, page=page, page_size=page_size)
@@ -127,8 +127,8 @@ async def generate_summary(doc_id: UUID, user: CurrentUser, service: DocumentSer
 @router.post("/upload/{product_id}", response_model=DocumentResponse, status_code=201)
 async def upload_document(
     product_id: UUID,
-    file: UploadFile = File(...),
     user: CurrentUser,
+    file: UploadFile = File(...),
     service: DocumentService = Depends(get_service),
 ):
     """Upload a document file."""

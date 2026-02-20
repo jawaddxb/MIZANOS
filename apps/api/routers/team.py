@@ -101,8 +101,8 @@ async def get_user_roles(user_id: str, user: CurrentUser, service: TeamService =
 @router.post("/profiles/{profile_id}/avatar", response_model=ProfileResponse)
 async def upload_avatar(
     profile_id: UUID,
-    file: UploadFile = File(...),
     user: CurrentUser,
+    file: UploadFile = File(...),
     service: TeamService = Depends(get_service),
 ):
     return await service.upload_avatar(profile_id, file)

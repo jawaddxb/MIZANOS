@@ -22,8 +22,8 @@ def get_service(db: DbSession) -> TaskTemplateService:
 
 @router.get("", response_model=list[TaskTemplateResponse])
 async def list_templates(
-    source_type: str | None = None,
     user: CurrentUser,
+    source_type: str | None = None,
     service: TaskTemplateService = Depends(get_service),
 ):
     """List task templates, optionally filtered by source_type."""

@@ -23,9 +23,9 @@ def get_service(db: DbSession) -> KnowledgeService:
 
 @router.get("", response_model=list[KnowledgeResponse])
 async def list_entries(
+    user: CurrentUser,
     category: str | None = None,
     search: str | None = None,
-    user: CurrentUser,
     service: KnowledgeService = Depends(get_service),
 ):
     return await service.list_entries(category=category, search=search)

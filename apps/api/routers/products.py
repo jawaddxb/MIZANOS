@@ -32,12 +32,12 @@ def get_service(db: DbSession) -> ProductService:
 
 @router.get("", response_model=ProductListResponse)
 async def list_products(
+    user: CurrentUser,
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
     status: str | None = None,
     search: str | None = None,
     include_archived: bool = Query(False),
-    user: CurrentUser,
     service: ProductService = Depends(get_service),
 ):
     """List products with pagination and filtering."""

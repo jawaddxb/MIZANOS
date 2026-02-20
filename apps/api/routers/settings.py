@@ -121,7 +121,7 @@ async def list_feature_permissions(user: CurrentUser, service: SettingsService =
 
 
 @router.get("/user-overrides", response_model=list[UserOverrideResponse])
-async def list_user_overrides(user_id: UUID | None = None, user: CurrentUser, service: SettingsService = Depends(get_service)):
+async def list_user_overrides(user: CurrentUser, user_id: UUID | None = None, service: SettingsService = Depends(get_service)):
     return await service.get_user_overrides(user_id)
 
 
@@ -141,7 +141,7 @@ async def delete_user_override(override_id: UUID, user: AuthenticatedUser = requ
 
 
 @router.get("/permission-audit-log", response_model=list[PermissionAuditLogResponse])
-async def list_permission_audit_log(limit: int = 50, user: CurrentUser, service: SettingsService = Depends(get_service)):
+async def list_permission_audit_log(user: CurrentUser, limit: int = 50, service: SettingsService = Depends(get_service)):
     return await service.get_permission_audit_log(limit)
 
 

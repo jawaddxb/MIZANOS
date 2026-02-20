@@ -17,8 +17,8 @@ def get_service(db: DbSession) -> VaultService:
 
 @router.get("", response_model=list[CredentialResponse])
 async def list_credentials(
-    category: str | None = None,
     user: CurrentUser,
+    category: str | None = None,
     service: VaultService = Depends(get_service),
 ):
     return await service.list_credentials(category=category)

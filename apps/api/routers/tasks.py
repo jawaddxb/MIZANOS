@@ -28,6 +28,7 @@ def get_service(db: DbSession) -> TaskService:
 
 @router.get("", response_model=TaskListResponse)
 async def list_tasks(
+    user: CurrentUser,
     product_id: UUID | None = None,
     assignee_id: UUID | None = None,
     pm_id: UUID | None = None,
@@ -38,7 +39,6 @@ async def list_tasks(
     include_drafts: bool = Query(False),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
-    user: CurrentUser,
     service: TaskService = Depends(get_service),
 ):
     """List tasks with filtering. Excludes drafts by default."""

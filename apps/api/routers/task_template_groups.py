@@ -23,8 +23,8 @@ def get_service(db: DbSession) -> TaskTemplateGroupService:
 
 @router.get("", response_model=list[TaskTemplateGroupResponse])
 async def list_groups(
-    source_type: str | None = None,
     user: CurrentUser,
+    source_type: str | None = None,
     service: TaskTemplateGroupService = Depends(get_service),
 ):
     """List template groups with item counts."""
