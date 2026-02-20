@@ -5,6 +5,8 @@ import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
 import { Badge } from "@/components/atoms/display/Badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/atoms/display/Avatar";
+import { StatusBadge } from "@/components/atoms/display/StatusBadge";
+import { ConfirmDialog } from "@/components/molecules/feedback/ConfirmDialog";
 import { getAvatarUrl } from "@/lib/utils/avatar";
 import { Ban, ShieldCheck, Shield, MapPin, Mail, Send } from "lucide-react";
 import { UserRolesDialog } from "./UserRolesDialog";
@@ -36,29 +38,9 @@ function getInitials(name: string | null): string {
   return name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) ?? "?";
 }
 
-function StatusBadge({ status }: { status: string | null }) {
-  const styles: Record<string, string> = {
-    active: "bg-green-100 text-green-700 border-green-200",
-    invited: "bg-amber-100 text-amber-700 border-amber-200",
-    pending: "bg-amber-100 text-amber-700 border-amber-200",
-    suspended: "bg-red-100 text-red-700 border-red-200",
-  };
-  const labels: Record<string, string> = {
-    active: "Active",
-    invited: "Pending Invite",
-    pending: "Pending Invite",
-    suspended: "Suspended",
-  };
-  const key = status ?? "active";
-  return (
-    <span className={cn("text-[11px] px-2 py-0.5 rounded-full border font-medium", styles[key] ?? styles.active)}>
-      {labels[key] ?? "Active"}
-    </span>
-  );
-}
-
 export function TeamMemberCard({ profile, evaluationSummary, compact }: TeamMemberCardProps) {
   const [rolesOpen, setRolesOpen] = useState(false);
+  const [confirmResend, setConfirmResend] = useState(false);
   const { user } = useAuth();
   const updateStatus = useUpdateUserStatus();
   const resendInvite = useResendInvite();
@@ -164,7 +146,7 @@ export function TeamMemberCard({ profile, evaluationSummary, compact }: TeamMemb
               <div className="flex items-center gap-2 pt-1 flex-wrap">
                 {isPending && canManage && (
                   <button
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); resendInvite.mutate(profile.id); }}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConfirmResend(true); }}
                     className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 font-medium transition-colors"
                   >
                     <Send className="h-3 w-3" />
@@ -201,6 +183,15 @@ export function TeamMemberCard({ profile, evaluationSummary, compact }: TeamMemb
       </Link>
 
       <UserRolesDialog open={rolesOpen} onOpenChange={setRolesOpen} profile={profile} />
+      <ConfirmDialog
+        open={confirmResend}
+        onOpenChange={setConfirmResend}
+        title="Resend Invitation"
+        description={`Send a new invitation email to ${profile.full_name ?? "this member"}?`}
+        confirmLabel="Send Invite"
+        onConfirm={() => resendInvite.mutate(profile.id)}
+        loading={resendInvite.isPending}
+      />
     </>
   );
 }

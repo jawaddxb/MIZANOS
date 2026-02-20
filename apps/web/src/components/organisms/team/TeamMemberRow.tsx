@@ -5,9 +5,12 @@ import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
 import { Badge } from "@/components/atoms/display/Badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/atoms/display/Avatar";
+import { StatusBadge } from "@/components/atoms/display/StatusBadge";
+import { ConfirmDialog } from "@/components/molecules/feedback/ConfirmDialog";
 import { getAvatarUrl } from "@/lib/utils/avatar";
-import { Shield } from "lucide-react";
+import { Shield, Send } from "lucide-react";
 import { UserRolesDialog } from "./UserRolesDialog";
+import { useResendInvite } from "@/hooks/mutations/useOrgChartMutations";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROLE_CONFIG } from "@/lib/constants/roles";
 import type { Profile, UserRole } from "@/lib/types";
@@ -38,9 +41,12 @@ function canManageRole(actorRole: string | undefined, targetRole: string | null)
 
 export function TeamMemberRow({ profile, evaluationSummary, additionalRoles = [] }: TeamMemberRowProps) {
   const [rolesOpen, setRolesOpen] = useState(false);
+  const [confirmResend, setConfirmResend] = useState(false);
   const { user } = useAuth();
+  const resendInvite = useResendInvite();
   const isSuspended = profile.status === "suspended";
-  const showRoleManagement = canManageRole(user?.role, profile.role) && profile.user_id !== user?.id;
+  const isPending = profile.status === "invited" || profile.status === "pending";
+  const canManage = canManageRole(user?.role, profile.role) && profile.user_id !== user?.id;
   const availability =
     availabilityConfig[profile.availability as keyof typeof availabilityConfig] ??
     availabilityConfig.available;
@@ -76,28 +82,21 @@ export function TeamMemberRow({ profile, evaluationSummary, additionalRoles = []
           />
         </div>
 
-        <div className="flex-1 min-w-0 grid grid-cols-[160px_120px_150px_80px_90px_40px_1fr_auto] items-center gap-4">
+        <div className="flex-1 min-w-0 grid grid-cols-[160px_120px_150px_80px_90px_1fr_100px_auto] items-center gap-4">
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm font-medium text-foreground truncate">
-                {profile.full_name ?? "Unknown"}
-              </span>
-              {isSuspended && (
-                <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
-                  Suspended
-                </Badge>
-              )}
-            </div>
+            <span className="text-sm font-medium text-foreground truncate block">
+              {profile.full_name ?? "Unknown"}
+            </span>
           </div>
 
-          <span className="text-xs text-muted-foreground truncate">
+          <Badge variant="default" className="text-[11px] px-2 py-0.5 font-semibold w-fit">
             {roleLabel(profile.role)}
-          </span>
+          </Badge>
 
           <div className="flex flex-wrap gap-1 min-w-0">
             {additionalRoles.length > 0 ? (
               additionalRoles.map((ur) => (
-                <Badge key={ur.id} variant="outline" className="text-[10px] px-1.5 py-0">
+                <Badge key={ur.id} variant="secondary" className="text-[11px] px-2 py-0.5 font-semibold">
                   {ROLE_CONFIG[ur.role as AppRole]?.label ?? ur.role}
                 </Badge>
               ))
@@ -114,10 +113,6 @@ export function TeamMemberRow({ profile, evaluationSummary, additionalRoles = []
             {profile.current_projects ?? 0}/{profile.max_projects ?? 3} projects
           </span>
 
-          <span className="text-xs font-medium tabular-nums">
-            {evaluationSummary ? evaluationSummary.overall_score.toFixed(1) : ""}
-          </span>
-
           <div className="flex gap-1 min-w-0 overflow-hidden">
             {profile.skills?.slice(0, 3).map((skill) => (
               <Badge key={skill} variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
@@ -131,21 +126,28 @@ export function TeamMemberRow({ profile, evaluationSummary, additionalRoles = []
             )}
           </div>
 
-          {showRoleManagement ? (
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setRolesOpen(true);
-              }}
-              className="shrink-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Shield className="h-3 w-3" />
-              Roles
-            </button>
-          ) : (
-            <span />
-          )}
+          <StatusBadge status={profile.status} />
+
+          <div className="shrink-0 flex items-center gap-2">
+            {isPending && canManage && (
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConfirmResend(true); }}
+                className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium transition-colors"
+              >
+                <Send className="h-3 w-3" />
+                Resend Invite
+              </button>
+            )}
+            {canManage && (
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setRolesOpen(true); }}
+                className="flex items-center gap-1.5 text-xs font-semibold text-primary border border-primary/30 bg-primary/5 rounded-md px-2.5 py-1 hover:bg-primary/10 transition-colors"
+              >
+                <Shield className="h-3.5 w-3.5" />
+                Roles
+              </button>
+            )}
+          </div>
         </div>
       </Link>
 
@@ -153,6 +155,15 @@ export function TeamMemberRow({ profile, evaluationSummary, additionalRoles = []
         open={rolesOpen}
         onOpenChange={setRolesOpen}
         profile={profile}
+      />
+      <ConfirmDialog
+        open={confirmResend}
+        onOpenChange={setConfirmResend}
+        title="Resend Invitation"
+        description={`Send a new invitation email to ${profile.full_name ?? "this member"}?`}
+        confirmLabel="Send Invite"
+        onConfirm={() => resendInvite.mutate(profile.id)}
+        loading={resendInvite.isPending}
       />
     </>
   );
