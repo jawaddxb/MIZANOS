@@ -88,16 +88,23 @@ export function TeamMemberRow({ profile, evaluationSummary, additionalRoles = []
             <span className="text-sm font-medium text-foreground truncate block">
               {profile.full_name ?? "Unknown"}
             </span>
+            {profile.email && (
+              <span className="text-[11px] text-muted-foreground truncate block">
+                {profile.email}
+              </span>
+            )}
           </div>
 
-          <Badge variant="default" className="text-[11px] px-2 py-0.5 font-semibold max-w-full truncate">
-            {roleLabel(profile.role)}
-          </Badge>
+          <div className="min-w-0">
+            <Badge variant="secondary" className="text-[10px] !px-1.5 !py-0 font-normal truncate">
+              {roleLabel(profile.role)}
+            </Badge>
+          </div>
 
           <div className="flex flex-wrap gap-1 min-w-0">
             {additionalRoles.length > 0 ? (
               additionalRoles.map((ur) => (
-                <Badge key={ur.id} variant="secondary" className="text-[11px] px-2 py-0.5 font-semibold">
+                <Badge key={ur.id} variant="secondary" className="text-[10px] !px-1.5 !py-0 font-normal">
                   {ROLE_CONFIG[ur.role as AppRole]?.label ?? ur.role}
                 </Badge>
               ))
@@ -116,12 +123,12 @@ export function TeamMemberRow({ profile, evaluationSummary, additionalRoles = []
 
           <div className="flex gap-1 min-w-0 overflow-hidden">
             {profile.skills?.slice(0, 3).map((skill) => (
-              <Badge key={skill} variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
+              <Badge key={skill} variant="secondary" className="text-[10px] !px-1.5 !py-0 font-normal shrink-0">
                 {skill}
               </Badge>
             ))}
             {(profile.skills?.length ?? 0) > 3 && (
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+              <Badge variant="outline" className="text-[10px] !px-1.5 !py-0 font-normal shrink-0">
                 +{(profile.skills?.length ?? 0) - 3}
               </Badge>
             )}

@@ -205,7 +205,8 @@ class ProductMemberService:
         self.session.add(notification)
 
         if profile.email:
-            product_url = f"/products/{product.id}"
+            from apps.api.config import settings
+            product_url = f"{settings.app_base_url}/projects/{product.id}"
             try:
                 await EmailService.send_assignment_email(
                     to_email=profile.email,
