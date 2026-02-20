@@ -48,6 +48,7 @@ function useUpdateRolePermission() {
     mutationFn: ({ permissionId, canAccess }: { permissionId: string; canAccess: boolean }) =>
       settingsRepository.updateRolePermission(permissionId, { can_access: canAccess }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["settings", "role-permissions"] }); },
+    onError: (err) => { console.error("Permission update failed:", err); },
   });
 }
 
@@ -81,6 +82,7 @@ export function PermissionMatrixTab({ className, overridesPanel, auditLogPanel }
 
   const handleToggle = useCallback((role: string, featureKey: string) => {
     const p = getPerm(role, featureKey);
+    console.log("[matrix] toggle", role, featureKey, "perm:", p);
     if (p) updatePerm.mutate({ permissionId: p.id, canAccess: !p.canAccess });
   }, [getPerm, updatePerm]);
 
