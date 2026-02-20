@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Search, Plus, Users, UserX, LayoutGrid, List } from "lucide-react";
+import { SortHeader } from "@/components/atoms/display/SortHeader";
 import { Button } from "@/components/molecules/buttons/Button";
 import { PageHeader } from "@/components/molecules/layout/PageHeader";
 import { Skeleton } from "@/components/atoms/display/Skeleton";
@@ -27,10 +28,8 @@ const ROLE_CHIPS = [
   { value: "marketing", label: "Marketing" },
 ] as const;
 
-const SORT_OPTIONS = [
-  { value: "name", label: "Name" },
-  { value: "score", label: "Score (High→Low)" },
-] as const;
+type SortColumn = "name" | "role" | "reports_to" | "availability" | "status";
+type SortDir = "asc" | "desc";
 
 export function TeamGrid() {
   const { data: profiles = [], isLoading } = useProfiles();
@@ -41,15 +40,25 @@ export function TeamGrid() {
   const [roleFilter, setRoleFilter] = useState("all");
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState("name");
+  const [reportsToFilter, setReportsToFilter] = useState("all");
+  const [sortCol, setSortCol] = useState<SortColumn>("name");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+
+  const toggleSort = (col: SortColumn) => {
+    if (sortCol === col) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortCol(col);
+      setSortDir("asc");
+    }
+  };
 
   const summaryMap = useMemo(() => {
     const map = new Map<string, EvaluationSummary>();
     summaries.forEach((s) => map.set(s.profile_id, s));
     return map;
   }, [summaries]);
-
   const rolesMap = useMemo(() => {
     const map = new Map<string, UserRole[]>();
     allUserRoles.forEach((r) => {
@@ -59,7 +68,6 @@ export function TeamGrid() {
     });
     return map;
   }, [allUserRoles]);
-
   const roleCounts = useMemo(() => {
     const counts: Record<string, number> = { all: profiles.length };
     profiles.forEach((p) => {
@@ -71,13 +79,23 @@ export function TeamGrid() {
     });
     return counts;
   }, [profiles]);
-
   const allSkills = useMemo(() => {
     const skillSet = new Set<string>();
     profiles.forEach((p) => p.skills?.forEach((s) => skillSet.add(s)));
     return Array.from(skillSet).sort();
   }, [profiles]);
+  const nameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    profiles.forEach((p) => map.set(p.id, p.full_name ?? "Unknown"));
+    return map;
+  }, [profiles]);
 
+  const managers = useMemo(() => {
+    const ids = new Set(profiles.map((p) => p.reports_to).filter(Boolean) as string[]);
+    return Array.from(ids)
+      .map((id) => ({ id, name: nameMap.get(id) ?? "Unknown" }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [profiles, nameMap]);
   const filteredTeam = useMemo(() => {
     const filtered = profiles.filter((member) => {
       const matchesRole =
@@ -92,19 +110,37 @@ export function TeamGrid() {
       const matchesSkills =
         selectedSkills.length === 0 ||
         selectedSkills.every((s) => member.skills?.includes(s));
-      return matchesRole && matchesSearch && matchesAvailability && matchesSkills;
+      const matchesReportsTo =
+        reportsToFilter === "all" ||
+        (reportsToFilter === "none" ? !member.reports_to : member.reports_to === reportsToFilter);
+      return matchesRole && matchesSearch && matchesAvailability && matchesSkills && matchesReportsTo;
     });
 
-    if (sortBy === "score") {
-      filtered.sort((a, b) => {
-        const scoreA = summaryMap.get(a.id)?.overall_score ?? 0;
-        const scoreB = summaryMap.get(b.id)?.overall_score ?? 0;
-        return scoreB - scoreA;
-      });
-    }
+    const dir = sortDir === "asc" ? 1 : -1;
+    filtered.sort((a, b) => {
+      let cmp = 0;
+      switch (sortCol) {
+        case "name":
+          cmp = (a.full_name ?? "").localeCompare(b.full_name ?? "");
+          break;
+        case "role":
+          cmp = (a.role ?? "").localeCompare(b.role ?? "");
+          break;
+        case "reports_to":
+          cmp = (nameMap.get(a.reports_to ?? "") ?? "").localeCompare(nameMap.get(b.reports_to ?? "") ?? "");
+          break;
+        case "availability":
+          cmp = (a.availability ?? "").localeCompare(b.availability ?? "");
+          break;
+        case "status":
+          cmp = (a.status ?? "").localeCompare(b.status ?? "");
+          break;
+      }
+      return cmp * dir;
+    });
 
     return filtered;
-  }, [profiles, roleFilter, searchQuery, availabilityFilter, selectedSkills, sortBy, summaryMap]);
+  }, [profiles, roleFilter, searchQuery, availabilityFilter, selectedSkills, reportsToFilter, sortCol, sortDir, summaryMap, nameMap]);
 
   return (
     <div className="space-y-6">
@@ -163,12 +199,14 @@ export function TeamGrid() {
           <option value="unavailable">Unavailable</option>
         </select>
         <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-          className="h-9 rounded-md border bg-background px-3 text-sm w-40"
+          value={reportsToFilter}
+          onChange={(e) => setReportsToFilter(e.target.value)}
+          className="h-9 rounded-md border bg-background px-3 text-sm w-44"
         >
-          {SORT_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          <option value="all">All</option>
+          <option value="none">No Manager</option>
+          {managers.map((m) => (
+            <option key={m.id} value={m.id}>{m.name}</option>
           ))}
         </select>
         <SkillFilter
@@ -217,15 +255,15 @@ export function TeamGrid() {
       ) : viewMode === "list" ? (
         <div className="rounded-lg border bg-card">
           <div className="flex items-center gap-4 px-4 py-2 border-b border-border bg-muted/50">
-            <div className="shrink-0 w-8" />
-            <div className="flex-1 min-w-0 grid grid-cols-[160px_120px_150px_80px_90px_1fr_100px_auto] items-center gap-4">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Name</span>
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Primary Role</span>
+            <div className="shrink-0 w-10" />
+            <div className="flex-1 min-w-0 grid grid-cols-[150px_120px_130px_120px_80px_1fr_100px_auto] items-center gap-4">
+              <SortHeader label="Name" column="name" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+              <SortHeader label="Primary Role" column="role" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Additional Roles</span>
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Availability</span>
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Projects</span>
+              <SortHeader label="Reports To" column="reports_to" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
+              <SortHeader label="Availability" column="availability" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Skills</span>
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Activation</span>
+              <SortHeader label="Activation" column="status" sortCol={sortCol} sortDir={sortDir} onSort={toggleSort} />
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</span>
             </div>
           </div>
@@ -235,6 +273,7 @@ export function TeamGrid() {
               profile={member}
               evaluationSummary={summaryMap.get(member.id)}
               additionalRoles={(rolesMap.get(member.user_id) ?? []).filter(r => r.role !== member.role)}
+              managerName={member.reports_to ? nameMap.get(member.reports_to) ?? null : null}
             />
           ))}
         </div>
@@ -254,4 +293,3 @@ export function TeamGrid() {
     </div>
   );
 }
-
