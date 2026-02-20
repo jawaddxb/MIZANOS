@@ -21,6 +21,7 @@ interface TeamMemberRowProps {
   profile: Profile;
   evaluationSummary?: EvaluationSummary;
   additionalRoles?: UserRole[];
+  managerName?: string | null;
 }
 
 const roleLabel = (role: string | null): string => {
@@ -39,7 +40,7 @@ function canManageRole(actorRole: string | undefined, targetRole: string | null)
   return false;
 }
 
-export function TeamMemberRow({ profile, evaluationSummary, additionalRoles = [] }: TeamMemberRowProps) {
+export function TeamMemberRow({ profile, evaluationSummary, additionalRoles = [], managerName }: TeamMemberRowProps) {
   const [rolesOpen, setRolesOpen] = useState(false);
   const [confirmResend, setConfirmResend] = useState(false);
   const { user } = useAuth();
@@ -68,28 +69,28 @@ export function TeamMemberRow({ profile, evaluationSummary, additionalRoles = []
         )}
       >
         <div className="relative shrink-0">
-          <Avatar className="h-8 w-8">
+          <Avatar className="h-10 w-10">
             {profile.avatar_url && (
-              <AvatarImage src={getAvatarUrl(profile.avatar_url) ?? ""} alt={profile.full_name ?? ""} />
+              <AvatarImage src={getAvatarUrl(profile.avatar_url) ?? ""} alt={profile.full_name ?? ""} className="object-cover" />
             )}
-            <AvatarFallback className="text-xs font-medium">{initials}</AvatarFallback>
+            <AvatarFallback className="text-sm font-medium">{initials}</AvatarFallback>
           </Avatar>
           <span
             className={cn(
-              "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background",
+              "absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background",
               availability.color,
             )}
           />
         </div>
 
-        <div className="flex-1 min-w-0 grid grid-cols-[160px_120px_150px_80px_90px_1fr_100px_auto] items-center gap-4">
+        <div className="flex-1 min-w-0 grid grid-cols-[150px_120px_130px_120px_80px_1fr_100px_auto] items-center gap-4">
           <div className="min-w-0">
             <span className="text-sm font-medium text-foreground truncate block">
               {profile.full_name ?? "Unknown"}
             </span>
           </div>
 
-          <Badge variant="default" className="text-[11px] px-2 py-0.5 font-semibold w-fit">
+          <Badge variant="default" className="text-[11px] px-2 py-0.5 font-semibold max-w-full truncate">
             {roleLabel(profile.role)}
           </Badge>
 
@@ -105,12 +106,12 @@ export function TeamMemberRow({ profile, evaluationSummary, additionalRoles = []
             )}
           </div>
 
-          <span className="text-xs text-muted-foreground">
-            {availability.label}
+          <span className="text-xs text-muted-foreground truncate">
+            {managerName ?? "—"}
           </span>
 
           <span className="text-xs text-muted-foreground">
-            {profile.current_projects ?? 0}/{profile.max_projects ?? 3} projects
+            {availability.label}
           </span>
 
           <div className="flex gap-1 min-w-0 overflow-hidden">
