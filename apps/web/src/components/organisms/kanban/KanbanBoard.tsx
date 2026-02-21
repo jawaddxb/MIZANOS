@@ -17,9 +17,9 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { KanbanColumn } from "./KanbanColumn";
 import { KanbanCard } from "./KanbanCard";
 import { KanbanFilters } from "./KanbanFilters";
-import { COLUMN_DEFINITIONS, toKanbanTask } from "./kanban-utils";
+import { COLUMN_DEFINITIONS, isKanbanVisible, toKanbanTask } from "./kanban-utils";
 import { AddTaskDialog } from "./AddTaskDialog";
-import { EditTaskDialog } from "@/components/organisms/product/EditTaskDialog";
+import { TaskDetailDrawer } from "@/components/organisms/product/TaskDetailDrawer";
 import { useTasks } from "@/hooks/queries/useTasks";
 import { useProductMembers } from "@/hooks/queries/useProductMembers";
 import {
@@ -59,7 +59,7 @@ export function KanbanBoard({ productId }: KanbanBoardProps) {
   }, [members]);
 
   const kanbanTasks = useMemo(
-    () => rawTasks.map((t) => toKanbanTask(t, assigneeMap)),
+    () => rawTasks.filter(isKanbanVisible).map((t) => toKanbanTask(t, assigneeMap)),
     [rawTasks, assigneeMap],
   );
 
@@ -298,7 +298,7 @@ export function KanbanBoard({ productId }: KanbanBoardProps) {
         productId={productId}
       />
 
-      <EditTaskDialog
+      <TaskDetailDrawer
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
         task={editTask}

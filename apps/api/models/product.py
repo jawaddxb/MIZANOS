@@ -119,3 +119,15 @@ class ProductPartnerNote(Base, UUIDMixin, TimestampMixin):
     )
     partner_name: Mapped[str] = mapped_column(String, nullable=False)
     content: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class ProductNotificationSetting(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "product_notification_settings"
+
+    product_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("products.id", ondelete="CASCADE"),
+        unique=True,
+        nullable=False,
+    )
+    email_enabled: Mapped[bool] = mapped_column(Boolean, default=True)

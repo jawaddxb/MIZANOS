@@ -44,7 +44,13 @@ from apps.api.routers import (
     evaluations,
     org_chart,
 )
-from apps.api.routers import external_documents, document_folders, product_members
+from apps.api.routers import (
+    external_documents,
+    document_folders,
+    product_members,
+    product_notification_settings,
+    task_comments,
+)
 
 
 @asynccontextmanager
@@ -121,6 +127,8 @@ app.include_router(external_documents.router, prefix="/products", tags=["externa
 app.include_router(document_folders.router, prefix="/products", tags=["document-folders"])
 app.include_router(evaluations.router, prefix="/evaluations", tags=["evaluations"])
 app.include_router(org_chart.router, prefix="/org-chart", tags=["org-chart"])
+app.include_router(product_notification_settings.router, prefix="/products", tags=["product-notification-settings"])
+app.include_router(task_comments.router, prefix="/tasks", tags=["task-comments"])
 
 
 # Mount static files for uploaded avatars

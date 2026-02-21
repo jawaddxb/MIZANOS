@@ -9,8 +9,8 @@ import { useDraftTasks } from "@/hooks/queries/useDraftTasks";
 import {
   useApproveTask,
   useBulkApproveTasks,
-  useRejectTask,
-  useBulkRejectTasks,
+  useRejectDraftTask,
+  useBulkRejectDraftTasks,
 } from "@/hooks/mutations/useTaskApprovalMutations";
 
 interface DraftTaskReviewProps {
@@ -29,8 +29,8 @@ export function DraftTaskReview({ productId }: DraftTaskReviewProps) {
 
   const approveTask = useApproveTask(productId);
   const bulkApprove = useBulkApproveTasks(productId);
-  const rejectTask = useRejectTask(productId);
-  const bulkReject = useBulkRejectTasks(productId);
+  const rejectTask = useRejectDraftTask(productId);
+  const bulkReject = useBulkRejectDraftTasks(productId);
 
   const allSelected = drafts.length > 0 && selectedIds.size === drafts.length;
 

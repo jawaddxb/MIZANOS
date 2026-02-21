@@ -12,7 +12,6 @@ import {
   TooltipTrigger,
 } from "@/components/atoms/feedback/Tooltip";
 import { NAV_GROUPS, SETTINGS_NAV_ITEM } from "@/lib/constants";
-import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
 
 interface SidebarNavProps {
   collapsed: boolean;
@@ -20,7 +19,6 @@ interface SidebarNavProps {
 
 export function SidebarNav({ collapsed }: SidebarNavProps) {
   const pathname = usePathname();
-  const { isProjectManager } = useRoleVisibility();
   const settingsActive =
     pathname === SETTINGS_NAV_ITEM.href ||
     pathname.startsWith(SETTINGS_NAV_ITEM.href);
@@ -59,21 +57,19 @@ export function SidebarNav({ collapsed }: SidebarNavProps) {
         ))}
       </div>
 
-      {!isProjectManager && (
-        <div className="mt-auto pt-4">
-          <Separator className="mb-3 bg-border" />
-          {collapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>{settingsLink}</TooltipTrigger>
-              <TooltipContent side="right">
-                {SETTINGS_NAV_ITEM.label}
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            settingsLink
-          )}
-        </div>
-      )}
+      <div className="mt-auto pt-4">
+        <Separator className="mb-3 bg-border" />
+        {collapsed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>{settingsLink}</TooltipTrigger>
+            <TooltipContent side="right">
+              {SETTINGS_NAV_ITEM.label}
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          settingsLink
+        )}
+      </div>
     </nav>
   );
 }

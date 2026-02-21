@@ -8,6 +8,7 @@ export interface AllTasksFilters {
   product_id?: string;
   assignee_id?: string;
   pm_id?: string;
+  member_id?: string;
   status?: string;
   priority?: string;
   pillar?: string;

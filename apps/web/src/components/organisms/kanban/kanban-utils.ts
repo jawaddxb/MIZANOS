@@ -12,6 +12,10 @@ export const COLUMN_DEFINITIONS: { id: TaskStatus; title: string }[] = [
   { id: "live", title: "Live" },
 ];
 
+export function isKanbanVisible(task: Task): boolean {
+  return task.status !== "cancelled";
+}
+
 export function toKanbanTask(
   task: Task,
   assigneeMap?: Map<string, string>,
@@ -29,6 +33,8 @@ export function toKanbanTask(
     assigneeId: task.assignee_id ?? undefined,
     productId: task.product_id,
     dueDate: task.due_date ?? undefined,
+    commentCount: task.comment_count ?? 0,
+    replyCount: task.reply_count ?? 0,
     createdAt: task.created_at,
   };
 }

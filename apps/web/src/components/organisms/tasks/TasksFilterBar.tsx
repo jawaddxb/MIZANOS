@@ -13,6 +13,7 @@ import { SearchableSelect } from "@/components/molecules/forms/SearchableSelect"
 import { Button } from "@/components/molecules/buttons/Button";
 import { TASK_STATUSES, TASK_PRIORITIES, TASK_PILLARS, TASK_STATUS_DISPLAY } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
+import { BaseSwitch } from "@/components/atoms/inputs/BaseSwitch";
 import { cn } from "@/lib/utils/cn";
 import { Search, Filter, X } from "lucide-react";
 import type { Product, Profile } from "@/lib/types";
@@ -32,6 +33,8 @@ interface TasksFilterBarProps {
   onPriorityChange: (v: string) => void;
   pillarFilter: string;
   onPillarChange: (v: string) => void;
+  myWorkEnabled: boolean;
+  onMyWorkToggle: (v: boolean) => void;
   projects: Product[];
   profiles: Profile[];
   pmProfiles: Profile[];
@@ -54,6 +57,8 @@ export function TasksFilterBar({
   onPriorityChange,
   pillarFilter,
   onPillarChange,
+  myWorkEnabled,
+  onMyWorkToggle,
   projects,
   profiles,
   pmProfiles,
@@ -84,6 +89,11 @@ export function TasksFilterBar({
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
+      <label className="flex items-center gap-1.5 shrink-0 cursor-pointer">
+        <BaseSwitch checked={myWorkEnabled} onCheckedChange={onMyWorkToggle} />
+        <span className="text-sm font-medium whitespace-nowrap">My Work</span>
+      </label>
+
       <div className="relative flex-1 min-w-[160px] max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <BaseInput

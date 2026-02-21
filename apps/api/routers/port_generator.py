@@ -37,8 +37,13 @@ async def generate_tasks(
     db: DbSession,
     user: CurrentUser = None,
 ) -> GenerateResponse:
-    """Generate porting tasks for a product from its Lovable source."""
-    # Get product
+    """Generate porting tasks for a product from its Lovable source. PM/superadmin only."""
+    from apps.api.models.enums import AppRole
+    from packages.common.utils.error_handlers import forbidden
+
+    if not user.has_any_role(AppRole.SUPERADMIN, AppRole.ADMIN, AppRole.PROJECT_MANAGER):
+        raise forbidden("Only project managers and admins can generate tasks")
+
     product = await db.get(Product, product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")

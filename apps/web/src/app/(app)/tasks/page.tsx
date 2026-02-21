@@ -6,8 +6,9 @@ import { Badge } from "@/components/atoms/display/Badge";
 import { Skeleton } from "@/components/atoms/display/Skeleton";
 import { PageHeader } from "@/components/molecules/layout/PageHeader";
 import { TasksFilterBar } from "@/components/organisms/tasks/TasksFilterBar";
-import { EditTaskDialog } from "@/components/organisms/product/EditTaskDialog";
+import { TaskDetailDrawer } from "@/components/organisms/product/TaskDetailDrawer";
 import { toKanbanTask } from "@/components/organisms/kanban/kanban-utils";
+import { useAuth } from "@/contexts/AuthContext";
 import { useAllTasks } from "@/hooks/queries/useAllTasks";
 import { useProducts } from "@/hooks/queries/useProducts";
 import { useAllProductMembers } from "@/hooks/queries/useProductMembers";
@@ -24,13 +25,17 @@ export default function TasksPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [pillarFilter, setPillarFilter] = useState("all");
+  const [myWorkEnabled, setMyWorkEnabled] = useState(false);
   const [editTask, setEditTask] = useState<KanbanTask | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  const { user } = useAuth();
 
   const filters = {
     product_id: projectFilter !== "all" ? projectFilter : undefined,
     assignee_id: assigneeFilter !== "all" ? assigneeFilter : undefined,
     pm_id: pmFilter !== "all" ? pmFilter : undefined,
+    member_id: myWorkEnabled && user?.profile_id ? user.profile_id : undefined,
     status: statusFilter !== "all" ? statusFilter : undefined,
     priority: priorityFilter !== "all" ? priorityFilter : undefined,
     pillar: pillarFilter !== "all" ? pillarFilter : undefined,
@@ -80,7 +85,8 @@ export default function TasksPage() {
     pmFilter !== "all" ||
     statusFilter !== "all" ||
     priorityFilter !== "all" ||
-    pillarFilter !== "all";
+    pillarFilter !== "all" ||
+    myWorkEnabled;
 
   const clearFilters = () => {
     setSearch("");
@@ -90,6 +96,7 @@ export default function TasksPage() {
     setStatusFilter("all");
     setPriorityFilter("all");
     setPillarFilter("all");
+    setMyWorkEnabled(false);
   };
 
   return (
@@ -138,6 +145,8 @@ export default function TasksPage() {
         onPriorityChange={setPriorityFilter}
         pillarFilter={pillarFilter}
         onPillarChange={setPillarFilter}
+        myWorkEnabled={myWorkEnabled}
+        onMyWorkToggle={setMyWorkEnabled}
         projects={products.filter((p) => !p.archived_at)}
         profiles={profiles}
         pmProfiles={pmProfiles}
@@ -176,7 +185,7 @@ export default function TasksPage() {
         </div>
       )}
 
-      <EditTaskDialog
+      <TaskDetailDrawer
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
         task={editTask}

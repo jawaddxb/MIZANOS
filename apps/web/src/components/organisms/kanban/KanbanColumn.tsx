@@ -23,6 +23,7 @@ const COLUMN_BG: Record<TaskStatus, string> = {
   review: "bg-amber-50/50 dark:bg-amber-950/20",
   done: "bg-green-50/50 dark:bg-green-950/20",
   live: "bg-sky-50/50 dark:bg-sky-950/20",
+  cancelled: "bg-red-50/50 dark:bg-red-950/20",
 };
 
 const COUNT_VARIANT: Record<TaskStatus, "secondary" | "default" | "outline"> = {
@@ -31,6 +32,7 @@ const COUNT_VARIANT: Record<TaskStatus, "secondary" | "default" | "outline"> = {
   review: "outline",
   done: "secondary",
   live: "secondary",
+  cancelled: "secondary",
 };
 
 /* ------------------------------------------------------------------ */

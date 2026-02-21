@@ -1,4 +1,5 @@
 import {
+  Ban,
   CheckCircle2,
   Circle,
   Clock,
@@ -19,6 +20,7 @@ export const TASK_STATUS_DISPLAY: Record<string, TaskStatusConfig> = {
   review: { icon: AlertTriangle, color: "text-orange-600 dark:text-orange-400", label: "Review" },
   done: { icon: CheckCircle2, color: "text-green-600 dark:text-green-400", label: "Done" },
   live: { icon: Rocket, color: "text-blue-600 dark:text-blue-400", label: "Live" },
+  cancelled: { icon: Ban, color: "text-red-600 dark:text-red-400", label: "Cancelled" },
 };
 
 export const TASK_PRIORITY_COLORS: Record<string, string> = {
@@ -27,6 +29,6 @@ export const TASK_PRIORITY_COLORS: Record<string, string> = {
   high: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
 };
 
-export const TASK_STATUSES = ["backlog", "in_progress", "review", "done", "live"] as const;
+export const TASK_STATUSES = ["backlog", "in_progress", "review", "done", "live", "cancelled"] as const;
 export const TASK_PRIORITIES = ["low", "medium", "high"] as const;
 export const TASK_PILLARS = ["development", "product", "business", "marketing"] as const;

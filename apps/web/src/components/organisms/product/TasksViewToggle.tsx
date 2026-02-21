@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { LayoutGrid, List, Sparkles, FileText, LayoutTemplate, Loader2, ClipboardCheck } from "lucide-react";
+import { LayoutGrid, List, Sparkles, FileText, LayoutTemplate, Loader2, ClipboardCheck, Mail, MailX } from "lucide-react";
+import { BaseSwitch } from "@/components/atoms/inputs/BaseSwitch";
 import { Button } from "@/components/molecules/buttons/Button";
 import { Badge } from "@/components/atoms/display/Badge";
 import {
@@ -21,14 +22,17 @@ import { useGeneratePortTasks } from "@/hooks/mutations/usePortGenerator";
 import { useProductDetail } from "@/hooks/queries/useProductDetail";
 import { useDraftTasks } from "@/hooks/queries/useDraftTasks";
 import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
+import { useProductNotificationSettings } from "@/hooks/queries/useProductNotificationSettings";
+import { useUpdateProductNotificationSettings } from "@/hooks/mutations/useProductNotificationSettingsMutations";
 
 type ViewMode = "board" | "list" | "drafts";
 
 interface TasksViewToggleProps {
   productId: string;
+  openTaskId?: string;
 }
 
-export function TasksViewToggle({ productId }: TasksViewToggleProps) {
+export function TasksViewToggle({ productId, openTaskId }: TasksViewToggleProps) {
   const [view, setView] = useState<ViewMode>("list");
   const { data: productData } = useProductDetail(productId);
   const { data: drafts = [] } = useDraftTasks(productId);
@@ -36,6 +40,9 @@ export function TasksViewToggle({ productId }: TasksViewToggleProps) {
   const generateFromSpec = useGenerateTasksFromSpec(productId);
   const generateFromTemplates = useGenerateTasksFromTemplates(productId);
   const generateFromPort = useGeneratePortTasks(productId);
+
+  const { data: notifSettings } = useProductNotificationSettings(productId);
+  const updateNotifSettings = useUpdateProductNotificationSettings(productId);
 
   const isGenerating =
     generateFromSpec.isPending ||
@@ -86,6 +93,31 @@ export function TasksViewToggle({ productId }: TasksViewToggleProps) {
           )}
         </div>
 
+        <div className="flex items-center gap-3">
+          {(isAdmin || isProjectManager) && (
+            <div className="flex flex-col items-end gap-0.5">
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                {notifSettings?.email_enabled !== false ? (
+                  <Mail className="h-4 w-4 text-primary" />
+                ) : (
+                  <MailX className="h-4 w-4 text-muted-foreground" />
+                )}
+                <span className="text-sm font-medium whitespace-nowrap">
+                  Email Alerts
+                </span>
+                <BaseSwitch
+                  checked={notifSettings?.email_enabled !== false}
+                  onCheckedChange={(checked) => updateNotifSettings.mutate(checked)}
+                  disabled={updateNotifSettings.isPending}
+                />
+              </label>
+              <span className="text-[11px] text-muted-foreground">
+                Notify members via email on task assignments
+              </span>
+            </div>
+          )}
+
+        {(isAdmin || isProjectManager) && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" disabled={isGenerating}>
@@ -114,10 +146,12 @@ export function TasksViewToggle({ productId }: TasksViewToggleProps) {
             )}
           </DropdownMenuContent>
         </DropdownMenu>
+        )}
+        </div>
       </div>
 
       {view === "board" && <KanbanBoard productId={productId} />}
-      {view === "list" && <TasksTab productId={productId} />}
+      {view === "list" && <TasksTab productId={productId} openTaskId={openTaskId} />}
       {view === "drafts" && <DraftTaskReview productId={productId} />}
     </div>
   );

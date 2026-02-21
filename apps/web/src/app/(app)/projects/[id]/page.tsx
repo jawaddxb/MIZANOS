@@ -1,6 +1,7 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Loader2, Pencil, Eye, Settings, Github, Archive } from "lucide-react";
 
 import { EditableTitle } from "@/components/atoms/inputs/EditableTitle";
@@ -39,6 +40,7 @@ interface ProductDetailPageProps {
 
 export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const { id } = use(params);
+  const searchParams = useSearchParams();
   const { data: product, isLoading } = useProductDetail(id);
   const updateProduct = useUpdateProduct();
   const { canEditProduct } = useRoleVisibility();
@@ -47,6 +49,13 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [linkGitHubOpen, setLinkGitHubOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+
+  const tabParam = searchParams.get("tab");
+  const taskParam = searchParams.get("task");
+
+  useEffect(() => {
+    if (tabParam) setActiveTab(tabParam);
+  }, [tabParam]);
 
   if (isLoading) {
     return (
@@ -138,7 +147,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         overviewContent={<ProductOverview productId={id} />}
         teamContent={<ProductTeamTab productId={id} />}
         specContent={specContent}
-        tasksContent={<TasksViewToggle productId={id} />}
+        tasksContent={<TasksViewToggle productId={id} openTaskId={taskParam ?? undefined} />}
         documentsContent={documentsContent}
         auditContent={<AuditHistoryList productId={id} />}
         deploymentContent={

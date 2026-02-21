@@ -49,8 +49,13 @@ async def apply_templates(
     service: TaskTemplateService = Depends(get_service),
     db: DbSession = None,
 ):
-    """Apply templates to generate tasks for a product."""
+    """Apply templates to generate tasks for a product. PM/superadmin only."""
+    from apps.api.models.enums import AppRole
     from apps.api.models.product import Product
+    from packages.common.utils.error_handlers import forbidden
+
+    if not user.has_any_role(AppRole.SUPERADMIN, AppRole.ADMIN, AppRole.PROJECT_MANAGER):
+        raise forbidden("Only project managers and admins can generate tasks")
 
     product = await db.get(Product, product_id)
     if not product:

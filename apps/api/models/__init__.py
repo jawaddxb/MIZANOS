@@ -26,6 +26,7 @@ from .product import (
     ProductEnvironment,
     ProductManagementNote,
     ProductMember,
+    ProductNotificationSetting,
     ProductPartnerNote,
 )
 from .project import ProjectCompletion, ProjectStakeholder
@@ -46,6 +47,7 @@ from .settings import (
 from .specification import Specification, SpecificationFeature, SpecificationSource
 from .system_document import SystemDocument
 from .task import Task, TaskTemplate, TaskTemplateGroup
+from .task_comment import TaskComment
 from .user import (
     InvitationToken,
     PasswordResetToken,
@@ -96,6 +98,7 @@ __all__ = [
     "ProductEnvironment",
     "ProductDocument",
     "ProductManagementNote",
+    "ProductNotificationSetting",
     "ProductPartnerNote",
     # Project
     "ProjectCompletion",
@@ -122,6 +125,7 @@ __all__ = [
     "SystemDocument",
     # Task
     "Task",
+    "TaskComment",
     "TaskTemplate",
     "TaskTemplateGroup",
     # User

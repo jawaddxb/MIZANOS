@@ -11,6 +11,20 @@ interface BulkAssignResponse {
   task_ids: string[];
 }
 
+interface BulkUpdateResponse {
+  updated_count: number;
+  task_ids: string[];
+}
+
+export interface TaskRejectResponse {
+  action: "deleted" | "cancelled";
+  task_id: string;
+}
+
+interface BulkRejectResponse {
+  results: TaskRejectResponse[];
+}
+
 export class TasksRepository extends BaseRepository<Task> {
   protected readonly basePath = "/tasks";
 
@@ -63,12 +77,30 @@ export class TasksRepository extends BaseRepository<Task> {
     return response.data;
   }
 
-  async rejectTask(taskId: string): Promise<void> {
-    await this.client.delete(`${this.basePath}/${taskId}/reject`);
+  async rejectTask(taskId: string): Promise<TaskRejectResponse> {
+    const response = await this.client.delete<TaskRejectResponse>(
+      `${this.basePath}/${taskId}/reject`,
+    );
+    return response.data;
   }
 
-  async bulkRejectTasks(taskIds: string[]): Promise<void> {
-    await this.client.post(`${this.basePath}/bulk-reject`, { task_ids: taskIds });
+  async bulkRejectTasks(taskIds: string[]): Promise<BulkRejectResponse> {
+    const response = await this.client.post<BulkRejectResponse>(
+      `${this.basePath}/bulk-reject`,
+      { task_ids: taskIds },
+    );
+    return response.data;
+  }
+
+  async bulkUpdateTasks(
+    taskIds: string[],
+    updates: { assignee_id?: string | null; due_date?: string | null; priority?: string },
+  ): Promise<BulkUpdateResponse> {
+    const response = await this.client.post<BulkUpdateResponse>(
+      `${this.basePath}/bulk-update`,
+      { task_ids: taskIds, ...updates },
+    );
+    return response.data;
   }
 
   async bulkAssignTasks(taskIds: string[], assigneeId: string | null): Promise<BulkAssignResponse> {
