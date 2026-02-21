@@ -4,6 +4,7 @@ import { Search } from "lucide-react";
 import { BaseInput } from "@/components/atoms/inputs/BaseInput";
 import { BaseButton } from "@/components/atoms/buttons/BaseButton";
 import { SelectField } from "@/components/molecules/forms/SelectField";
+import { useAuth } from "@/contexts/AuthContext";
 import { useProfiles } from "@/hooks/queries/useProfiles";
 import type { PillarType, TaskPriority } from "@/lib/types";
 import { PILLAR_ORDER } from "@/lib/types";
@@ -58,15 +59,25 @@ export function KanbanFilters({
   onAssigneeChange,
   productId,
 }: KanbanFiltersProps) {
+  const { user } = useAuth();
   const { data: profiles = [] } = useProfiles();
+  const currentUserId = user?.profile_id;
 
   const assigneeOptions = [
     { value: "all", label: "All Assignees" },
     { value: "unassigned", label: "Unassigned" },
-    ...profiles.map((p) => ({
-      value: p.id,
-      label: p.full_name ?? p.email ?? "Unnamed",
-    })),
+    ...profiles
+      .map((p) => ({
+        value: p.id,
+        label: p.id === currentUserId
+          ? `${p.full_name ?? p.email ?? "Unnamed"} (Me)`
+          : (p.full_name ?? p.email ?? "Unnamed"),
+      }))
+      .sort((a, b) => {
+        if (a.value === currentUserId) return -1;
+        if (b.value === currentUserId) return 1;
+        return 0;
+      }),
   ];
 
   const handleClearAll = () => {

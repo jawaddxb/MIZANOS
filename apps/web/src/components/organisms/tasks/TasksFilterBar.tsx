@@ -12,6 +12,7 @@ import {
 import { SearchableSelect } from "@/components/molecules/forms/SearchableSelect";
 import { Button } from "@/components/molecules/buttons/Button";
 import { TASK_STATUSES, TASK_PRIORITIES, TASK_PILLARS, TASK_STATUS_DISPLAY } from "@/lib/constants";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils/cn";
 import { Search, Filter, X } from "lucide-react";
 import type { Product, Profile } from "@/lib/types";
@@ -59,10 +60,23 @@ export function TasksFilterBar({
   hasActiveFilters,
   onClearFilters,
 }: TasksFilterBarProps) {
-  const assigneeOptions = useMemo(
-    () => profiles.map((p) => ({ value: p.id, label: p.full_name ?? p.email ?? "Unknown" })),
-    [profiles],
-  );
+  const { user } = useAuth();
+
+  const assigneeOptions = useMemo(() => {
+    const currentUserId = user?.profile_id;
+    return profiles
+      .map((p) => ({
+        value: p.id,
+        label: p.id === currentUserId
+          ? `${p.full_name ?? p.email ?? "Unknown"} (Me)`
+          : (p.full_name ?? p.email ?? "Unknown"),
+      }))
+      .sort((a, b) => {
+        if (a.value === currentUserId) return -1;
+        if (b.value === currentUserId) return 1;
+        return 0;
+      });
+  }, [profiles, user?.profile_id]);
   const pmOptions = useMemo(
     () => pmProfiles.map((p) => ({ value: p.id, label: p.full_name ?? p.email ?? "Unknown" })),
     [pmProfiles],
