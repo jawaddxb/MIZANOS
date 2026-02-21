@@ -91,7 +91,7 @@ async def bulk_update_tasks(
     if not updates:
         from packages.common.utils.error_handlers import bad_request
         raise bad_request("At least one update field is required")
-    result = await service.bulk_update_tasks(body.task_ids, updates)
+    result = await service.bulk_update_tasks(body.task_ids, updates, user)
 
     if "assignee_id" in updates and updates["assignee_id"]:
         notif_svc = get_notif_service(db)
@@ -111,7 +111,7 @@ async def bulk_assign_tasks(
     service: TaskService = Depends(get_service),
 ):
     """Bulk assign/unassign tasks to a team member."""
-    result = await service.bulk_assign_tasks(body.task_ids, body.assignee_id)
+    result = await service.bulk_assign_tasks(body.task_ids, body.assignee_id, user)
 
     if body.assignee_id:
         notif_svc = get_notif_service(db)
