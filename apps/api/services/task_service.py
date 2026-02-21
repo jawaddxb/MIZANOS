@@ -50,7 +50,7 @@ class TaskService(BaseService[Task]):
                 ProductMember,
                 (Task.product_id == ProductMember.product_id)
                 & (ProductMember.profile_id == pm_id)
-                & (ProductMember.role == "pm"),
+                & (ProductMember.role == "project_manager"),
             )
         if status:
             stmt = stmt.where(Task.status == status)
@@ -163,7 +163,7 @@ class TaskService(BaseService[Task]):
         stmt = select(ProductMember).where(
             ProductMember.product_id == task.product_id,
             ProductMember.profile_id == user_id,
-            ProductMember.role == "pm",
+            ProductMember.role == "project_manager",
         )
         result = await self.repo.session.execute(stmt)
         if result.scalar_one_or_none() is not None:

@@ -3,9 +3,9 @@
 from packages.common.utils.error_handlers import forbidden
 
 INVITE_MATRIX: dict[str, set[str]] = {
-    "super_admin": {"admin", "pm"},
-    "admin": {"pm", "member"},
-    "pm": {"member"},
+    "super_admin": {"admin", "project_manager"},
+    "admin": {"project_manager", "member"},
+    "project_manager": {"member"},
     "member": set(),
 }
 

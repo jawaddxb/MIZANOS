@@ -5,7 +5,7 @@ import { useAllProductMembers } from "@/hooks/queries/useProductMembers";
 import type { ProductMember, ProfileSummary } from "@/lib/types";
 
 const ROLE_FILTER_DEFS = [
-  { key: "pm", label: "PM" },
+  { key: "project_manager", label: "Project Manager" },
   { key: "ai_engineer", label: "Engineer" },
   { key: "business_owner", label: "Bus. Owner" },
   { key: "marketing", label: "Marketing" },
@@ -47,7 +47,7 @@ function buildMemberLookup(
 }
 
 const DEFAULT_VALUES: Record<RoleKey, string> = {
-  pm: "all",
+  project_manager: "all",
   ai_engineer: "all",
   business_owner: "all",
   marketing: "all",

@@ -46,7 +46,7 @@ function StakeholderDialog({
   isSubmitting,
 }: StakeholderDialogProps) {
   const [name, setName] = useState("");
-  const [role, setRole] = useState<StakeholderRole>("pm");
+  const [role, setRole] = useState<StakeholderRole>("project_manager");
   const [email, setEmail] = useState("");
   const [isExternal, setIsExternal] = useState(false);
   const [responsibilitiesText, setResponsibilitiesText] = useState("");
@@ -60,7 +60,7 @@ function StakeholderDialog({
       setResponsibilitiesText(stakeholder.responsibilities.join(", "));
     } else {
       setName("");
-      setRole("pm");
+      setRole("project_manager");
       setEmail("");
       setIsExternal(false);
       setResponsibilitiesText("");

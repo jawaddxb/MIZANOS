@@ -22,7 +22,7 @@ export const ROLE_CONFIG: Record<AppRole, RoleConfig> = {
     description: "Full access to all features and settings",
     color: "var(--role-admin)",
   },
-  pm: {
+  project_manager: {
     label: "Project Manager",
     description: "Manages products, tasks, and team assignments",
     color: "var(--role-pm)",
@@ -32,7 +32,7 @@ export const ROLE_CONFIG: Record<AppRole, RoleConfig> = {
     description: "Development tasks, code reviews, and deployments",
     color: "var(--role-engineer)",
   },
-  bizdev: {
+  business_development: {
     label: "Business Development",
     description: "Client relations, specifications, and business operations",
     color: "var(--role-bizdev)",
@@ -41,11 +41,6 @@ export const ROLE_CONFIG: Record<AppRole, RoleConfig> = {
     label: "Marketing",
     description: "Marketing campaigns, domains, and social media",
     color: "var(--role-marketing)",
-  },
-  product_manager: {
-    label: "Product Manager",
-    description: "Product intake, project overview, dashboard, and tasks",
-    color: "var(--role-pm)",
   },
   operations: {
     label: "Operations",
@@ -58,11 +53,10 @@ export const APP_ROLES: AppRole[] = [
   "business_owner",
   "superadmin",
   "admin",
-  "pm",
+  "project_manager",
   "engineer",
-  "bizdev",
+  "business_development",
   "marketing",
-  "product_manager",
   "operations",
 ];
 
@@ -76,7 +70,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AppRole, string[]> = {
   business_owner: ["*"],
   superadmin: ["*"],
   admin: ["*"],
-  pm: [
+  project_manager: [
     "intake_access", "dashboard_view", "project_overview", "sources_tab",
     "kanban_view", "kanban_edit",
     "specification_view", "specification_edit",
@@ -94,7 +88,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AppRole, string[]> = {
     "qa_manage", "audit_view",
     "documents_view",
   ],
-  bizdev: [
+  business_development: [
     "dashboard_view", "project_overview",
     "specification_view", "specification_edit",
     "documents_view", "documents_edit",
@@ -103,17 +97,6 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AppRole, string[]> = {
     "dashboard_view", "project_overview",
     "marketing_tab", "marketing_credentials",
     "documents_view",
-  ],
-  product_manager: [
-    "intake_access", "dashboard_view", "project_overview", "sources_tab",
-    "kanban_view", "kanban_edit",
-    "specification_view", "specification_edit",
-    "qa_manage", "audit_view", "environments_view",
-    "documents_view", "documents_edit",
-    "marketing_tab", "marketing_credentials",
-    "management_notes", "partner_notes", "stakeholders_manage",
-    "team_view", "team_manage",
-    "credential_vault",
   ],
   operations: [
     "dashboard_view", "project_overview",

@@ -50,7 +50,7 @@ infra/             — Docker (PostgreSQL 16 on 5433, Redis 7 on 6380), Alembic 
 
 | Domain | What It Does |
 |--------|-------------|
-| **Auth** | JWT login/register/refresh, role-based access (admin, pm, engineer, bizdev, marketing) |
+| **Auth** | JWT login/register/refresh, role-based access (admin, project_manager, engineer, business_development, marketing) |
 | **Products** | Central entity — name, status, stage, pillar, health score, PM/engineer assignments, environments (dev/staging/prod) |
 | **Tasks** | Kanban board (backlog -> in_progress -> review -> done), drag-drop reorder, pillar/priority tagging, estimated hours |
 | **Task Templates** | Reusable multi-step workflow templates per project type (Greenfield, Lovable Port, Replit Port, GitHub, External) |

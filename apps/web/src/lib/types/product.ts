@@ -49,7 +49,7 @@ export interface ProductEnvironment {
   updated_at: string;
 }
 
-export type ProductMemberRole = "pm" | "marketing" | "business_owner" | "ai_engineer";
+export type ProductMemberRole = "project_manager" | "marketing" | "business_owner" | "ai_engineer";
 
 export interface TeamReadiness {
   complete: boolean;

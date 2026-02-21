@@ -24,9 +24,9 @@ interface InviteUserDialogProps {
 
 const ROLE_OPTIONS = [
   { value: "admin", label: "Admin" },
-  { value: "pm", label: "PM" },
+  { value: "project_manager", label: "Project Manager" },
   { value: "engineer", label: "Engineer" },
-  { value: "bizdev", label: "BizDev" },
+  { value: "business_development", label: "Business Development" },
   { value: "marketing", label: "Marketing" },
 ];
 
@@ -38,12 +38,10 @@ const OFFICE_OPTIONS = [
 ];
 
 const SKILL_OPTIONS = [
-  "Leadership", "Strategy", "Business Development",
-  "Product Management", "Project Management", "Finance",
-  "Marketing", "Sales", "Operations",
-  "Software Engineering", "AI & Machine Learning",
-  "Cloud & Infrastructure", "Data & Analytics", "Blockchain",
-  "UI/UX Design", "Quality Assurance", "Research", "Vibe Coding",
+  "Leadership", "Strategy", "Business Development", "Finance",
+  "Product Management", "Project Management", "Marketing", "UI/UX Design", 
+  "Software Engineering", "Vibe Coding", "Blockchain", "AI & ML", "Operations",
+  "Cloud & Infra", "Quality Assurance",
 ];
 
 interface InviteFormState {

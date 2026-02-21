@@ -20,9 +20,8 @@ import type { EvaluationSummary } from "@/lib/types/evaluation";
 const ROLE_CHIPS = [
   { value: "all", label: "All" },
   { value: "admin", label: "Leadership" },
-  { value: "pm", label: "PMs" },
-  { value: "product_manager", label: "Product Managers" },
-  { value: "bizdev", label: "Business Development" },
+  { value: "project_manager", label: "Project Managers" },
+  { value: "business_development", label: "Business Development" },
   { value: "engineer", label: "Engineers" },
   { value: "operations", label: "Operations" },
   { value: "marketing", label: "Marketing" },

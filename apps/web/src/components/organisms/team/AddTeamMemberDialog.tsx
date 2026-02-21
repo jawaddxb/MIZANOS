@@ -29,16 +29,14 @@ const TITLE_OPTIONS = [
   "Project Manager", "Product Owner", "PM/PO",
   "Business Development", "Software Engineer", "AI Engineer",
   "Marketing Manager", "SEO Specialist", "Analytics",
-  "UI/UX Designer", "QA Engineer", "Content Creator", "Motion Designer",
+  "UI/UX Designer", "QA Engineer", "Content Creator",
 ] as const;
 
 const SKILL_OPTIONS = [
-  "Leadership", "Strategy", "Business Development",
-  "Product Management", "Project Management", "Finance",
-  "Marketing", "Sales", "Operations",
-  "Software Engineering", "AI & Machine Learning",
-  "Cloud & Infrastructure", "Data & Analytics", "Blockchain",
-  "UI/UX Design", "Quality Assurance", "Research", "Vibe Coding",
+  "Leadership", "Strategy", "Business Development", "Finance",
+  "Product Management", "Project Management", "Marketing", "UI/UX Design", 
+  "Software Engineering", "Vibe Coding", "Blockchain", "AI & ML", "Operations",
+  "Cloud & Infra", "Quality Assurance",
 ] as const;
 
 interface AddTeamMemberDialogProps {
@@ -104,7 +102,8 @@ export function AddTeamMemberDialog({ open, onOpenChange }: AddTeamMemberDialogP
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/50" onClick={() => onOpenChange(false)} />
-      <div className="relative z-50 w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-lg border bg-background p-6 shadow-lg">
+      <div className="relative z-50 w-full max-w-lg max-h-[85vh] flex flex-col rounded-lg border bg-background shadow-lg">
+        <div className="overflow-y-auto flex-1 min-h-0 p-6 pb-0">
         <h2 className="text-lg font-semibold mb-4">Add Team Member</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
@@ -231,21 +230,26 @@ export function AddTeamMemberDialog({ open, onOpenChange }: AddTeamMemberDialogP
             </div>
           </div>
 
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground pb-4">
             {sendEmailEnabled
               ? "An invitation email will be sent to activate their account."
               : "Account will be created without sending an activation email."}
           </p>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={!email || !fullName || !role || !officeLocation || inviteUser.isPending}>
-              {inviteUser.isPending ? "Inviting..." : "Invite Member"}
-            </Button>
-          </div>
         </form>
+        </div>
+
+        <div className="flex justify-end gap-2 p-6 pt-4 border-t">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            disabled={!email || !fullName || !role || !officeLocation || inviteUser.isPending}
+            onClick={handleSubmit}
+          >
+            {inviteUser.isPending ? "Inviting..." : "Invite Member"}
+          </Button>
+        </div>
       </div>
     </div>
   );

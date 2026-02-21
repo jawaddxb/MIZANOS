@@ -1,6 +1,6 @@
 export type StakeholderRole =
   | "sponsor"
-  | "pm"
+  | "project_manager"
   | "tech_lead"
   | "marketing_lead"
   | "business_lead"
@@ -22,7 +22,7 @@ export interface Stakeholder {
 
 export const STAKEHOLDER_ROLE_LABELS: Record<StakeholderRole, string> = {
   sponsor: "Executive Sponsor",
-  pm: "Project Manager",
+  project_manager: "Project Manager",
   tech_lead: "Technical Lead",
   marketing_lead: "Marketing Lead",
   business_lead: "Business Lead",

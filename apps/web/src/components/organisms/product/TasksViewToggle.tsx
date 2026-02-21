@@ -32,7 +32,7 @@ export function TasksViewToggle({ productId }: TasksViewToggleProps) {
   const [view, setView] = useState<ViewMode>("list");
   const { data: productData } = useProductDetail(productId);
   const { data: drafts = [] } = useDraftTasks(productId);
-  const { isAdmin, isPM } = useRoleVisibility();
+  const { isAdmin, isProjectManager } = useRoleVisibility();
   const generateFromSpec = useGenerateTasksFromSpec(productId);
   const generateFromTemplates = useGenerateTasksFromTemplates(productId);
   const generateFromPort = useGeneratePortTasks(productId);
@@ -43,7 +43,7 @@ export function TasksViewToggle({ productId }: TasksViewToggleProps) {
     generateFromPort.isPending;
 
   const showLovable = productData?.product?.source_type?.includes("lovable");
-  const showDraftsTab = isAdmin || isPM;
+  const showDraftsTab = isAdmin || isProjectManager;
   const draftCount = drafts.length;
 
   return (

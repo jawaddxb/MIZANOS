@@ -20,7 +20,7 @@ interface SidebarNavProps {
 
 export function SidebarNav({ collapsed }: SidebarNavProps) {
   const pathname = usePathname();
-  const { isProductManager } = useRoleVisibility();
+  const { isProjectManager } = useRoleVisibility();
   const settingsActive =
     pathname === SETTINGS_NAV_ITEM.href ||
     pathname.startsWith(SETTINGS_NAV_ITEM.href);
@@ -59,7 +59,7 @@ export function SidebarNav({ collapsed }: SidebarNavProps) {
         ))}
       </div>
 
-      {!isProductManager && (
+      {!isProjectManager && (
         <div className="mt-auto pt-4">
           <Separator className="mb-3 bg-border" />
           {collapsed ? (

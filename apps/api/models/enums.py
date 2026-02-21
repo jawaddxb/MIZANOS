@@ -7,11 +7,10 @@ class AppRole(str, enum.Enum):
     BUSINESS_OWNER = "business_owner"
     SUPERADMIN = "superadmin"
     ADMIN = "admin"
-    PM = "pm"
+    PROJECT_MANAGER = "project_manager"
     ENGINEER = "engineer"
-    BIZDEV = "bizdev"
+    BUSINESS_DEVELOPMENT = "business_development"
     MARKETING = "marketing"
-    PRODUCT_MANAGER = "product_manager"
     OPERATIONS = "operations"
 
 
@@ -32,14 +31,14 @@ class NotificationType(str, enum.Enum):
 
 
 class ProductMemberRole(str, enum.Enum):
-    PM = "pm"
+    PROJECT_MANAGER = "project_manager"
     MARKETING = "marketing"
     BUSINESS_OWNER = "business_owner"
     AI_ENGINEER = "ai_engineer"
 
 
 REQUIRED_TEAM_COMPOSITION = {
-    ProductMemberRole.PM: 1,
+    ProductMemberRole.PROJECT_MANAGER: 1,
     ProductMemberRole.MARKETING: 1,
     ProductMemberRole.BUSINESS_OWNER: 1,
     ProductMemberRole.AI_ENGINEER: 1,

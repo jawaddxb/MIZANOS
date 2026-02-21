@@ -23,7 +23,7 @@ import type { OrgChartNode } from "@/lib/types";
 
 export default function OrgChartPage() {
   const { data: nodes, isLoading } = useOrgChart();
-  const { isSuperAdmin, isAdmin, isPM } = useRoleVisibility();
+  const { isSuperAdmin, isAdmin, isProjectManager } = useRoleVisibility();
   const updateLine = useUpdateReportingLine();
   const resendInvite = useResendInvite();
 
@@ -46,7 +46,7 @@ export default function OrgChartPage() {
   }, []);
 
   const { orphans } = useMemo(() => buildTree(nodes ?? []), [nodes]);
-  const canInvite = isAdmin || isPM;
+  const canInvite = isAdmin || isProjectManager;
 
   const handleEditManager = (node: OrgChartNode) => {
     setSelectedNode(node);
@@ -113,7 +113,7 @@ export default function OrgChartPage() {
           <div className="flex-1 overflow-x-auto">
             <OrgChartTree
               nodes={nodes ?? []}
-              canResendInvite={isAdmin || isPM}
+              canResendInvite={isAdmin || isProjectManager}
               canEditHierarchy={isAdmin}
               onResendInvite={(id) => { const n = (nodes ?? []).find((nd) => nd.id === id); setResendTarget(n ?? null); }}
               onEditManager={handleEditManager}
@@ -123,7 +123,7 @@ export default function OrgChartPage() {
           </div>
           <UnassignedSidebar
             orphans={orphans}
-            canResendInvite={isAdmin || isPM}
+            canResendInvite={isAdmin || isProjectManager}
             canEditHierarchy={isAdmin}
             onResendInvite={(id) => { const n = (nodes ?? []).find((nd) => nd.id === id); setResendTarget(n ?? null); }}
             onEditManager={handleEditManager}
