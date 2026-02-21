@@ -4,7 +4,7 @@ export interface TreeNodeData extends OrgChartNode {
   children: TreeNodeData[];
 }
 
-const LEADERSHIP_ROLES = new Set(["superadmin", "admin"]);
+const LEADERSHIP_ROLES = new Set(["business_owner", "executive"]);
 
 export function buildTree(nodes: OrgChartNode[]): { roots: TreeNodeData[]; orphans: TreeNodeData[] } {
   const map = new Map<string, TreeNodeData>();
@@ -41,6 +41,11 @@ export function buildTree(nodes: OrgChartNode[]): { roots: TreeNodeData[]; orpha
     } else {
       orphans.push(node);
     }
+  }
+
+  // When no hierarchy exists, show all members in the tree instead of the sidebar
+  if (roots.length === 0) {
+    roots.push(...orphans.splice(0));
   }
 
   return { roots, orphans };
