@@ -14,6 +14,7 @@ import { SkillFilter } from "@/components/molecules/filters/SkillFilter";
 import { useProfiles } from "@/hooks/queries/useProfiles";
 import { useEvaluationSummaries } from "@/hooks/queries/useEvaluations";
 import { useAllUserRoles } from "@/hooks/queries/useUserRoles";
+import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
 import type { UserRole } from "@/lib/types";
 import type { EvaluationSummary } from "@/lib/types/evaluation";
 
@@ -34,6 +35,7 @@ export function TeamGrid() {
   const { data: profiles = [], isLoading } = useProfiles();
   const { data: summaries = [] } = useEvaluationSummaries();
   const { data: allUserRoles = [] } = useAllUserRoles();
+  const { canManageTeam } = useRoleVisibility();
   const [searchQuery, setSearchQuery] = useState("");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [roleFilter, setRoleFilter] = useState("all");
@@ -148,10 +150,12 @@ export function TeamGrid() {
         subtitle="Manage your team members"
         icon={<Users className="h-5 w-5 text-primary" />}
       >
-        <Button onClick={() => setAddMemberOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Team Member
-        </Button>
+        {canManageTeam && (
+          <Button onClick={() => setAddMemberOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Team Member
+          </Button>
+        )}
       </PageHeader>
 
       {!isLoading && profiles.length > 0 && (

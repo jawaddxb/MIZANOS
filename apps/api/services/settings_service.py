@@ -195,8 +195,14 @@ class SettingsService:
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def invite_user(self, data) -> dict:
+    async def invite_user(self, data, inviter: "AuthenticatedUser | None" = None) -> dict:
+        from apps.api.dependencies import AuthenticatedUser
         from apps.api.services.email_service import EmailService
+        from apps.api.services.invite_service import validate_invite_permission
+
+        if inviter is not None:
+            inviter_roles = [r for r in [inviter.role] + inviter.additional_roles if r]
+            validate_invite_permission(inviter_roles, data.role)
 
         existing = await self.session.execute(
             select(Profile).where(func.lower(Profile.email) == data.email.lower())

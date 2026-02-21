@@ -160,8 +160,8 @@ async def list_users(user: CurrentUser = None, service: SettingsService = Depend
 
 
 @router.post("/users/invite", status_code=201)
-async def invite_user(body: InviteUserRequest, user: CurrentUser = None, service: SettingsService = Depends(get_service)):
-    return await service.invite_user(body)
+async def invite_user(body: InviteUserRequest, user: CurrentUser, service: SettingsService = Depends(get_service)):
+    return await service.invite_user(body, user)
 
 
 @router.patch("/users/{user_id}/status")
