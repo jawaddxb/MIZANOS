@@ -44,6 +44,8 @@ class ProductResponse(ProductBase):
     id: UUID
     lovable_url: str | None = None
     logo_url: str | None = None
+    created_by: UUID | None = None
+    created_by_name: str | None = None
     archived_at: datetime | None = None
     created_at: datetime
     updated_at: datetime

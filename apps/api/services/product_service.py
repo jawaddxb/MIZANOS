@@ -113,7 +113,7 @@ class ProductService(BaseService[Product]):
             raise forbidden(
                 "Only superadmins and project managers can create projects"
             )
-        product = Product(**data.model_dump())
+        product = Product(**data.model_dump(), created_by=user.profile_id)
         return await self.repo.create(product)
 
     async def update(self, entity_id: UUID, data: dict) -> Product:
