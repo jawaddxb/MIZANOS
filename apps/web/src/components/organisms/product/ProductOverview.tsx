@@ -82,6 +82,10 @@ function ProductOverview({ productId }: ProductOverviewProps) {
   }
 
   const { product, members } = data;
+  const creator =
+    members.find((m) => m.role === "business_owner") ??
+    [...members].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0] ??
+    null;
   const totalTasks = tasks?.length ?? 0;
   const tasksCompleted =
     tasks?.filter((t) => t.status === "done" || t.status === "live").length ?? 0;
@@ -157,6 +161,14 @@ function ProductOverview({ productId }: ProductOverviewProps) {
               <div className="flex justify-between text-sm items-center">
                 <span className="text-muted-foreground">Pillar</span>
                 <PillarBadge pillar={product.pillar} />
+              </div>
+            )}
+            {creator && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Created By</span>
+                <span className="font-medium">
+                  {creator.profile?.full_name ?? creator.profile?.email ?? "Unknown"}
+                </span>
               </div>
             )}
             <div className="flex justify-between text-sm">
