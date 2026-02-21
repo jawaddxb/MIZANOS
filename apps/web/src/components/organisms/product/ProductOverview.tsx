@@ -160,6 +160,12 @@ function ProductOverview({ productId }: ProductOverviewProps) {
               </div>
             )}
             <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Created By</span>
+              <span className="font-medium">
+                {product.created_by_name ?? "Unknown"}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Created</span>
               <span className="tabular-nums text-xs">
                 {new Date(product.created_at).toLocaleDateString()}

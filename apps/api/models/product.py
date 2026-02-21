@@ -24,9 +24,20 @@ class Product(Base, UUIDMixin, TimestampMixin):
     lovable_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     logo_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     source_type: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    created_by: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("profiles.id"), nullable=True
+    )
     archived_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+
+    creator: Mapped[Optional["Profile"]] = relationship(
+        "Profile", foreign_keys=[created_by], lazy="selectin"
+    )
+
+    @property
+    def created_by_name(self) -> str | None:
+        return self.creator.full_name if self.creator else None
 
 
 class ProductMember(Base, UUIDMixin):
