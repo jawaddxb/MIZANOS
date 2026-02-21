@@ -155,12 +155,17 @@ class TaskService(BaseService[Task]):
         """Update a task with assignee validation and status/assignee auth."""
         if "assignee_id" in data and data["assignee_id"]:
             await self._validate_assignee(UUID(str(data["assignee_id"])))
+        task = None
         if "assignee_id" in data and user is not None and not self._can_manage_tasks(user):
             task = await self.get_or_404(entity_id)
-            if not await self._is_product_pm(task.product_id, user.profile_id):
-                raise forbidden("Only superadmins and project managers can reassign tasks")
+            current_assignee = str(task.assignee_id) if task.assignee_id else None
+            new_assignee = str(data["assignee_id"]) if data["assignee_id"] else None
+            if current_assignee != new_assignee:
+                if not await self._is_product_pm(task.product_id, user.profile_id):
+                    raise forbidden("Only superadmins and project managers can reassign tasks")
         if "status" in data and user_id is not None and not is_superadmin:
-            task = await self.get_or_404(entity_id)
+            if task is None:
+                task = await self.get_or_404(entity_id)
             await self._authorize_status_change(task, user_id)
         return await super().update(entity_id, data)
 
