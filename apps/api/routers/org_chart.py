@@ -27,7 +27,7 @@ def require_admin(user: CurrentUser) -> None:
 
 
 def require_admin_or_pm(user: CurrentUser) -> None:
-    if not user.has_any_role(AppRole.SUPERADMIN, AppRole.ADMIN, AppRole.PM):
+    if not user.has_any_role(AppRole.SUPERADMIN, AppRole.ADMIN, AppRole.PROJECT_MANAGER):
         raise forbidden("Insufficient permissions to resend invitations")
 
 

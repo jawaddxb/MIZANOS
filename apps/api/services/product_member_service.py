@@ -23,7 +23,7 @@ from packages.common.utils.error_handlers import bad_request, forbidden, not_fou
 logger = logging.getLogger(__name__)
 
 MEMBER_ROLE_LABELS = {
-    ProductMemberRole.PM: "Project Manager",
+    ProductMemberRole.PROJECT_MANAGER: "Project Manager",
     ProductMemberRole.MARKETING: "Marketing",
     ProductMemberRole.BUSINESS_OWNER: "Business Owner",
     ProductMemberRole.AI_ENGINEER: "AI Engineer",
@@ -172,7 +172,7 @@ class ProductMemberService:
         result = await self.session.execute(stmt)
         roles.update(result.scalars().all())
 
-        allowed = {"business_owner", "superadmin", "admin", "pm"}
+        allowed = {"business_owner", "superadmin", "admin", "project_manager"}
         if not roles & allowed:
             raise forbidden("Only admins or PMs can manage product members")
 

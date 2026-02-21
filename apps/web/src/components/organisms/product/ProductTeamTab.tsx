@@ -20,7 +20,7 @@ interface RoleConfig {
 }
 
 const ROLE_CONFIG: RoleConfig[] = [
-  { key: "pm", label: "Project Manager", allowMultiple: false },
+  { key: "project_manager", label: "Project Manager", allowMultiple: false },
   { key: "ai_engineer", label: "AI Engineers", allowMultiple: true },
   { key: "business_owner", label: "Business Owner", allowMultiple: false },
   { key: "marketing", label: "Marketing", allowMultiple: false },
@@ -34,11 +34,11 @@ export function ProductTeamTab({ productId }: ProductTeamTabProps) {
   const { data: readiness, isLoading } = useTeamReadiness(productId);
   const { data: profiles = [] } = useProfiles();
   const showPendingProfiles = useShowPendingProfiles();
-  const { isAdmin, isPM } = useRoleVisibility();
+  const { isAdmin, isProjectManager } = useRoleVisibility();
   const addMember = useAddProductMember(productId);
   const removeMember = useRemoveProductMember(productId);
 
-  const canManage = isAdmin || isPM;
+  const canManage = isAdmin || isProjectManager;
   const members = readiness?.members ?? [];
 
   const membersByRole = useMemo(() => {

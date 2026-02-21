@@ -12,10 +12,10 @@ import {
 import type { Profile } from "@/lib/types";
 
 const SUGGESTED_ORG_ROLES: Record<string, string[]> = {
-  pm: ["pm", "product_manager"],
+  project_manager: ["project_manager"],
   ai_engineer: ["engineer"],
   business_owner: ["business_owner"],
-  marketing: ["marketing", "bizdev"],
+  marketing: ["marketing", "business_development"],
 };
 
 interface TeamMemberSelectProps {

@@ -56,10 +56,10 @@ export default function TasksPage() {
 
   const pmProfiles = useMemo(() => {
     const pmMemberIds = new Set(
-      allMembers.filter((m) => m.role === "pm").map((m) => m.profile_id),
+      allMembers.filter((m) => m.role === "project_manager").map((m) => m.profile_id),
     );
     return profiles.filter(
-      (p) => pmMemberIds.has(p.id) || p.role === "product_manager" || p.role === "pm",
+      (p) => pmMemberIds.has(p.id) || p.role === "project_manager",
     );
   }, [allMembers, profiles]);
 

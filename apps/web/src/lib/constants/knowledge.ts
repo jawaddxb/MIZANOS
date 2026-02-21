@@ -8,7 +8,7 @@ export interface KnowledgeCategory {
 }
 
 export const KNOWLEDGE_CATEGORIES: KnowledgeCategory[] = [
-  { value: "bizdev", label: "BizDev", colorClasses: "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700", borderClass: "border-l-amber-500" },
+  { value: "business_development", label: "Business Development", colorClasses: "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700", borderClass: "border-l-amber-500" },
   { value: "product", label: "Product Features", colorClasses: "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700", borderClass: "border-l-blue-500" },
   { value: "dev_knowledge", label: "Dev Knowledge", colorClasses: "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700", borderClass: "border-l-emerald-500" },
   { value: "general", label: "General", colorClasses: "bg-secondary text-secondary-foreground border-border", borderClass: "border-l-muted-foreground" },

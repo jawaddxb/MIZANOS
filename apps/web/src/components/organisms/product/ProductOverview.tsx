@@ -66,7 +66,7 @@ function deriveStage(tasks: { status?: string | null }[]): ProductStage | null {
 
 function ProductOverview({ productId }: ProductOverviewProps) {
   const { user } = useAuth();
-  const { canViewManagementNotes, canViewPartnerNotes, canManageStakeholders, isPM, isSuperAdmin } =
+  const { canViewManagementNotes, canViewPartnerNotes, canManageStakeholders, isProjectManager, isSuperAdmin } =
     useRoleVisibility();
   const { data, isLoading } = useProductDetail(productId);
   const { data: tasks } = useTasks(productId);
@@ -178,7 +178,7 @@ function ProductOverview({ productId }: ProductOverviewProps) {
           currentStage={product.stage ?? "Intake"}
           productId={productId}
           suggestedStage={tasks ? deriveStage(tasks) : null}
-          canChangeStage={isPM || isSuperAdmin}
+          canChangeStage={isProjectManager || isSuperAdmin}
         />
       </div>
 

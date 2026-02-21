@@ -9,11 +9,10 @@ export function useRoleVisibility() {
   const isBusinessOwner = userRoles.includes("business_owner");
   const isSuperAdmin = userRoles.includes("superadmin");
   const isAdmin = isBusinessOwner || isSuperAdmin || userRoles.includes("admin");
-  const isPM = userRoles.includes("pm");
+  const isProjectManager = userRoles.includes("project_manager");
   const isMarketing = userRoles.includes("marketing");
   const isEngineer = userRoles.includes("engineer");
-  const isBizDev = userRoles.includes("bizdev");
-  const isProductManager = userRoles.includes("product_manager");
+  const isBusinessDevelopment = userRoles.includes("business_development");
   const isOperations = userRoles.includes("operations");
 
   const canViewMarketingTab = hasPermission("marketing_tab");
@@ -52,19 +51,17 @@ export function useRoleVisibility() {
     ? "superadmin"
     : userRoles.includes("admin")
       ? "admin"
-      : isPM
-      ? "pm"
+      : isProjectManager
+      ? "project_manager"
       : isMarketing
         ? "marketing"
-        : isBizDev
-          ? "bizdev"
+        : isBusinessDevelopment
+          ? "business_development"
           : isEngineer
             ? "engineer"
-            : isProductManager
-              ? "product_manager"
-              : isOperations
-                ? "operations"
-                : null;
+            : isOperations
+              ? "operations"
+              : null;
 
   return {
     isLoading,
@@ -73,11 +70,10 @@ export function useRoleVisibility() {
     isBusinessOwner,
     isSuperAdmin,
     isAdmin,
-    isPM,
+    isProjectManager,
     isMarketing,
     isEngineer,
-    isBizDev,
-    isProductManager,
+    isBusinessDevelopment,
     isOperations,
     primaryRole,
     canViewMarketingTab,
