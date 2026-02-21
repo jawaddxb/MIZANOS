@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -134,6 +134,9 @@ export function EditTaskDialog({
   const currentStatus = watch("status");
   const currentAssignee = watch("assignee_id");
 
+  const isUnassigned = !currentAssignee || currentAssignee === "__none__";
+  const [assignWarning, setAssignWarning] = useState(false);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[480px]">
@@ -175,7 +178,14 @@ export function EditTaskDialog({
             placeholder="Select assignee"
             options={assigneeOptions}
             value={currentAssignee || "__none__"}
-            onValueChange={(v) => setValue("assignee_id", v)}
+            onValueChange={(v) => {
+              setValue("assignee_id", v);
+              if ((!v || v === "__none__") && currentStatus !== "backlog") {
+                setValue("status", "backlog");
+                setAssignWarning(true);
+                setTimeout(() => setAssignWarning(false), 3000);
+              }
+            }}
           />
 
           <div className="grid grid-cols-3 gap-4">
@@ -198,9 +208,22 @@ export function EditTaskDialog({
               placeholder="Select status"
               options={STATUS_OPTIONS}
               value={currentStatus}
-              onValueChange={(v) => setValue("status", v as TaskStatus)}
+              onValueChange={(v) => {
+                if (isUnassigned && v !== "backlog") {
+                  setAssignWarning(true);
+                  setTimeout(() => setAssignWarning(false), 3000);
+                  return;
+                }
+                setValue("status", v as TaskStatus);
+              }}
             />
           </div>
+
+          {assignWarning && (
+            <p className="animate-in fade-in rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+              Please assign this task before changing its status
+            </p>
+          )}
 
           <div className="space-y-2">
             <BaseLabel htmlFor="edit-task-due-date">Due Date</BaseLabel>

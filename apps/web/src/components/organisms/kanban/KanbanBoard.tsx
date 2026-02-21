@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import { toast } from "sonner";
 import {
   DndContext,
   DragEndEvent,
@@ -137,8 +138,11 @@ export function KanbanBoard({ productId }: KanbanBoardProps) {
       const activeId = active.id as string;
       const overId = over.id as string;
 
+      const draggedTask = tasks.find((t) => t.id === activeId);
+
       const isOverColumn = COLUMN_DEFINITIONS.some((c) => c.id === overId);
       if (isOverColumn) {
+        if (!draggedTask?.assigneeId && overId !== "backlog") return;
         setLocalTasks(
           (tasks.length ? tasks : kanbanTasks).map((t) =>
             t.id === activeId
@@ -151,6 +155,7 @@ export function KanbanBoard({ productId }: KanbanBoardProps) {
 
       const overTask = tasks.find((t) => t.id === overId);
       if (overTask) {
+        if (!draggedTask?.assigneeId && overTask.status !== "backlog") return;
         setLocalTasks(
           (tasks.length ? tasks : kanbanTasks).map((t) =>
             t.id === activeId ? { ...t, status: overTask.status } : t,
@@ -172,6 +177,19 @@ export function KanbanBoard({ productId }: KanbanBoardProps) {
       if (activeId === overId) return;
 
       const movedTask = findTask(activeId);
+      if (movedTask && !movedTask.assigneeId) {
+        const isOverColumn = COLUMN_DEFINITIONS.some((c) => c.id === overId);
+        const targetStatus = isOverColumn
+          ? overId
+          : tasks.find((t) => t.id === overId)?.status;
+        if (targetStatus && targetStatus !== "backlog") {
+          setLocalTasks([]);
+          toast.warning("Please assign this task before changing its status", {
+            duration: 3000,
+          });
+          return;
+        }
+      }
       if (movedTask) {
         updateTask.mutate(
           {
