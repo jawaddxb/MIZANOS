@@ -21,6 +21,7 @@ export type {
   ProfileSummary,
   ProductMember,
   ProductMemberRole,
+  ProductNotificationSetting,
   ProductEnvironment,
   ProductDocument,
   TeamReadiness,
@@ -144,5 +145,7 @@ export type {
 export type { OrgChartNode, UpdateReportingLineRequest } from "./org-chart";
 
 export type { GitHubPat, GitHubPatVerifyResult } from "./github-pat";
+
+export type { TaskComment } from "./task-comment";
 
 export type { Job, JobStatus, JobCreateResponse } from "./job";

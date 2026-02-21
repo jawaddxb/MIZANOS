@@ -173,5 +173,10 @@ async def generate_tasks_from_spec(
     user: CurrentUser = None,
     service: SpecificationService = Depends(get_service),
 ):
-    """Generate tasks from specification features."""
+    """Generate tasks from specification features. PM/superadmin only."""
+    from apps.api.models.enums import AppRole
+    from packages.common.utils.error_handlers import forbidden
+
+    if not user.has_any_role(AppRole.SUPERADMIN, AppRole.ADMIN, AppRole.PROJECT_MANAGER):
+        raise forbidden("Only project managers and admins can generate tasks")
     return await service.generate_tasks_from_spec(product_id)

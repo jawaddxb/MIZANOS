@@ -1,107 +1,27 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/atoms/display/Card";
-import { Badge } from "@/components/atoms/display/Badge";
 import { Skeleton } from "@/components/atoms/display/Skeleton";
 import { Button } from "@/components/molecules/buttons/Button";
-import { BaseCheckbox } from "@/components/atoms/inputs/BaseCheckbox";
-import { BulkAssignToolbar } from "@/components/molecules/tasks/BulkAssignToolbar";
-import { ClaudeCodePrompt } from "@/components/molecules/tasks/ClaudeCodePrompt";
-import { EditTaskDialog } from "@/components/organisms/product/EditTaskDialog";
+import { BulkActionsToolbar } from "@/components/molecules/tasks/BulkActionsToolbar";
+import { TaskRow } from "@/components/molecules/tasks/TaskRow";
+import { TaskDetailDrawer } from "@/components/organisms/product/TaskDetailDrawer";
 import { AddTaskDialog } from "@/components/organisms/kanban/AddTaskDialog";
 import { toKanbanTask } from "@/components/organisms/kanban/kanban-utils";
 import { useTasks } from "@/hooks/queries/useTasks";
 import { useProductMembers } from "@/hooks/queries/useProductMembers";
 import { useCreateTask } from "@/hooks/mutations/useTaskMutations";
-import { TASK_STATUS_DISPLAY, TASK_PRIORITY_COLORS } from "@/lib/constants";
-import type { Task, KanbanTask, TaskStatus, TaskPriority } from "@/lib/types";
+import { TASK_STATUS_DISPLAY } from "@/lib/constants";
+import type { KanbanTask, TaskStatus, TaskPriority } from "@/lib/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/inputs/BaseSelect";
 import { Filter, ListTodo, Plus, User } from "lucide-react";
 
-interface TasksTabProps { productId: string }
+interface TasksTabProps { productId: string; openTaskId?: string }
 type FilterStatus = TaskStatus | "all";
 type FilterPriority = TaskPriority | "all";
 
-interface TaskRowProps {
-  task: Task;
-  selected: boolean;
-  assigneeName?: string;
-  onToggle: () => void;
-  onClick: () => void;
-}
-
-function TaskRow({ task, selected, assigneeName, onToggle, onClick }: TaskRowProps) {
-  const statusConfig = TASK_STATUS_DISPLAY[task.status ?? "backlog"] ?? TASK_STATUS_DISPLAY.backlog;
-  const StatusIcon = statusConfig.icon;
-
-  return (
-    <div
-      className="rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
-      onClick={onClick}
-    >
-      <div className="flex items-center gap-3 p-3">
-        <div onClick={(e) => e.stopPropagation()}>
-          <BaseCheckbox checked={selected} onCheckedChange={onToggle} />
-        </div>
-        <StatusIcon className={`h-5 w-5 shrink-0 ${statusConfig.color}`} />
-
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate">{task.title}</p>
-          {task.description && (
-            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-              {task.description}
-            </p>
-          )}
-          <div className="flex items-center gap-2 mt-1.5">
-            {task.priority && (
-              <Badge
-                variant="secondary"
-                className={`text-[10px] ${TASK_PRIORITY_COLORS[task.priority] ?? ""}`}
-              >
-                {task.priority}
-              </Badge>
-            )}
-            {task.domain_group && (
-              <Badge variant="secondary" className="text-[10px] font-mono">
-                {task.domain_group}
-              </Badge>
-            )}
-            {task.due_date && (
-              <span className="text-xs text-muted-foreground tabular-nums">
-                Due {new Date(task.due_date).toLocaleDateString()}
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          {assigneeName ? (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground max-w-[120px] truncate">
-              <User className="h-3 w-3 shrink-0" />
-              {assigneeName}
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium">
-              <span className="flex items-center justify-center h-4 w-4 rounded-full bg-amber-100 dark:bg-amber-900/40 text-[10px] font-bold shrink-0">?</span>
-              Unassigned
-            </span>
-          )}
-          <Badge variant="outline" className="text-xs">
-            {statusConfig.label}
-          </Badge>
-        </div>
-      </div>
-      {task.claude_code_prompt && (
-        <div className="px-3 pb-3">
-          <ClaudeCodePrompt prompt={task.claude_code_prompt} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function TasksTab({ productId }: TasksTabProps) {
+function TasksTab({ productId, openTaskId }: TasksTabProps) {
   const { data: tasks, isLoading } = useTasks(productId);
   const { data: members = [] } = useProductMembers(productId);
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
@@ -120,6 +40,19 @@ function TasksTab({ productId }: TasksTabProps) {
     }
     return map;
   }, [members]);
+
+  const handledTaskIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (openTaskId && tasks && !isLoading && handledTaskIdRef.current !== openTaskId) {
+      const task = tasks.find((t) => t.id === openTaskId);
+      if (task) {
+        handledTaskIdRef.current = openTaskId;
+        setEditTask(toKanbanTask(task, assigneeMap));
+        setEditDialogOpen(true);
+      }
+    }
+  }, [openTaskId, tasks, isLoading, assigneeMap]);
 
   const filteredTasks = useMemo(() => {
     if (!tasks) return [];
@@ -232,6 +165,7 @@ function TasksTab({ productId }: TasksTabProps) {
         ))}
         <div className="ml-auto flex items-center gap-2">
           <User className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">Assignee:</span>
           <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
             <SelectTrigger className="w-[160px] h-8 text-xs">
               <SelectValue placeholder="Assignee" />
@@ -255,7 +189,7 @@ function TasksTab({ productId }: TasksTabProps) {
         </div>
       </div>
 
-      <BulkAssignToolbar
+      <BulkActionsToolbar
         taskCount={filteredTasks.length}
         selectedIds={selectedIds}
         onToggleAll={toggleSelectAll}
@@ -279,7 +213,7 @@ function TasksTab({ productId }: TasksTabProps) {
         ))}
       </div>
 
-      <EditTaskDialog
+      <TaskDetailDrawer
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
         task={editTask}

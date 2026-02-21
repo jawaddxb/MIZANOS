@@ -61,6 +61,8 @@ class TaskResponse(TaskBase):
     is_draft: bool
     approved_by: UUID | None = None
     approved_at: datetime | None = None
+    comment_count: int = 0
+    reply_count: int = 0
     created_at: datetime
     updated_at: datetime
 
@@ -96,3 +98,32 @@ class TaskBulkAssignResponse(BaseSchema):
 
     assigned_count: int
     task_ids: list[UUID]
+
+
+class TaskBulkUpdateRequest(BaseSchema):
+    """Request to bulk update tasks."""
+
+    task_ids: list[UUID]
+    assignee_id: UUID | None = None
+    due_date: datetime | None = None
+    priority: str | None = None
+
+
+class TaskBulkUpdateResponse(BaseSchema):
+    """Response from bulk update."""
+
+    updated_count: int
+    task_ids: list[UUID]
+
+
+class TaskRejectResponse(BaseSchema):
+    """Response from reject/cancel action."""
+
+    action: str
+    task_id: UUID
+
+
+class TaskBulkRejectResponse(BaseSchema):
+    """Response from bulk reject/cancel."""
+
+    results: list[TaskRejectResponse]

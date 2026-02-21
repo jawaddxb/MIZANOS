@@ -2,7 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Calendar, User } from "lucide-react";
+import { GripVertical, Calendar, MessageSquare, User } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { Card } from "@/components/atoms/display/Card";
 import {
@@ -146,12 +146,20 @@ export function KanbanCard({ task, isOverlay, onClick }: KanbanCardProps) {
           </div>
         )}
 
-        {task.dueDate && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Calendar className="h-3 w-3" />
-            <span className="font-mono">{new Date(task.dueDate).toLocaleDateString()}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {(task.commentCount + task.replyCount) > 0 && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <MessageSquare className="h-3 w-3" />
+              <span>{task.commentCount + task.replyCount}</span>
+            </div>
+          )}
+          {task.dueDate && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Calendar className="h-3 w-3" />
+              <span className="font-mono">{new Date(task.dueDate).toLocaleDateString()}</span>
+            </div>
+          )}
+        </div>
       </div>
     </Card>
   );

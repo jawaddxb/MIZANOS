@@ -2,6 +2,7 @@ import type {
   Product,
   ProductMember,
   ProductEnvironment,
+  ProductNotificationSetting,
   DeploymentChecklistItem,
   Stakeholder,
   TeamReadiness,
@@ -238,6 +239,24 @@ export class ProductsRepository extends BaseRepository<Product> {
 
   async deletePartnerNote(noteId: string): Promise<void> {
     await this.client.delete(`/products/partner-notes/${noteId}`);
+  }
+
+  async getNotificationSettings(productId: string): Promise<ProductNotificationSetting> {
+    const response = await this.client.get<ProductNotificationSetting>(
+      `${this.basePath}/${productId}/notification-settings`,
+    );
+    return response.data;
+  }
+
+  async updateNotificationSettings(
+    productId: string,
+    emailEnabled: boolean,
+  ): Promise<ProductNotificationSetting> {
+    const response = await this.client.patch<ProductNotificationSetting>(
+      `${this.basePath}/${productId}/notification-settings`,
+      { email_enabled: emailEnabled },
+    );
+    return response.data;
   }
 
   async archive(productId: string): Promise<Product> {

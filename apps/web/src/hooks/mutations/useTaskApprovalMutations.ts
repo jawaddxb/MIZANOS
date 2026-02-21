@@ -39,11 +39,11 @@ export function useBulkApproveTasks(productId: string) {
   });
 }
 
-export function useRejectTask(productId: string) {
+export function useRejectDraftTask(productId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (taskId: string): Promise<void> =>
+    mutationFn: (taskId: string) =>
       tasksRepository.rejectTask(taskId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", productId, "drafts"] });
@@ -55,11 +55,11 @@ export function useRejectTask(productId: string) {
   });
 }
 
-export function useBulkRejectTasks(productId: string) {
+export function useBulkRejectDraftTasks(productId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (taskIds: string[]): Promise<void> =>
+    mutationFn: (taskIds: string[]) =>
       tasksRepository.bulkRejectTasks(taskIds),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", productId, "drafts"] });

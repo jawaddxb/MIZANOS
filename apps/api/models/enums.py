@@ -23,6 +23,7 @@ class EnvironmentType(str, enum.Enum):
 
 class NotificationType(str, enum.Enum):
     TASK_ASSIGNED = "task_assigned"
+    COMMENT_MENTION = "comment_mention"
     PRODUCT_STATUS_CHANGED = "product_status_changed"
     QA_CHECK_FAILED = "qa_check_failed"
     SPECIFICATION_READY = "specification_ready"

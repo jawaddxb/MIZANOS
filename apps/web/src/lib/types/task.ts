@@ -19,6 +19,8 @@ export interface Task {
   is_draft: boolean;
   approved_by: string | null;
   approved_at: string | null;
+  comment_count: number;
+  reply_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -65,6 +67,8 @@ export interface KanbanTask {
   assigneeId?: string;
   productId?: string;
   dueDate?: string;
+  commentCount: number;
+  replyCount: number;
   createdAt: string;
 }
 

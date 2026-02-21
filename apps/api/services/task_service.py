@@ -3,14 +3,17 @@
 from datetime import datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import select, func, delete as sa_delete
+from sqlalchemy import or_, select, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.dependencies import AuthenticatedUser
 from apps.api.models.enums import AppRole
+from apps.api.models.notification import Notification
 from apps.api.models.product import ProductMember
 from apps.api.models.settings import OrgSetting
+from apps.api.models.specification import SpecificationFeature
 from apps.api.models.task import Task
+from apps.api.models.task_comment import TaskComment
 from apps.api.models.user import Profile
 from apps.api.schemas.tasks import TaskCreate
 from apps.api.services.base_service import BaseService
@@ -29,6 +32,7 @@ class TaskService(BaseService[Task]):
         product_id: UUID | None = None,
         assignee_id: UUID | None = None,
         pm_id: UUID | None = None,
+        member_id: UUID | None = None,
         status: str | None = None,
         priority: str | None = None,
         pillar: str | None = None,
@@ -38,39 +42,68 @@ class TaskService(BaseService[Task]):
         page_size: int = 50,
     ) -> dict:
         """List tasks with optional filtering. Excludes drafts by default."""
-        stmt = select(Task)
-
+        base = select(Task)
         if not include_drafts:
-            stmt = stmt.where(Task.is_draft == False)  # noqa: E712
-
+            base = base.where(Task.is_draft == False)  # noqa: E712
         if product_id:
-            stmt = stmt.where(Task.product_id == product_id)
+            base = base.where(Task.product_id == product_id)
         if assignee_id:
-            stmt = stmt.where(Task.assignee_id == assignee_id)
+            base = base.where(Task.assignee_id == assignee_id)
         if pm_id:
-            stmt = stmt.join(
+            base = base.join(
                 ProductMember,
                 (Task.product_id == ProductMember.product_id)
                 & (ProductMember.profile_id == pm_id)
                 & (ProductMember.role == "project_manager"),
             )
+        if member_id:
+            member_products = (
+                select(ProductMember.product_id)
+                .where(ProductMember.profile_id == member_id)
+            )
+            base = base.where(
+                or_(
+                    Task.assignee_id == member_id,
+                    Task.product_id.in_(member_products),
+                )
+            )
         if status:
-            stmt = stmt.where(Task.status == status)
+            base = base.where(Task.status == status)
         if priority:
-            stmt = stmt.where(Task.priority == priority)
+            base = base.where(Task.priority == priority)
         if pillar:
-            stmt = stmt.where(Task.pillar == pillar)
+            base = base.where(Task.pillar == pillar)
         if search:
-            stmt = stmt.where(Task.title.ilike(f"%{search}%"))
+            base = base.where(Task.title.ilike(f"%{search}%"))
 
-        stmt = stmt.order_by(Task.sort_order)
-
-        count_stmt = select(func.count()).select_from(stmt.subquery())
+        count_stmt = select(func.count()).select_from(base.subquery())
         total = (await self.repo.session.execute(count_stmt)).scalar_one()
-
+        comment_count_subq = (
+            select(func.count(TaskComment.id))
+            .where(TaskComment.task_id == Task.id, TaskComment.parent_id.is_(None))
+            .correlate(Task)
+            .scalar_subquery()
+            .label("comment_count")
+        )
+        reply_count_subq = (
+            select(func.count(TaskComment.id))
+            .where(TaskComment.task_id == Task.id, TaskComment.parent_id.is_not(None))
+            .correlate(Task)
+            .scalar_subquery()
+            .label("reply_count")
+        )
+        stmt = base.add_columns(comment_count_subq, reply_count_subq)
+        stmt = stmt.order_by(Task.sort_order)
         stmt = stmt.offset((page - 1) * page_size).limit(page_size)
+
         result = await self.repo.session.execute(stmt)
-        data = list(result.scalars().all())
+        rows = result.all()
+        data = []
+        for row in rows:
+            task = row[0]
+            task.comment_count = row[1] or 0
+            task.reply_count = row[2] or 0
+            data.append(task)
 
         return {"data": data, "total": total, "page": page, "page_size": page_size}
 
@@ -98,26 +131,42 @@ class TaskService(BaseService[Task]):
     ) -> dict:
         """Approve multiple draft tasks."""
         now = datetime.now(timezone.utc)
-        approved = []
         for tid in task_ids:
             task = await self.get_or_404(tid)
             await self.repo.update(task, {
-                "is_draft": False,
-                "approved_by": approver_id,
-                "approved_at": now,
+                "is_draft": False, "approved_by": approver_id, "approved_at": now,
             })
-            approved.append(tid)
-        return {"approved_count": len(approved), "task_ids": approved}
+        return {"approved_count": len(task_ids), "task_ids": task_ids}
 
-    async def reject_task(self, task_id: UUID) -> None:
-        """Reject (delete) a draft task."""
+    async def reject_task(self, task_id: UUID, user: AuthenticatedUser) -> dict:
+        """PM/superadmin hard-deletes a draft task."""
         task = await self.get_or_404(task_id)
+        if not self._can_manage_tasks(user):
+            raise forbidden("Only superadmins and project managers can reject tasks")
+        if not task.is_draft:
+            raise bad_request("Only draft tasks can be rejected")
+        await self._clear_task_references(task_id)
         await self.repo.delete(task)
+        return {"action": "deleted", "task_id": task_id}
 
-    async def bulk_reject_tasks(self, task_ids: list[UUID]) -> None:
-        """Reject (delete) multiple draft tasks."""
-        stmt = sa_delete(Task).where(Task.id.in_(task_ids))
-        await self.repo.session.execute(stmt)
+    async def _clear_task_references(self, task_id: UUID) -> None:
+        """Null out FK references to a task before deletion."""
+        await self.repo.session.execute(
+            update(SpecificationFeature)
+            .where(SpecificationFeature.task_id == task_id)
+            .values(task_id=None)
+        )
+        await self.repo.session.execute(
+            update(Notification)
+            .where(Notification.task_id == task_id)
+            .values(task_id=None)
+        )
+
+    async def bulk_reject_tasks(
+        self, task_ids: list[UUID], user: AuthenticatedUser
+    ) -> list[dict]:
+        """Hard-delete multiple draft tasks. PM/superadmin only."""
+        return [await self.reject_task(tid, user) for tid in task_ids]
 
     async def bulk_assign_tasks(
         self, task_ids: list[UUID], assignee_id: UUID | None
@@ -132,6 +181,21 @@ class TaskService(BaseService[Task]):
             await self.repo.update(task, {"assignee_id": assignee_id})
             assigned.append(tid)
         return {"assigned_count": len(assigned), "task_ids": assigned}
+
+    async def bulk_update_tasks(
+        self, task_ids: list[UUID], updates: dict
+    ) -> dict:
+        """Bulk update tasks with provided fields."""
+        if "assignee_id" in updates and updates["assignee_id"]:
+            await self._validate_assignee(updates["assignee_id"])
+        if "priority" in updates and updates["priority"] not in ("low", "medium", "high"):
+            raise bad_request("Invalid priority value")
+        updated = []
+        for tid in task_ids:
+            task = await self.get_or_404(tid)
+            await self.repo.update(task, updates)
+            updated.append(tid)
+        return {"updated_count": len(updated), "task_ids": updated}
 
     async def create_task(self, data: TaskCreate, user: AuthenticatedUser) -> Task:
         """Create a new task. Engineers are auto-assigned to self."""

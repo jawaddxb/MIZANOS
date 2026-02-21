@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/molecules/buttons/Button";
 import { NotificationItem } from "@/components/molecules/feedback/NotificationItem";
@@ -26,8 +27,19 @@ export function NotificationDropdown({
   onNotificationClick,
 }: NotificationDropdownProps) {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
   const { data: notifications, unreadCount, isLoading } = useNotifications();
   const { markAsRead, markAllAsRead } = useNotificationMutations();
+
+  const buildNotificationLink = useCallback((notification: Notification): string | null => {
+    if (notification.product_id && notification.task_id) {
+      return `/projects/${notification.product_id}?tab=tasks&task=${notification.task_id}`;
+    }
+    if (notification.product_id) {
+      return `/projects/${notification.product_id}`;
+    }
+    return null;
+  }, []);
 
   const handleItemClick = useCallback(
     (notification: Notification) => {
@@ -36,8 +48,11 @@ export function NotificationDropdown({
       }
       onNotificationClick?.(notification);
       setOpen(false);
+
+      const link = buildNotificationLink(notification);
+      if (link) router.push(link as never);
     },
-    [markAsRead, onNotificationClick],
+    [markAsRead, onNotificationClick, buildNotificationLink, router],
   );
 
   const handleMarkAllAsRead = useCallback(() => {

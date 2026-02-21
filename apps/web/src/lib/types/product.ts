@@ -49,6 +49,11 @@ export interface ProductEnvironment {
   updated_at: string;
 }
 
+export interface ProductNotificationSetting {
+  product_id: string;
+  email_enabled: boolean;
+}
+
 export type ProductMemberRole = "project_manager" | "marketing" | "business_owner" | "ai_engineer";
 
 export interface TeamReadiness {

@@ -95,6 +95,133 @@ class EmailService:
             return False
 
     @staticmethod
+    async def send_task_assignment_email(
+        to_email: str,
+        full_name: str,
+        task_title: str,
+        product_name: str,
+        task_url: str,
+    ) -> bool:
+        """Send a task assignment notification email. Returns True on success."""
+        if not settings.resend_api_key:
+            logger.warning("RESEND_API_KEY not set — skipping task assignment email to %s", to_email)
+            return False
+
+        import resend
+
+        resend.api_key = settings.resend_api_key
+
+        html = (
+            f"<h2>Task Assigned</h2>"
+            f"<p>Hi {full_name},</p>"
+            f"<p>You've been assigned to <strong>{task_title}</strong> "
+            f"in <strong>{product_name}</strong>.</p>"
+            f'<p><a href="{task_url}" '
+            f'style="display:inline-block;padding:12px 24px;'
+            f"background:#2563eb;color:#fff;border-radius:6px;"
+            f'text-decoration:none;font-weight:600">'
+            f"View Task</a></p>"
+        )
+
+        try:
+            resend.Emails.send({
+                "from": settings.email_from,
+                "to": [to_email],
+                "subject": f"Task assigned: {task_title}",
+                "html": html,
+            })
+            return True
+        except Exception:
+            logger.exception("Failed to send task assignment email to %s", to_email)
+            return False
+
+    @staticmethod
+    async def send_bulk_task_assignment_email(
+        to_email: str,
+        full_name: str,
+        tasks: list[dict],
+    ) -> bool:
+        """Send a consolidated task assignment email. Returns True on success."""
+        if not settings.resend_api_key:
+            logger.warning("RESEND_API_KEY not set — skipping bulk assignment email to %s", to_email)
+            return False
+
+        import resend
+
+        resend.api_key = settings.resend_api_key
+
+        rows = "".join(
+            f"<tr><td style='padding:8px;border-bottom:1px solid #e5e7eb'>{t['title']}</td>"
+            f"<td style='padding:8px;border-bottom:1px solid #e5e7eb'>{t['product_name']}</td></tr>"
+            for t in tasks
+        )
+        html = (
+            f"<h2>Tasks Assigned</h2>"
+            f"<p>Hi {full_name},</p>"
+            f"<p>You've been assigned to {len(tasks)} task{'s' if len(tasks) != 1 else ''}:</p>"
+            f"<table style='border-collapse:collapse;width:100%'>"
+            f"<tr><th style='padding:8px;text-align:left;border-bottom:2px solid #e5e7eb'>Task</th>"
+            f"<th style='padding:8px;text-align:left;border-bottom:2px solid #e5e7eb'>Project</th></tr>"
+            f"{rows}</table>"
+        )
+
+        try:
+            resend.Emails.send({
+                "from": settings.email_from,
+                "to": [to_email],
+                "subject": f"You've been assigned {len(tasks)} tasks",
+                "html": html,
+            })
+            return True
+        except Exception:
+            logger.exception("Failed to send bulk assignment email to %s", to_email)
+            return False
+
+    @staticmethod
+    async def send_comment_mention_email(
+        to_email: str,
+        full_name: str,
+        author_name: str,
+        task_title: str,
+        comment_preview: str,
+        task_url: str,
+    ) -> bool:
+        """Send a comment @mention notification email. Returns True on success."""
+        if not settings.resend_api_key:
+            logger.warning("RESEND_API_KEY not set — skipping mention email to %s", to_email)
+            return False
+
+        import resend
+
+        resend.api_key = settings.resend_api_key
+
+        html = (
+            f"<h2>You were mentioned in a comment</h2>"
+            f"<p>Hi {full_name},</p>"
+            f"<p><strong>{author_name}</strong> mentioned you in a comment on "
+            f"<strong>{task_title}</strong>:</p>"
+            f"<blockquote style='border-left:3px solid #e5e7eb;padding:8px 12px;"
+            f"margin:12px 0;color:#6b7280'>{comment_preview}</blockquote>"
+            f'<p><a href="{task_url}" '
+            f'style="display:inline-block;padding:12px 24px;'
+            f"background:#2563eb;color:#fff;border-radius:6px;"
+            f'text-decoration:none;font-weight:600">'
+            f"View Task</a></p>"
+        )
+
+        try:
+            resend.Emails.send({
+                "from": settings.email_from,
+                "to": [to_email],
+                "subject": f"{author_name} mentioned you in a comment",
+                "html": html,
+            })
+            return True
+        except Exception:
+            logger.exception("Failed to send mention email to %s", to_email)
+            return False
+
+    @staticmethod
     async def send_assignment_email(
         to_email: str,
         full_name: str,

@@ -72,6 +72,28 @@ export function useBulkAssignTasks(productId: string) {
   });
 }
 
+export function useBulkUpdateTasks(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      taskIds,
+      updates,
+    }: {
+      taskIds: string[];
+      updates: { assignee_id?: string | null; due_date?: string | null; priority?: string };
+    }) => tasksRepository.bulkUpdateTasks(taskIds, updates),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["tasks", productId] });
+      queryClient.invalidateQueries({ queryKey: ["tasks", "all"] });
+      toast.success(`Updated ${data.updated_count} task${data.updated_count !== 1 ? "s" : ""}`);
+    },
+    onError: (error: Error) => {
+      toast.error("Failed to update tasks: " + error.message);
+    },
+  });
+}
+
 export function useReorderTask() {
   return useMutation({
     mutationFn: ({
