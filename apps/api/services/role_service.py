@@ -25,20 +25,32 @@ class RoleService:
         role: str | None = None,
     ) -> None:
         """Check that actor can modify roles on the target."""
-        actor_is_business_owner = actor.has_role(AppRole.BUSINESS_OWNER)
         actor_is_superadmin = actor.has_role(AppRole.SUPERADMIN)
+        actor_is_business_owner = actor.has_role(AppRole.BUSINESS_OWNER)
         actor_is_admin = actor.has_role(AppRole.ADMIN)
 
-        if not (actor_is_business_owner or actor_is_superadmin or actor_is_admin):
+        if not (actor_is_superadmin or actor_is_business_owner or actor_is_admin):
             raise forbidden("Only admins can manage roles")
 
-        if actor_is_admin and not (actor_is_superadmin or actor_is_business_owner):
+        # Superadmin: unrestricted
+        if actor_is_superadmin:
+            return
+
+        # Business owner: cannot modify or assign superadmin
+        if actor_is_business_owner:
             if target.role == "superadmin":
-                raise forbidden("Admins cannot modify superadmin roles")
+                raise forbidden("Business owners cannot modify superadmin roles")
             if role == "superadmin":
-                raise forbidden("Admins cannot assign the superadmin role")
-            if target.user_id == actor.id:
-                raise forbidden("Admins cannot modify their own roles")
+                raise forbidden("Business owners cannot assign the superadmin role")
+            return
+
+        # Admin: cannot modify superadmin/business_owner, cannot self-modify
+        if target.role in ("superadmin", "business_owner"):
+            raise forbidden("Admins cannot modify superadmin or business owner roles")
+        if role in ("superadmin", "business_owner"):
+            raise forbidden("Admins cannot assign superadmin or business owner roles")
+        if target.user_id == actor.id:
+            raise forbidden("Admins cannot modify their own roles")
 
     async def _get_target(self, user_id: UUID) -> Profile:
         target = await self.session.get(Profile, user_id)
@@ -49,6 +61,8 @@ class RoleService:
     async def assign_role(
         self, user_id: UUID, role: str, actor: AuthenticatedUser,
     ) -> UserRole:
+        if role == "superadmin":
+            raise bad_request("Superadmin cannot be assigned as a secondary role")
         target = await self._get_target(user_id)
         self._check_authorization(actor, target, role)
 

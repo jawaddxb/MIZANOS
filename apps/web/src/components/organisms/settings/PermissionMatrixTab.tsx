@@ -20,6 +20,7 @@ interface PermissionMatrixTabProps {
 
 const ROLES: { key: AppRole; label: string; tier: number }[] = [
   { key: "admin", label: "Admin", tier: 1 },
+  { key: "executive", label: "Executive", tier: 6 },
   { key: "project_manager", label: "Project Manager", tier: 2 },
   { key: "business_development", label: "Business Development", tier: 3 },
   { key: "marketing", label: "Marketing", tier: 4 },

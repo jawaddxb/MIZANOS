@@ -46,7 +46,7 @@ async def verify_product_access(
     product_id: UUID,
 ) -> None:
     """Raise 403 unless user is admin/superadmin or a member of the product."""
-    if user.has_any_role(AppRole.SUPERADMIN, AppRole.ADMIN):
+    if user.has_any_role(AppRole.SUPERADMIN, AppRole.BUSINESS_OWNER, AppRole.ADMIN, AppRole.EXECUTIVE):
         return
 
     from apps.api.models.product import ProductMember

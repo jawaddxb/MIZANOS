@@ -100,10 +100,10 @@ async def get_task(
 @router.post("", response_model=TaskResponse, status_code=201)
 async def create_task(
     body: TaskCreate,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: TaskService = Depends(get_service),
 ):
-    return await service.create_task(body)
+    return await service.create_task(body, user)
 
 
 @router.post("/{task_id}/approve", response_model=TaskResponse)
@@ -136,6 +136,7 @@ async def update_task(
     return await service.update(
         task_id,
         body.model_dump(exclude_unset=True),
+        user=user,
         user_id=user.profile_id,
         is_superadmin=user.has_role(AppRole.SUPERADMIN),
     )

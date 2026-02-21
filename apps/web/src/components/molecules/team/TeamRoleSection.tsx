@@ -14,6 +14,7 @@ interface TeamRoleSectionProps {
   canManage: boolean;
   profiles: Profile[];
   showPendingProfiles: boolean;
+  rolesMap?: Map<string, string[]>;
   onAdd: (profileId: string, role: string) => void;
   onRemove: (memberId: string) => void;
   isAdding: boolean;
@@ -28,6 +29,7 @@ export function TeamRoleSection({
   canManage,
   profiles,
   showPendingProfiles,
+  rolesMap,
   onAdd,
   onRemove,
   isRemoving,
@@ -82,6 +84,7 @@ export function TeamRoleSection({
           productRole={role}
           excludeProfileIds={excludeProfileIds}
           showPendingProfiles={showPendingProfiles}
+          rolesMap={rolesMap}
           placeholder={`Select ${label}...`}
           onSelect={handleSelect}
         />

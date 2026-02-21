@@ -19,9 +19,11 @@ from apps.api.schemas.products import (
     PartnerNoteCreate,
     ProductCreate,
 )
+from apps.api.dependencies import AuthenticatedUser
+from apps.api.models.enums import AppRole
 from apps.api.services.base_service import BaseService
 from apps.api.services.product_member_service import ProductMemberService
-from packages.common.utils.error_handlers import not_found
+from packages.common.utils.error_handlers import forbidden, not_found
 
 
 class ProductService(BaseService[Product]):
@@ -103,8 +105,14 @@ class ProductService(BaseService[Product]):
         result = await self.repo.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def create_product(self, data: ProductCreate) -> Product:
-        """Create a new product."""
+    async def create_product(
+        self, data: ProductCreate, user: AuthenticatedUser
+    ) -> Product:
+        """Create a new product (superadmin / project_manager only)."""
+        if not user.has_any_role(AppRole.SUPERADMIN, AppRole.PROJECT_MANAGER):
+            raise forbidden(
+                "Only superadmins and project managers can create projects"
+            )
         product = Product(**data.model_dump())
         return await self.repo.create(product)
 

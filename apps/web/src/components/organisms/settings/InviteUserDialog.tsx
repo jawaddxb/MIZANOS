@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,8 @@ import { Button } from "@/components/molecules/buttons/Button";
 import { SelectField } from "@/components/molecules/forms/SelectField";
 import { SearchableSelect } from "@/components/molecules/forms/SearchableSelect";
 import { useInviteUser } from "@/hooks/queries/useUserManagement";
+import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
+import { APP_ROLES, ROLE_CONFIG, getInvitableRoles } from "@/lib/constants/roles";
 import { Loader2 } from "lucide-react";
 
 interface InviteUserDialogProps {
@@ -21,14 +23,6 @@ interface InviteUserDialogProps {
   onOpenChange: (open: boolean) => void;
   managerOptions?: { value: string; label: string }[];
 }
-
-const ROLE_OPTIONS = [
-  { value: "admin", label: "Admin" },
-  { value: "project_manager", label: "Project Manager" },
-  { value: "engineer", label: "Engineer" },
-  { value: "business_development", label: "Business Development" },
-  { value: "marketing", label: "Marketing" },
-];
 
 const OFFICE_OPTIONS = [
   { value: "lahore", label: "Lahore" },
@@ -69,6 +63,13 @@ const INITIAL_STATE: InviteFormState = {
 export function InviteUserDialog({ open, onOpenChange, managerOptions }: InviteUserDialogProps) {
   const [form, setForm] = useState<InviteFormState>(INITIAL_STATE);
   const inviteUser = useInviteUser();
+  const { userRoles } = useRoleVisibility();
+
+  const invitableSet = useMemo(() => getInvitableRoles(userRoles), [userRoles]);
+  const roleOptions = useMemo(
+    () => APP_ROLES.map((r) => ({ value: r, label: ROLE_CONFIG[r].label, disabled: !invitableSet.has(r) })),
+    [invitableSet],
+  );
 
   const handleClose = useCallback(
     (v: boolean) => {
@@ -145,7 +146,7 @@ export function InviteUserDialog({ open, onOpenChange, managerOptions }: InviteU
           <div className="grid grid-cols-2 gap-4">
             <SelectField
               label="Role *"
-              options={ROLE_OPTIONS}
+              options={roleOptions}
               value={form.role}
               onValueChange={(v) => setForm({ ...form, role: v })}
               placeholder="Select role"

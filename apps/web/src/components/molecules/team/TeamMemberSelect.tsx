@@ -15,7 +15,7 @@ const SUGGESTED_ORG_ROLES: Record<string, string[]> = {
   project_manager: ["project_manager"],
   ai_engineer: ["engineer"],
   business_owner: ["business_owner"],
-  marketing: ["marketing", "business_development"],
+  marketing: ["marketing"],
 };
 
 interface TeamMemberSelectProps {
@@ -23,6 +23,7 @@ interface TeamMemberSelectProps {
   productRole: string;
   excludeProfileIds: Set<string>;
   showPendingProfiles: boolean;
+  rolesMap?: Map<string, string[]>;
   placeholder?: string;
   onSelect: (profileId: string) => void;
 }
@@ -42,6 +43,7 @@ export function TeamMemberSelect({
   productRole,
   excludeProfileIds,
   showPendingProfiles,
+  rolesMap = new Map(),
   placeholder = "Select...",
   onSelect,
 }: TeamMemberSelectProps) {
@@ -58,7 +60,9 @@ export function TeamMemberSelect({
     const othersList: Profile[] = [];
 
     for (const p of available) {
-      if (p.role && suggestedRoles.includes(p.role)) {
+      const additionalRoles = rolesMap.get(p.user_id) ?? [];
+      const allRoles = [p.role, ...additionalRoles].filter(Boolean) as string[];
+      if (allRoles.some((r) => suggestedRoles.includes(r))) {
         suggestedList.push(p);
       } else {
         othersList.push(p);
@@ -66,7 +70,7 @@ export function TeamMemberSelect({
     }
 
     return { suggested: suggestedList, others: othersList };
-  }, [profiles, excludeProfileIds, showPendingProfiles, productRole]);
+  }, [profiles, excludeProfileIds, showPendingProfiles, productRole, rolesMap]);
 
   const filterBySearch = (list: Profile[]): Profile[] => {
     if (!search) return list;

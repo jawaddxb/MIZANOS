@@ -1,4 +1,4 @@
-export type AppRole = "business_owner" | "superadmin" | "admin" | "project_manager" | "engineer" | "business_development" | "marketing" | "operations";
+export type AppRole = "business_owner" | "superadmin" | "admin" | "executive" | "project_manager" | "engineer" | "business_development" | "marketing" | "operations";
 
 export type EnvironmentType = "development" | "staging" | "production";
 

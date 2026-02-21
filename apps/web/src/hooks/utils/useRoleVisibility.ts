@@ -12,6 +12,7 @@ export function useRoleVisibility() {
   const isProjectManager = userRoles.includes("project_manager");
   const isMarketing = userRoles.includes("marketing");
   const isEngineer = userRoles.includes("engineer");
+  const isExecutive = userRoles.includes("executive");
   const isBusinessDevelopment = userRoles.includes("business_development");
   const isOperations = userRoles.includes("operations");
 
@@ -45,12 +46,14 @@ export function useRoleVisibility() {
   const canManageRoles = hasPermission("role_management");
   const canManageWorkflow = hasPermission("workflow_rules");
 
-  const primaryRole = isBusinessOwner
-    ? "business_owner"
-    : isSuperAdmin
+  const primaryRole = isSuperAdmin
     ? "superadmin"
+    : isBusinessOwner
+    ? "business_owner"
     : userRoles.includes("admin")
       ? "admin"
+      : isExecutive
+      ? "executive"
       : isProjectManager
       ? "project_manager"
       : isMarketing
@@ -70,6 +73,7 @@ export function useRoleVisibility() {
     isBusinessOwner,
     isSuperAdmin,
     isAdmin,
+    isExecutive,
     isProjectManager,
     isMarketing,
     isEngineer,

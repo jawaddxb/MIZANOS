@@ -4,13 +4,14 @@
 
 There are **two layers** of roles:
 
-### Global App Roles (8 roles)
+### Global App Roles (9 roles)
 
 | Role | Description |
 |------|-------------|
-| **business_owner** | Org-level top of hierarchy, full access |
-| **superadmin** | Full platform control, only role that can manage superadmins |
+| **superadmin** | Highest authority with full platform control |
+| **business_owner** | Organizational management with full access |
 | **admin** | Full access except can't modify superadmins or their own role |
+| **executive** | Read-only access to all platform data and reports |
 | **project_manager** | Manages products, tasks, team, specs, QA, docs, audit |
 | **engineer** | Dev tasks, code reviews, QA, specs (view only), docs (view only) |
 | **business_development** | Client relations, specs (edit), docs (edit) |
@@ -32,41 +33,41 @@ These don't grant permissions — they're about team structure.
 
 ## Permission Matrix
 
-| Feature | business_owner | superadmin | admin | project_manager | engineer | business_development | marketing | operations |
-|---------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| Feature | business_owner | superadmin | admin | executive | project_manager | engineer | business_development | marketing | operations |
+|---------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 | **Products** |
-| View | * | * | * | Y | Y | Y | Y | Y |
-| Create | * | * | * | Y | - | - | - | - |
-| Edit | * | * | * | Y | - | - | - | - |
-| Delete | * | * | * | - | - | - | - | - |
+| View | * | * | * | Y | Y | Y | Y | Y | Y |
+| Create | * | * | * | - | Y | - | - | - | - |
+| Edit | * | * | * | - | Y | - | - | - | - |
+| Delete | * | * | * | - | - | - | - | - | - |
 | **Tasks** |
-| View/Edit/Assign | * | * | * | Y | Y | - | - | - |
-| Change Status (DnD) | * | * | * | Y (as PM) | Y (if assignee) | - | - | - |
+| View/Edit/Assign | * | * | * | - | Y | Y | - | - | - |
+| Change Status (DnD) | * | * | * | - | Y (as PM) | Y (if assignee) | - | - | - |
 | **Specifications** |
-| View | * | * | * | Y | Y | Y | - | - |
-| Edit | * | * | * | Y | - | Y | - | - |
+| View | * | * | * | Y | Y | Y | Y | - | - |
+| Edit | * | * | * | - | Y | - | Y | - | - |
 | **QA** |
-| View/Manage | * | * | * | Y | Y | - | - | - |
+| View/Manage | * | * | * | - | Y | Y | - | - | - |
 | **Marketing** |
-| View/Edit/Credentials | * | * | * | Y | - | - | Y | - |
+| View/Edit/Credentials | * | * | * | Y (view) | Y | - | - | Y | - |
 | **Documents** |
-| View | * | * | * | Y | Y | Y | Y | Y |
-| Edit | * | * | * | Y | - | Y | - | - |
+| View | * | * | * | Y | Y | Y | Y | Y | Y |
+| Edit | * | * | * | - | Y | - | Y | - | - |
 | **Notes** |
-| Management Notes | * | * | * | Y | - | - | - | - |
-| Partner Notes | * | * | * | Y | - | - | - | - |
+| Management Notes | * | * | * | Y | Y | - | - | - | - |
+| Partner Notes | * | * | * | Y | Y | - | - | - | - |
 | **Team** |
-| View | * | * | * | Y | - | - | - | Y |
-| Manage | * | * | * | Y | - | - | - | - |
+| View | * | * | * | Y | Y | - | - | - | Y |
+| Manage | * | * | * | - | Y | - | - | - | - |
 | **Admin** |
-| Settings/Roles/Workflows | * | * | * | - | - | - | - | - |
-| **Stage Changes** | * | * | - | Y | - | - | - | - |
-| **Audit Log** | * | * | * | Y | Y | - | - | - |
+| Settings/Roles/Workflows | * | * | * | - | - | - | - | - | - |
+| **Stage Changes** | * | * | - | - | Y | - | - | - | - |
+| **Audit Log** | * | * | * | Y | Y | Y | - | - | - |
 | **Knowledge Base** |
-| View | * | * | * | Y | Y | Y | Y | Y |
-| Edit | * | * | * | Y | - | - | - | - |
-| **Environments** | * | * | * | Y | - | - | - | - |
-| **Stakeholders** | * | * | * | Y | - | - | - | - |
+| View | * | * | * | Y | Y | Y | Y | Y | Y |
+| Edit | * | * | * | - | Y | - | - | - | - |
+| **Environments** | * | * | * | Y | Y | - | - | - | - |
+| **Stakeholders** | * | * | * | - | Y | - | - | - | - |
 
 `*` = wildcard (full access), `Y` = explicitly granted, `-` = no access
 
@@ -169,7 +170,7 @@ Stored in `role_permissions`, `feature_permissions`, and `user_permission_overri
 | `apps/api/services/role_service.py` | Role assignment authorization | Only ADMIN+ can assign roles |
 | `apps/api/services/product_member_service.py` | Product member management auth | Only ADMIN/PROJECT_MANAGER can manage members |
 | `apps/api/services/settings_service.py` | User status & invitation auth | Admin-only status changes |
-| `apps/api/services/task_service.py` | Task status change auth | Assignee or PROJECT_MANAGER only |
+| `apps/api/services/task_service.py` | Task creation/status/assignee auth | Engineers auto-assign, no reassign |
 | `apps/api/dependencies.py` | JWT extraction & role loading | `AuthenticatedUser.has_role()` |
 
 **Backend guards:**
@@ -181,18 +182,30 @@ Stored in `role_permissions`, `feature_permissions`, and `user_permission_overri
 
 **Role assignment restrictions (RoleService):**
 
-- Only BUSINESS_OWNER, SUPERADMIN, or ADMIN can manage roles
-- ADMIN cannot modify SUPERADMIN roles, assign SUPERADMIN, or modify their own roles
-- SUPERADMIN/BUSINESS_OWNER have no restrictions
+- Only SUPERADMIN, BUSINESS_OWNER, or ADMIN can manage roles
+- SUPERADMIN has no restrictions (highest authority)
+- BUSINESS_OWNER cannot modify or assign SUPERADMIN roles
+- ADMIN cannot modify SUPERADMIN or BUSINESS_OWNER roles, cannot assign SUPERADMIN or BUSINESS_OWNER, cannot modify their own roles
+- **Superadmin cannot be assigned as a secondary role** — it must always be a primary role
+
+**Task management restrictions:**
+
+- **Superadmin / Project Manager**: Can create tasks and assign to anyone. Can reassign tasks freely.
+- **Engineer**: Can create tasks under assigned projects but tasks are **auto-assigned to self**. Cannot reassign tasks to other users. Can update their own assigned tasks (status, details).
 
 **Invitation matrix (InviteService):**
 
 | Actor | Can invite |
 |---|---|
-| super_admin | admin, project_manager |
-| admin | project_manager, member |
-| project_manager | member |
-| member | (nobody) |
+| superadmin | superadmin, business_owner, admin, executive, project_manager, engineer, business_development, marketing, operations |
+| business_owner | admin, executive, project_manager, engineer, business_development, marketing, operations |
+| admin | executive, project_manager, engineer, business_development, marketing, operations |
+| project_manager | engineer, business_development, marketing, operations |
+| executive | (nobody) |
+| engineer | (nobody) |
+| business_development | (nobody) |
+| marketing | (nobody) |
+| operations | (nobody) |
 
 ### Frontend (Visibility Only)
 
@@ -204,7 +217,7 @@ Stored in `role_permissions`, `feature_permissions`, and `user_permission_overri
 
 **`useRoleVisibility()` provides:**
 
-- Role checks: `isBusinessOwner`, `isSuperAdmin`, `isAdmin`, `isProjectManager`, `isMarketing`, `isEngineer`, `isBusinessDevelopment`, `isOperations`
+- Role checks: `isBusinessOwner`, `isSuperAdmin`, `isAdmin`, `isExecutive`, `isProjectManager`, `isMarketing`, `isEngineer`, `isBusinessDevelopment`, `isOperations`
 - Feature flags: `canViewMarketingTab`, `canManageTeam`, `canManageSettings`, `canViewAudit`, `canViewQA`, `canViewDocuments`, `canAssignTasks`, `canCreateProduct`, `canEditProduct`, `canDeleteProduct`, `canViewKanban`, `canEditKanban`, `canViewSpecification`, `canEditSpecification`, `canViewManagementNotes`, `canViewPartnerNotes`, `canManageStakeholders`, `canManageRoles`, `canManageWorkflow`, etc.
 
 ---

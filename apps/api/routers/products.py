@@ -102,11 +102,11 @@ async def delete_product_environment(
 @router.post("", response_model=ProductResponse, status_code=201)
 async def create_product(
     body: ProductCreate,
-    user: CurrentUser = None,
+    user: CurrentUser,
     service: ProductService = Depends(get_service),
 ):
     """Create a new product."""
-    return await service.create_product(body)
+    return await service.create_product(body, user)
 
 
 @router.patch("/{product_id}", response_model=ProductResponse)
