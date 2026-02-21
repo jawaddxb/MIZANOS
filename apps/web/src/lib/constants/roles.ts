@@ -7,19 +7,24 @@ export interface RoleConfig {
 }
 
 export const ROLE_CONFIG: Record<AppRole, RoleConfig> = {
-  business_owner: {
-    label: "Business Owner",
-    description: "Organizational top of the hierarchy with full access",
-    color: "var(--role-admin)",
-  },
   superadmin: {
     label: "Super Admin",
-    description: "Full platform control including user management",
+    description: "Highest authority with full platform control",
+    color: "var(--role-admin)",
+  },
+  business_owner: {
+    label: "Business Owner",
+    description: "Organizational management with full access",
     color: "var(--role-admin)",
   },
   admin: {
     label: "Admin",
     description: "Full access to all features and settings",
+    color: "var(--role-admin)",
+  },
+  executive: {
+    label: "Executive",
+    description: "Read-only access to all platform data and reports",
     color: "var(--role-admin)",
   },
   project_manager: {
@@ -49,10 +54,37 @@ export const ROLE_CONFIG: Record<AppRole, RoleConfig> = {
   },
 } as const;
 
+/**
+ * Mirrors backend INVITE_MATRIX from invite_service.py.
+ * Defines which roles each role is allowed to invite.
+ */
+export const INVITE_MATRIX: Record<AppRole, AppRole[]> = {
+  superadmin: ["superadmin", "business_owner", "admin", "executive", "project_manager", "engineer", "business_development", "marketing", "operations"],
+  business_owner: ["admin", "executive", "project_manager", "engineer", "business_development", "marketing", "operations"],
+  admin: ["executive", "project_manager", "engineer", "business_development", "marketing", "operations"],
+  project_manager: ["engineer", "business_development", "marketing", "operations"],
+  executive: [],
+  engineer: [],
+  business_development: [],
+  marketing: [],
+  operations: [],
+};
+
+/** Returns the set of roles the user can invite, considering all their roles (primary + secondary). */
+export function getInvitableRoles(userRoles: string[]): Set<AppRole> {
+  const allowed = new Set<AppRole>();
+  for (const role of userRoles) {
+    const invitable = INVITE_MATRIX[role as AppRole];
+    if (invitable) invitable.forEach((r) => allowed.add(r));
+  }
+  return allowed;
+}
+
 export const APP_ROLES: AppRole[] = [
-  "business_owner",
   "superadmin",
+  "business_owner",
   "admin",
+  "executive",
   "project_manager",
   "engineer",
   "business_development",
@@ -67,9 +99,15 @@ export const APP_ROLES: AppRole[] = [
  * Used as fallback when the role_permissions DB table is empty.
  */
 export const DEFAULT_ROLE_PERMISSIONS: Record<AppRole, string[]> = {
-  business_owner: ["*"],
   superadmin: ["*"],
+  business_owner: ["*"],
   admin: ["*"],
+  executive: [
+    "intake_access", "dashboard_view", "project_overview", "sources_tab",
+    "kanban_view", "specification_view", "audit_view", "environments_view",
+    "documents_view", "marketing_tab", "marketing_credentials",
+    "management_notes", "partner_notes", "team_view",
+  ],
   project_manager: [
     "intake_access", "dashboard_view", "project_overview", "sources_tab",
     "kanban_view", "kanban_edit",

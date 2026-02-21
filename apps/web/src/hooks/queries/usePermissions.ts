@@ -70,17 +70,14 @@ export function useMyPermissions() {
   const permissionMap = useMemo(() => {
     const map = new Map<string, boolean>();
 
-    // Use DB role_permissions if available, otherwise fall back to defaults
-    const hasDbPermissions = rolePermissions.length > 0;
-
-    if (hasDbPermissions) {
-      for (const rp of rolePermissions) {
-        if (userRoles.includes(rp.role) && rp.can_access) {
-          map.set(rp.feature_key, true);
+    // Per-role resolution: use DB entries if the role has them, otherwise defaults
+    for (const role of userRoles) {
+      const dbPerms = rolePermissions.filter((rp) => rp.role === role);
+      if (dbPerms.length > 0) {
+        for (const rp of dbPerms) {
+          if (rp.can_access) map.set(rp.feature_key, true);
         }
-      }
-    } else {
-      for (const role of userRoles) {
+      } else {
         const defaults = DEFAULT_ROLE_PERMISSIONS[role as keyof typeof DEFAULT_ROLE_PERMISSIONS];
         if (!defaults) continue;
         if (defaults.includes("*")) {

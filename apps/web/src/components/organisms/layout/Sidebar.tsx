@@ -122,6 +122,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 const ROLE_DISPLAY_LABELS: Record<string, string> = {
   superadmin: "Super Admin",
   admin: "Admin",
+  executive: "Executive",
   project_manager: "Project Manager",
   marketing: "Marketing",
   business_development: "Business Development",

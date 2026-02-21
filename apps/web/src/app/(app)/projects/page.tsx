@@ -10,6 +10,7 @@ import { ProductTable } from "@/components/organisms/product/ProductTable";
 import { ProductsFilterBar } from "@/components/organisms/dashboard/ProductsFilterBar";
 import { useProducts } from "@/hooks/queries/useProducts";
 import { useProductRoleFilters } from "@/hooks/utils/useProductRoleFilters";
+import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
 import { PRODUCT_STAGES } from "@/lib/constants";
 import { cn } from "@/lib/utils/cn";
 import {
@@ -32,6 +33,8 @@ export default function ProductsPage() {
   const { data: products = [], isLoading } = useProducts();
   const { roleFilters, anyActive: anyRoleActive, matchesProduct, reset: resetRoles } =
     useProductRoleFilters();
+  const { isSuperAdmin, isProjectManager } = useRoleVisibility();
+  const canCreateProject = isSuperAdmin || isProjectManager;
 
   const archivedCount = products.filter((p) => p.archived_at).length;
 
@@ -83,12 +86,14 @@ export default function ProductsPage() {
           </Badge>
         }
       >
-        <Link href="/intake">
-          <Button className="shadow-sm hover:shadow-md transition-shadow">
-            <Plus className="h-4 w-4 mr-2" />
-            New Project
-          </Button>
-        </Link>
+        {canCreateProject && (
+          <Link href="/intake">
+            <Button className="shadow-sm hover:shadow-md transition-shadow">
+              <Plus className="h-4 w-4 mr-2" />
+              New Project
+            </Button>
+          </Link>
+        )}
       </PageHeader>
 
       <div className="flex items-center gap-2 flex-wrap">
@@ -180,14 +185,14 @@ export default function ProductsPage() {
             <Button variant="outline" onClick={clearFilters}>
               Clear Filters
             </Button>
-          ) : (
+          ) : canCreateProject ? (
             <Link href="/intake">
               <Button className="shadow-sm">
                 <Plus className="h-4 w-4 mr-2" />
                 Create Project
               </Button>
             </Link>
-          )}
+          ) : null}
         </div>
       )}
     </div>

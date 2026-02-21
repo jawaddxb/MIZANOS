@@ -7,6 +7,7 @@ import {
   useRemoveProductMember,
 } from "@/hooks/mutations/useProductMemberMutations";
 import { useProfiles } from "@/hooks/queries/useProfiles";
+import { useAllUserRoles } from "@/hooks/queries/useUserRoles";
 import { useShowPendingProfiles } from "@/hooks/queries/useOrgSettings";
 import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
 import { TeamReadinessBanner } from "@/components/molecules/team/TeamReadinessBanner";
@@ -33,6 +34,7 @@ interface ProductTeamTabProps {
 export function ProductTeamTab({ productId }: ProductTeamTabProps) {
   const { data: readiness, isLoading } = useTeamReadiness(productId);
   const { data: profiles = [] } = useProfiles();
+  const { data: allUserRoles = [] } = useAllUserRoles();
   const showPendingProfiles = useShowPendingProfiles();
   const { isAdmin, isProjectManager } = useRoleVisibility();
   const addMember = useAddProductMember(productId);
@@ -48,6 +50,16 @@ export function ProductTeamTab({ productId }: ProductTeamTabProps) {
     }
     return grouped;
   }, [members]);
+
+  const rolesMap = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const r of allUserRoles) {
+      const list = map.get(r.user_id) ?? [];
+      list.push(r.role);
+      map.set(r.user_id, list);
+    }
+    return map;
+  }, [allUserRoles]);
 
   const handleAdd = (profileId: string, role: string) => {
     addMember.mutate({ profile_id: profileId, role });
@@ -79,6 +91,7 @@ export function ProductTeamTab({ productId }: ProductTeamTabProps) {
             canManage={canManage}
             profiles={profiles}
             showPendingProfiles={showPendingProfiles}
+            rolesMap={rolesMap}
             onAdd={handleAdd}
             onRemove={(memberId) => removeMember.mutate(memberId)}
             isAdding={addMember.isPending}

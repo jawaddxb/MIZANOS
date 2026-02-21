@@ -1,14 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/molecules/buttons/Button";
 import { SearchableSelect } from "@/components/molecules/forms/SearchableSelect";
 import { useInviteUser } from "@/hooks/queries/useUserManagement";
 import { useProfiles } from "@/hooks/queries/useProfiles";
 import { useSendActivationEmailOnInvite, useShowPendingProfiles } from "@/hooks/queries/useOrgSettings";
-import { APP_ROLES, ROLE_CONFIG } from "@/lib/constants/roles";
-
-const ROLES = APP_ROLES.map((r) => ({ value: r, label: ROLE_CONFIG[r].label }));
+import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
+import { APP_ROLES, ROLE_CONFIG, getInvitableRoles } from "@/lib/constants/roles";
 
 const AVAILABILITY = [
   { value: "available", label: "Available" },
@@ -49,6 +48,13 @@ export function AddTeamMemberDialog({ open, onOpenChange }: AddTeamMemberDialogP
   const { data: profiles = [] } = useProfiles();
   const sendEmailEnabled = useSendActivationEmailOnInvite();
   const showPending = useShowPendingProfiles();
+  const { userRoles } = useRoleVisibility();
+
+  const invitableSet = useMemo(() => getInvitableRoles(userRoles), [userRoles]);
+  const roleOptions = useMemo(
+    () => APP_ROLES.map((r) => ({ value: r, label: ROLE_CONFIG[r].label, disabled: !invitableSet.has(r) })),
+    [invitableSet],
+  );
 
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
@@ -128,7 +134,7 @@ export function AddTeamMemberDialog({ open, onOpenChange }: AddTeamMemberDialogP
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <SelectField label="Primary Role *" value={role} onChange={setRole} options={ROLES} placeholder="Select role..." />
+            <SelectField label="Primary Role *" value={role} onChange={setRole} options={roleOptions} placeholder="Select role..." />
             <SelectField label="Availability" value={availability} onChange={setAvailability} options={AVAILABILITY} />
           </div>
 
@@ -284,7 +290,7 @@ interface SelectFieldProps {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  options: ReadonlyArray<{ value: string; label: string }>;
+  options: ReadonlyArray<{ value: string; label: string; disabled?: boolean }>;
   placeholder?: string;
 }
 
@@ -301,7 +307,9 @@ function SelectField({ label, value, onChange, options, placeholder }: SelectFie
           <option value="" disabled>{placeholder}</option>
         )}
         {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
+          <option key={opt.value} value={opt.value} disabled={opt.disabled}>
+            {opt.label}
+          </option>
         ))}
       </select>
     </div>

@@ -7,6 +7,7 @@ class AppRole(str, enum.Enum):
     BUSINESS_OWNER = "business_owner"
     SUPERADMIN = "superadmin"
     ADMIN = "admin"
+    EXECUTIVE = "executive"
     PROJECT_MANAGER = "project_manager"
     ENGINEER = "engineer"
     BUSINESS_DEVELOPMENT = "business_development"

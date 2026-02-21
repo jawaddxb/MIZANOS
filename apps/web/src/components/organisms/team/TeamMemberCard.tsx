@@ -30,7 +30,8 @@ const roleLabel = (role: string | null): string => {
 
 function canManageUser(actorRole: string | undefined, targetRole: string | null): boolean {
   if (actorRole === "superadmin") return true;
-  if (actorRole === "admin" && targetRole !== "admin" && targetRole !== "superadmin") return true;
+  if (actorRole === "business_owner" && targetRole !== "superadmin") return true;
+  if (actorRole === "admin" && targetRole !== "admin" && targetRole !== "superadmin" && targetRole !== "business_owner") return true;
   return false;
 }
 

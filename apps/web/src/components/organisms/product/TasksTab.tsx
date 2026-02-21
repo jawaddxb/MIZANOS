@@ -76,10 +76,17 @@ function TaskRow({ task, selected, assigneeName, onToggle, onClick }: TaskRowPro
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <span className="flex items-center gap-1 text-xs text-muted-foreground max-w-[120px] truncate">
-            <User className="h-3 w-3 shrink-0" />
-            {assigneeName ?? "Unassigned"}
-          </span>
+          {assigneeName ? (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground max-w-[120px] truncate">
+              <User className="h-3 w-3 shrink-0" />
+              {assigneeName}
+            </span>
+          ) : (
+            <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium">
+              <span className="flex items-center justify-center h-4 w-4 rounded-full bg-amber-100 dark:bg-amber-900/40 text-[10px] font-bold shrink-0">?</span>
+              Unassigned
+            </span>
+          )}
           <Badge variant="outline" className="text-xs">
             {statusConfig.label}
           </Badge>

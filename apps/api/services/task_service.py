@@ -6,6 +6,8 @@ from uuid import UUID
 from sqlalchemy import select, func, delete as sa_delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.api.dependencies import AuthenticatedUser
+from apps.api.models.enums import AppRole
 from apps.api.models.product import ProductMember
 from apps.api.models.settings import OrgSetting
 from apps.api.models.task import Task
@@ -131,11 +133,14 @@ class TaskService(BaseService[Task]):
             assigned.append(tid)
         return {"assigned_count": len(assigned), "task_ids": assigned}
 
-    async def create_task(self, data: TaskCreate) -> Task:
-        """Create a new task."""
-        if data.assignee_id:
-            await self._validate_assignee(data.assignee_id)
-        task = Task(**data.model_dump())
+    async def create_task(self, data: TaskCreate, user: AuthenticatedUser) -> Task:
+        """Create a new task. Engineers are auto-assigned to self."""
+        task_data = data.model_dump()
+        if not self._can_manage_tasks(user):
+            task_data["assignee_id"] = user.profile_id
+        if task_data.get("assignee_id"):
+            await self._validate_assignee(task_data["assignee_id"])
+        task = Task(**task_data)
         return await self.repo.create(task)
 
     async def update(
@@ -143,12 +148,17 @@ class TaskService(BaseService[Task]):
         entity_id: UUID,
         data: dict,
         *,
+        user: AuthenticatedUser | None = None,
         user_id: UUID | None = None,
         is_superadmin: bool = False,
     ) -> Task:
-        """Update a task with assignee validation and status auth."""
+        """Update a task with assignee validation and status/assignee auth."""
         if "assignee_id" in data and data["assignee_id"]:
             await self._validate_assignee(UUID(str(data["assignee_id"])))
+        if "assignee_id" in data and user is not None and not self._can_manage_tasks(user):
+            task = await self.get_or_404(entity_id)
+            if not await self._is_product_pm(task.product_id, user.profile_id):
+                raise forbidden("Only superadmins and project managers can reassign tasks")
         if "status" in data and user_id is not None and not is_superadmin:
             task = await self.get_or_404(entity_id)
             await self._authorize_status_change(task, user_id)
@@ -171,6 +181,20 @@ class TaskService(BaseService[Task]):
         raise forbidden(
             "Only the assignee or product PM can change task status"
         )
+
+    def _can_manage_tasks(self, user: AuthenticatedUser) -> bool:
+        """Superadmins and project managers can freely assign/reassign tasks."""
+        return user.has_any_role(AppRole.SUPERADMIN, AppRole.PROJECT_MANAGER)
+
+    async def _is_product_pm(self, product_id: UUID, profile_id: UUID) -> bool:
+        """Check if user is a project manager on this specific product."""
+        stmt = select(ProductMember.id).where(
+            ProductMember.product_id == product_id,
+            ProductMember.profile_id == profile_id,
+            ProductMember.role == "project_manager",
+        ).limit(1)
+        result = await self.repo.session.execute(stmt)
+        return result.scalar_one_or_none() is not None
 
     async def _validate_assignee(self, assignee_id: UUID) -> None:
         """Reject assigning to pending profiles when org setting is off."""

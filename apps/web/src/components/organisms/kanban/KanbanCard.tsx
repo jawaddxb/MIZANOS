@@ -140,8 +140,8 @@ export function KanbanCard({ task, isOverlay, onClick }: KanbanCardProps) {
             </span>
           </div>
         ) : (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <User className="h-3 w-3" />
+          <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium">
+            <span className="flex items-center justify-center h-4 w-4 rounded-full bg-amber-100 dark:bg-amber-900/40 text-[10px] font-bold shrink-0">?</span>
             <span>Unassigned</span>
           </div>
         )}
