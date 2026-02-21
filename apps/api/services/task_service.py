@@ -169,9 +169,12 @@ class TaskService(BaseService[Task]):
         return [await self.reject_task(tid, user) for tid in task_ids]
 
     async def bulk_assign_tasks(
-        self, task_ids: list[UUID], assignee_id: UUID | None
+        self, task_ids: list[UUID], assignee_id: UUID | None,
+        user: AuthenticatedUser,
     ) -> dict:
         """Assign (or unassign) multiple tasks to a team member."""
+        if not self._can_manage_tasks(user):
+            raise forbidden("Only superadmins and project managers can assign tasks")
         if assignee_id:
             await self._validate_assignee(assignee_id)
 
@@ -183,9 +186,12 @@ class TaskService(BaseService[Task]):
         return {"assigned_count": len(assigned), "task_ids": assigned}
 
     async def bulk_update_tasks(
-        self, task_ids: list[UUID], updates: dict
+        self, task_ids: list[UUID], updates: dict,
+        user: AuthenticatedUser,
     ) -> dict:
         """Bulk update tasks with provided fields."""
+        if not self._can_manage_tasks(user):
+            raise forbidden("Only superadmins and project managers can bulk update tasks")
         if "assignee_id" in updates and updates["assignee_id"]:
             await self._validate_assignee(updates["assignee_id"])
         if "priority" in updates and updates["priority"] not in ("low", "medium", "high"):
@@ -219,6 +225,11 @@ class TaskService(BaseService[Task]):
         """Update a task with assignee validation and status/assignee auth."""
         if "assignee_id" in data and data["assignee_id"]:
             await self._validate_assignee(UUID(str(data["assignee_id"])))
+        if user is not None and not self._can_manage_tasks(user):
+            allowed = {"status"}
+            restricted = set(data.keys()) - allowed
+            if restricted:
+                raise forbidden("Engineers can only update task status")
         task = None
         if "assignee_id" in data and user is not None and not self._can_manage_tasks(user):
             task = await self.get_or_404(entity_id)

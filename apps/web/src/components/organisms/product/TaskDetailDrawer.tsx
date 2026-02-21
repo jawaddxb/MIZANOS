@@ -19,6 +19,7 @@ import { SelectField } from "@/components/molecules/forms/SelectField";
 import { CommentThread } from "@/components/molecules/comments/CommentThread";
 import { useProductMembers } from "@/hooks/queries/useProductMembers";
 import { useUpdateTask } from "@/hooks/mutations/useTaskMutations";
+import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
 import type { KanbanTask, TaskStatus, PillarType, TaskPriority } from "@/lib/types";
 
 const taskSchema = z.object({
@@ -70,6 +71,8 @@ export function TaskDetailDrawer({
 }: TaskDetailDrawerProps) {
   const { data: members = [] } = useProductMembers(productId);
   const updateTask = useUpdateTask(productId);
+  const { isAdmin, isProjectManager } = useRoleVisibility();
+  const canManageTasks = isAdmin || isProjectManager;
 
   const assigneeOptions = [
     { value: "__none__", label: "Unassigned" },
@@ -110,19 +113,19 @@ export function TaskDetailDrawer({
 
   const onFormSubmit = (values: TaskFormValues) => {
     if (!task) return;
-    updateTask.mutate(
-      {
-        id: task.id,
-        title: values.title,
-        description: values.description ?? null,
-        pillar: values.pillar,
-        priority: values.priority,
-        status: values.status,
-        due_date: values.due_date || null,
-        assignee_id: values.assignee_id === "__none__" ? null : (values.assignee_id ?? null),
-      },
-      { onSuccess: () => onOpenChange(false) },
-    );
+    const payload = canManageTasks
+      ? {
+          id: task.id,
+          title: values.title,
+          description: values.description ?? null,
+          pillar: values.pillar,
+          priority: values.priority,
+          status: values.status,
+          due_date: values.due_date || null,
+          assignee_id: values.assignee_id === "__none__" ? null : (values.assignee_id ?? null),
+        }
+      : { id: task.id, status: values.status };
+    updateTask.mutate(payload, { onSuccess: () => onOpenChange(false) });
   };
 
   const currentPillar = watch("pillar");
@@ -144,33 +147,39 @@ export function TaskDetailDrawer({
           <form id="task-detail-form" onSubmit={handleSubmit(onFormSubmit)} className="space-y-3">
             <div className="space-y-1">
               <BaseLabel htmlFor="drawer-title">Title</BaseLabel>
-              <BaseInput id="drawer-title" {...register("title")} aria-invalid={!!errors.title} />
+              <BaseInput id="drawer-title" {...register("title")} aria-invalid={!!errors.title} disabled={!canManageTasks} />
               {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
             </div>
 
             <div className="space-y-1">
               <BaseLabel htmlFor="drawer-desc">Description</BaseLabel>
-              <BaseTextarea id="drawer-desc" className="resize-none" rows={3} {...register("description")} />
+              <BaseTextarea id="drawer-desc" className="resize-none" rows={3} {...register("description")} disabled={!canManageTasks} />
             </div>
 
-            <SelectField
-              label="Assignee"
-              placeholder="Select assignee"
-              options={assigneeOptions}
-              value={currentAssignee || "__none__"}
-              onValueChange={(v) => {
-                setValue("assignee_id", v);
-                if ((!v || v === "__none__") && currentStatus !== "backlog") {
-                  setValue("status", "backlog");
-                  setAssignWarning(true);
-                  setTimeout(() => setAssignWarning(false), 3000);
-                }
-              }}
-            />
+            {canManageTasks && (
+              <SelectField
+                label="Assignee"
+                placeholder="Select assignee"
+                options={assigneeOptions}
+                value={currentAssignee || "__none__"}
+                onValueChange={(v) => {
+                  setValue("assignee_id", v);
+                  if ((!v || v === "__none__") && currentStatus !== "backlog") {
+                    setValue("status", "backlog");
+                    setAssignWarning(true);
+                    setTimeout(() => setAssignWarning(false), 3000);
+                  }
+                }}
+              />
+            )}
 
-            <div className="grid grid-cols-3 gap-3">
-              <SelectField label="Vertical" placeholder="Vertical" options={PILLAR_OPTIONS} value={currentPillar} onValueChange={(v) => setValue("pillar", v as PillarType)} />
-              <SelectField label="Priority" placeholder="Priority" options={PRIORITY_OPTIONS} value={currentPriority} onValueChange={(v) => setValue("priority", v as TaskPriority)} />
+            <div className={canManageTasks ? "grid grid-cols-3 gap-3" : ""}>
+              {canManageTasks && (
+                <>
+                  <SelectField label="Vertical" placeholder="Vertical" options={PILLAR_OPTIONS} value={currentPillar} onValueChange={(v) => setValue("pillar", v as PillarType)} />
+                  <SelectField label="Priority" placeholder="Priority" options={PRIORITY_OPTIONS} value={currentPriority} onValueChange={(v) => setValue("priority", v as TaskPriority)} />
+                </>
+              )}
               <SelectField
                 label="Status"
                 placeholder="Status"
@@ -193,10 +202,12 @@ export function TaskDetailDrawer({
               </p>
             )}
 
-            <div className="space-y-1">
-              <BaseLabel htmlFor="drawer-due">Due Date</BaseLabel>
-              <BaseInput id="drawer-due" type="date" {...register("due_date")} />
-            </div>
+            {canManageTasks && (
+              <div className="space-y-1">
+                <BaseLabel htmlFor="drawer-due">Due Date</BaseLabel>
+                <BaseInput id="drawer-due" type="date" {...register("due_date")} />
+              </div>
+            )}
 
             <div className="flex justify-end gap-2 pt-1">
               <BaseButton type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</BaseButton>
