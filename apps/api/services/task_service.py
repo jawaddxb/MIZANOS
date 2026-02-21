@@ -163,10 +163,21 @@ class TaskService(BaseService[Task]):
             if current_assignee != new_assignee:
                 if not await self._is_product_pm(task.product_id, user.profile_id):
                     raise forbidden("Only superadmins and project managers can reassign tasks")
+        if "status" in data and data["status"] != "backlog":
+            if task is None:
+                task = await self.get_or_404(entity_id)
+            effective_assignee = (
+                data["assignee_id"] if "assignee_id" in data else task.assignee_id
+            )
+            if not effective_assignee:
+                raise bad_request(
+                    "Cannot change status from Backlog — please assign this task first"
+                )
         if "status" in data and user_id is not None and not is_superadmin:
             if task is None:
                 task = await self.get_or_404(entity_id)
-            await self._authorize_status_change(task, user_id)
+            if task.assignee_id is not None:
+                await self._authorize_status_change(task, user_id)
         return await super().update(entity_id, data)
 
     async def _authorize_status_change(
