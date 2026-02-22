@@ -22,6 +22,17 @@ from packages.common.utils.error_handlers import not_found
 logger = logging.getLogger(__name__)
 
 
+def _normalize_criteria(raw) -> list[str] | None:
+    """Coerce acceptance_criteria to ``list[str] | None``."""
+    if raw is None:
+        return None
+    if isinstance(raw, list):
+        return [str(c) for c in raw] or None
+    if isinstance(raw, str):
+        return [raw] if raw.strip() else None
+    return [str(raw)]
+
+
 class SpecificationService(BaseService[Specification]):
     """Specification business logic."""
 
@@ -270,7 +281,7 @@ class SpecificationService(BaseService[Specification]):
             if isinstance(feat, dict):
                 name = feat.get("name") or feat.get("title") or str(feat)
                 desc = feat.get("description")
-                criteria = feat.get("acceptance_criteria")
+                criteria = _normalize_criteria(feat.get("acceptance_criteria"))
                 priority = feat.get("priority", "medium")
             else:
                 name = str(feat)

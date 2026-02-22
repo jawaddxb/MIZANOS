@@ -62,9 +62,9 @@ class GCSStorageService:
         return f"/uploads/sources/{path}"
 
     def generate_signed_url(self, file_path: str, expiration_minutes: int = 60) -> str:
-        """Return a temporary download URL (signed for GCS, passthrough for local)."""
+        """Return a temporary download URL (signed for GCS, absolute for local)."""
         if not self.is_gcs_available:
-            return file_path
+            return f"{settings.api_base_url.rstrip('/')}{file_path}"
         from datetime import timedelta
 
         bucket = self._client.bucket(settings.gcs_bucket_name)

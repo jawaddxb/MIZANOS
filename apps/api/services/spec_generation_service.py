@@ -20,7 +20,10 @@ from apps.api.services.spec_source_context import (
     build_spec_prompt,
     parse_spec_response,
 )
-from apps.api.services.specification_service import SpecificationService
+from apps.api.services.specification_service import (
+    SpecificationService,
+    _normalize_criteria,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +135,7 @@ class SpecGenerationService:
             if isinstance(feat, dict):
                 name = feat.get("name") or feat.get("title") or str(feat)
                 desc = feat.get("description")
-                criteria = feat.get("acceptance_criteria")
+                criteria = _normalize_criteria(feat.get("acceptance_criteria"))
                 priority = feat.get("priority", "medium")
             else:
                 name = str(feat)

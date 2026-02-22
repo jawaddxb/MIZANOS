@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     email_from: str = "Mizan <onboarding@resend.dev>"
     app_base_url: str = "http://localhost:3006"
+    api_base_url: str = "http://localhost:8000"
 
     # Google OAuth
     google_oauth_client_id: str = ""

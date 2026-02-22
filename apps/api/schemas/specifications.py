@@ -43,7 +43,7 @@ class SpecFeatureBase(BaseSchema):
     description: str | None = None
     status: str = "proposed"
     priority: str = "medium"
-    acceptance_criteria: str | None = None
+    acceptance_criteria: list[str] | str | None = None
     is_reusable: bool = False
     reusable_category: str | None = None
     github_path: str | None = None
@@ -64,7 +64,7 @@ class SpecFeatureUpdate(BaseSchema):
     description: str | None = None
     priority: str | None = None
     status: str | None = None
-    acceptance_criteria: str | None = None
+    acceptance_criteria: list[str] | str | None = None
     github_path: str | None = None
     sort_order: int | None = None
 
