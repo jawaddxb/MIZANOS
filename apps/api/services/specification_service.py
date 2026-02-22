@@ -37,8 +37,8 @@ class SpecificationService(BaseService[Specification]):
         result = await self.repo.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def create_spec(self, data: SpecificationCreate) -> Specification:
-        spec = Specification(**data.model_dump())
+    async def create_spec(self, data: SpecificationCreate, user_id: UUID | None = None) -> Specification:
+        spec = Specification(**data.model_dump(), created_by=user_id)
         return await self.repo.create(spec)
 
     async def get_features(self, spec_id: UUID) -> list[SpecificationFeature]:

@@ -34,6 +34,7 @@ class SpecGenerationService:
 
     async def generate_specification(
         self, product_id: UUID, custom_instructions: str | None = None,
+        user_id: UUID | None = None,
     ) -> dict:
         """Generate specification using AI, incorporating saved sources."""
         product_result = await self.session.execute(
@@ -56,7 +57,7 @@ class SpecGenerationService:
         try:
             spec_data = await self._call_ai(prompt)
             return await self._save_spec(
-                product_id, spec_data, custom_instructions
+                product_id, spec_data, custom_instructions, user_id=user_id
             )
         except HTTPException:
             raise
@@ -109,6 +110,7 @@ class SpecGenerationService:
         product_id: UUID,
         spec_data: dict,
         custom_instructions: str | None,
+        user_id: UUID | None = None,
     ) -> dict:
         """Persist spec and feature rows, return response dict."""
         existing = await self._spec_service.get_by_product(product_id)
@@ -119,6 +121,7 @@ class SpecGenerationService:
             content=spec_data,
             version=next_version,
             custom_instructions=custom_instructions,
+            created_by=user_id,
         )
         self.session.add(spec)
         await self.session.flush()

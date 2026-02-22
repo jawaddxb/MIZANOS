@@ -43,7 +43,7 @@ async def get_spec(spec_id: UUID, user: CurrentUser = None, service: Specificati
 
 @router.post("", response_model=SpecificationResponse, status_code=201)
 async def create_spec(body: SpecificationCreate, user: CurrentUser = None, service: SpecificationService = Depends(get_service)):
-    return await service.create_spec(body)
+    return await service.create_spec(body, user_id=user.profile_id if user else None)
 
 
 @router.patch("/{spec_id}", response_model=SpecificationResponse)
@@ -182,7 +182,8 @@ async def generate_spec(
 ):
     """AI-generate specification from product context."""
     return await service.generate_specification(
-        body.product_id, body.custom_instructions
+        body.product_id, body.custom_instructions,
+        user_id=user.profile_id if user else None,
     )
 
 
