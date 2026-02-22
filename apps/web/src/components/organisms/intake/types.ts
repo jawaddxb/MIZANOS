@@ -124,6 +124,7 @@ export interface IntakeFormData {
   pillar: PillarType | "";
   sourceType: ProjectSourceType;
   description: string;
+  customInstructions: string;
   sources: IntakeSourceData;
   generatedSpec: GeneratedSpec | null;
 }

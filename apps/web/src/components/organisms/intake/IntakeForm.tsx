@@ -1,63 +1,27 @@
 "use client";
 
 import * as React from "react";
-import { CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
-import { cn } from "@/lib/utils/cn";
 import { Progress } from "@/components/atoms/feedback/Progress";
 import { Button } from "@/components/molecules/buttons/Button";
 import { useIntakeSubmit } from "@/hooks/features/useIntakeSubmit";
 import { aiRepository } from "@/lib/api/repositories";
-
 import { useProducts } from "@/hooks/queries/useProducts";
+import { StepIndicator } from "@/components/molecules/intake/StepIndicator";
 
 import { IntakeBasicInfo } from "./IntakeBasicInfo";
 import { IntakeSourcesStep } from "./IntakeSourcesStep";
 import { IntakeSpecReview } from "./IntakeSpecReview";
 import { IntakeConfirmation } from "./IntakeConfirmation";
+import { buildSourceSummary } from "./intake-utils";
 import {
   INTAKE_STEPS,
-  STEP_LABELS,
   type IntakeStep,
   type IntakeFormData,
   type GeneratedSpec,
-  isTextLikeSpecFile,
 } from "./types";
-
-function buildSourceSummary(sources: IntakeFormData["sources"]): string {
-  const parts: string[] = [];
-  if (sources.pasteContent.trim()) {
-    parts.push(`Pasted content:\n${sources.pasteContent.slice(0, 2000)}`);
-  }
-  if (sources.markdownContent.trim()) {
-    parts.push(`Markdown notes:\n${sources.markdownContent.slice(0, 2000)}`);
-  }
-  for (const site of sources.scrapedWebsites) {
-    let siteInfo = `Website (${site.url}):\n`;
-    if (site.analysis) {
-      siteInfo += `Product: ${site.analysis.productName}\n`;
-      siteInfo += `Description: ${site.analysis.description}\n`;
-      if (site.analysis.features.length > 0) siteInfo += `Features: ${site.analysis.features.join("; ")}\n`;
-      if (site.analysis.targetAudience) siteInfo += `Target Audience: ${site.analysis.targetAudience}\n`;
-      if (site.analysis.techIndicators.length > 0) siteInfo += `Tech: ${site.analysis.techIndicators.join(", ")}\n`;
-    }
-    siteInfo += site.markdown?.slice(0, 1000) || site.aiSummary || "(no content)";
-    parts.push(siteInfo);
-  }
-  for (const note of sources.audioNotes) {
-    if (note.transcription) {
-      parts.push(`Audio note transcription:\n${note.transcription}`);
-    }
-  }
-  if (sources.documents.length > 0) {
-    parts.push(`Uploaded documents: ${sources.documents.map((d) => d.name).join(", ")}`);
-  }
-  if (sources.githubData) {
-    parts.push(`GitHub repository: ${sources.githubData.repositoryUrl}`);
-  }
-  return parts.join("\n\n");
-}
 
 export function IntakeForm() {
   const [currentStep, setCurrentStep] = React.useState<IntakeStep>("basic-info");
@@ -69,6 +33,7 @@ export function IntakeForm() {
     pillar: "",
     sourceType: "greenfield",
     description: "",
+    customInstructions: "",
     sources: {
       documents: [],
       audioNotes: [],
@@ -137,6 +102,9 @@ export function IntakeForm() {
         `Generate a detailed product specification for "${formData.projectName}".`,
         formData.description ? `Description: ${formData.description}` : "",
         sourceSummary ? `\nSource material:\n${sourceSummary}` : "",
+        formData.customInstructions?.trim()
+          ? `\nCustom Instructions from the user:\n${formData.customInstructions}`
+          : "",
         "\nRespond ONLY with valid JSON (no markdown, no code fences) in this exact format:",
         JSON.stringify({
           summary: "High-level product summary",
@@ -192,7 +160,7 @@ export function IntakeForm() {
     } finally {
       setIsGenerating(false);
     }
-  }, [formData.projectName, formData.description, formData.sources]);
+  }, [formData.projectName, formData.description, formData.sources, formData.customInstructions]);
 
   const progressPercent = ((stepIndex + 1) / INTAKE_STEPS.length) * 100;
 
@@ -205,11 +173,9 @@ export function IntakeForm() {
         </p>
       </div>
 
-      {/* Step indicator */}
       <StepIndicator steps={INTAKE_STEPS} currentIndex={stepIndex} onStepClick={setCurrentStep} />
       <Progress value={progressPercent} className="h-1" />
 
-      {/* Step content */}
       {currentStep === "basic-info" && (
         <IntakeBasicInfo
           projectName={formData.projectName}
@@ -247,6 +213,8 @@ export function IntakeForm() {
           projectName={formData.projectName}
           isGenerating={isGenerating}
           onGenerate={handleGenerateSpec}
+          customInstructions={formData.customInstructions}
+          onCustomInstructionsChange={(v) => setFormData((p) => ({ ...p, customInstructions: v }))}
         />
       )}
       {currentStep === "confirmation" && (
@@ -259,7 +227,6 @@ export function IntakeForm() {
         />
       )}
 
-      {/* Navigation */}
       {!isSubmitting && (
         <div className="flex items-center justify-between border-t pt-4">
           <Button variant="ghost" onClick={goBack} disabled={stepIndex === 0}>
@@ -274,44 +241,6 @@ export function IntakeForm() {
           )}
         </div>
       )}
-    </div>
-  );
-}
-
-function StepIndicator({
-  steps,
-  currentIndex,
-  onStepClick,
-}: {
-  steps: readonly IntakeStep[];
-  currentIndex: number;
-  onStepClick: (step: IntakeStep) => void;
-}) {
-  return (
-    <div className="flex items-center justify-between">
-      {steps.map((step, idx) => (
-        <button
-          key={step}
-          type="button"
-          className={cn(
-            "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors",
-            idx === currentIndex && "bg-primary text-primary-foreground",
-            idx < currentIndex && "text-green-600",
-            idx > currentIndex && "text-muted-foreground",
-          )}
-          onClick={() => { if (idx <= currentIndex) onStepClick(steps[idx]); }}
-          disabled={idx > currentIndex}
-        >
-          {idx < currentIndex ? (
-            <CheckCircle2 className="h-4 w-4" />
-          ) : (
-            <span className="flex h-5 w-5 items-center justify-center rounded-full border text-xs">
-              {idx + 1}
-            </span>
-          )}
-          <span className="hidden sm:inline">{STEP_LABELS[step]}</span>
-        </button>
-      ))}
     </div>
   );
 }

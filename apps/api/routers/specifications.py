@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from apps.api.dependencies import CurrentUser, DbSession
+from apps.api.schemas.base import BaseSchema
 from apps.api.schemas.specifications import (
     ImportFeatureRequest,
     LibraryFeatureResponse,
@@ -16,6 +17,7 @@ from apps.api.schemas.specifications import (
     SpecificationResponse,
     SpecificationUpdate,
 )
+from apps.api.services.spec_generation_service import SpecGenerationService
 from apps.api.services.specification_service import SpecificationService
 
 router = APIRouter()
@@ -23,6 +25,10 @@ router = APIRouter()
 
 def get_service(db: DbSession) -> SpecificationService:
     return SpecificationService(db)
+
+
+def get_gen_service(db: DbSession) -> SpecGenerationService:
+    return SpecGenerationService(db)
 
 
 @router.get("", response_model=list[SpecificationResponse])
@@ -161,10 +167,23 @@ async def unqueue_feature(
     return await service.unqueue_feature(feature_id)
 
 
+class GenerateSpecRequest(BaseSchema):
+    """Request body for specification generation."""
+
+    product_id: UUID
+    custom_instructions: str | None = None
+
+
 @router.post("/generate")
-async def generate_spec(product_id: UUID, user: CurrentUser = None, service: SpecificationService = Depends(get_service)):
+async def generate_spec(
+    body: GenerateSpecRequest,
+    user: CurrentUser = None,
+    service: SpecGenerationService = Depends(get_gen_service),
+):
     """AI-generate specification from product context."""
-    return await service.generate_specification(product_id)
+    return await service.generate_specification(
+        body.product_id, body.custom_instructions
+    )
 
 
 @router.post("/{product_id}/generate-tasks")

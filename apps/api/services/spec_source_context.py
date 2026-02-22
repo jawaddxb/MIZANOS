@@ -18,7 +18,13 @@ _SPEC_FORMAT = {
             "Performance, security, or scalability requirement"
         ],
     },
-    "features": ["Feature name or description"],
+    "features": [
+        {
+            "name": "Feature name",
+            "description": "What this feature does and why it matters",
+            "acceptance_criteria": ["Criterion 1", "Criterion 2"],
+        }
+    ],
     "techStack": ["Technology name"],
     "qaChecklist": ["QA test or check item"],
 }
@@ -90,12 +96,22 @@ def build_source_context(
     )
 
 
-def build_spec_prompt(product_name: str, context: str) -> str:
+def build_spec_prompt(
+    product_name: str,
+    context: str,
+    custom_instructions: str | None = None,
+) -> str:
     """Build the LLM prompt for spec generation."""
     spec_format = json.dumps(_SPEC_FORMAT)
+    instruction_block = ""
+    if custom_instructions:
+        instruction_block = (
+            f"\n\nCustom Instructions from the user:\n{custom_instructions}\n"
+        )
     return (
         f'Generate a detailed product specification for "{product_name}".\n\n'
-        f"{context}\n\n"
+        f"{context}"
+        f"{instruction_block}\n\n"
         "Respond ONLY with valid JSON (no markdown, no code fences) "
         f"in this exact format:\n{spec_format}"
     )

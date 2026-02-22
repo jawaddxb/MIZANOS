@@ -11,6 +11,7 @@ class SpecificationBase(BaseSchema):
 
     content: dict | None = None
     version: int = 1
+    custom_instructions: str | None = None
 
 
 class SpecificationCreate(SpecificationBase):

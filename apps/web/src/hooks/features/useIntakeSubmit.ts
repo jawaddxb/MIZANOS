@@ -59,6 +59,7 @@ export function useIntakeSubmit() {
         await specificationsRepository.createSpecification({
           product_id: product.id,
           content: formData.generatedSpec as unknown as Record<string, unknown>,
+          custom_instructions: formData.customInstructions || undefined,
         });
       }
 
@@ -91,12 +92,7 @@ async function persistSources(productId: string, sources: IntakeFormData["source
         console.warn(`Failed to read text file ${doc.name}:`, err);
       }
     } else {
-      await specificationsRepository.createSource({
-        product_id: productId,
-        source_type: "document",
-        file_name: doc.name,
-        raw_content: `[Binary file: ${doc.name}, ${doc.size} bytes, type: ${doc.type}]`,
-      });
+      await specificationsRepository.uploadSource(productId, doc);
     }
   }
 
@@ -154,7 +150,6 @@ async function autoPopulateMarketing(productId: string, sources: IntakeFormData[
   const websites = sources.scrapedWebsites.filter((s) => s.marketing);
   if (websites.length === 0) return;
 
-  // Collect and deduplicate domains
   const domainMap = new Map<string, { domain_name: string; ssl_status?: string; is_secured?: boolean }>();
   for (const site of websites) {
     const d = site.marketing!.domain;
@@ -167,7 +162,6 @@ async function autoPopulateMarketing(productId: string, sources: IntakeFormData[
     }
   }
 
-  // Collect and deduplicate social handles
   const handleMap = new Map<string, { platform: string; handle: string; url?: string }>();
   for (const site of websites) {
     for (const h of site.marketing!.socialHandles) {

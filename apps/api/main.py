@@ -49,6 +49,7 @@ from apps.api.routers import (
     document_folders,
     product_members,
     product_notification_settings,
+    specification_sources,
     task_comments,
 )
 
@@ -129,6 +130,7 @@ app.include_router(evaluations.router, prefix="/evaluations", tags=["evaluations
 app.include_router(org_chart.router, prefix="/org-chart", tags=["org-chart"])
 app.include_router(product_notification_settings.router, prefix="/products", tags=["product-notification-settings"])
 app.include_router(task_comments.router, prefix="/tasks", tags=["task-comments"])
+app.include_router(specification_sources.router, prefix="/products", tags=["specification-sources"])
 
 
 # Mount static files for uploaded avatars

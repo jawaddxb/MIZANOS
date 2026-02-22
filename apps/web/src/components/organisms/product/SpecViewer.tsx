@@ -15,6 +15,7 @@ import type { Specification } from "@/lib/types";
 import { History, FileText, RefreshCw, Loader2, Sparkles, Layers } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { parseSpecContent, SpecContentSections } from "./SpecContentSections";
+import { CustomInstructionsBadge } from "@/components/molecules/specifications/CustomInstructionsBadge";
 
 interface SpecViewerProps {
   productId: string;
@@ -108,7 +109,7 @@ function SpecViewer({ productId, productName, onNavigateToFeatures }: SpecViewer
             details and any intake materials.
           </p>
           <Button
-            onClick={() => regenerate.mutate()}
+            onClick={() => regenerate.mutate(undefined)}
             disabled={regenerate.isPending}
           >
             {regenerate.isPending ? (
@@ -148,7 +149,7 @@ function SpecViewer({ productId, productName, onNavigateToFeatures }: SpecViewer
             <Button
               variant="outline"
               size="sm"
-              onClick={() => regenerate.mutate()}
+              onClick={() => regenerate.mutate(undefined)}
               disabled={regenerate.isPending}
             >
               {regenerate.isPending ? (
@@ -160,6 +161,13 @@ function SpecViewer({ productId, productName, onNavigateToFeatures }: SpecViewer
             </Button>
           </div>
         </div>
+
+        {currentSpec.custom_instructions && (
+          <CustomInstructionsBadge
+            instructions={currentSpec.custom_instructions}
+            version={currentSpec.version}
+          />
+        )}
 
         <SpecContentSections content={content} />
       </div>

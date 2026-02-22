@@ -22,6 +22,9 @@ class Specification(Base, UUIDMixin, TimestampMixin):
     )
     content: Mapped[dict] = mapped_column(JSONB, default=dict)
     version: Mapped[int] = mapped_column(Integer, default=1)
+    custom_instructions: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True
+    )
 
 
 class SpecificationFeature(Base, UUIDMixin, TimestampMixin):

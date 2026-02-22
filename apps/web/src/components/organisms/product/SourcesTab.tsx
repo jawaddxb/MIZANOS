@@ -16,10 +16,14 @@ import {
   Loader2,
   Code,
   ClipboardPaste,
+  Download,
+  Settings2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { useProductDetail } from "@/hooks/queries/useProductDetail";
 import { useSpecificationSources } from "@/hooks/queries/useSpecificationSources";
 import { useRegenerateSpecification } from "@/hooks/mutations/useSpecificationMutations";
+import { specificationsRepository } from "@/lib/api/repositories";
 import { formatDistanceToNow } from "date-fns";
 import { AddSourceDialog } from "./AddSourceDialog";
 
@@ -31,6 +35,7 @@ interface SpecSource {
   id: string;
   source_type: string;
   file_name?: string | null;
+  file_url?: string | null;
   url?: string | null;
   raw_content?: string | null;
   transcription?: string | null;
@@ -45,6 +50,7 @@ const SOURCE_ICONS: Record<string, React.ReactNode> = {
   paste: <ClipboardPaste className="h-4 w-4" />,
   website: <Globe className="h-4 w-4" />,
   github: <GitBranch className="h-4 w-4" />,
+  instructions: <Settings2 className="h-4 w-4" />,
 };
 
 export function SourcesTab({ productId }: SourcesTabProps) {
@@ -58,6 +64,7 @@ export function SourcesTab({ productId }: SourcesTabProps) {
     id: s.id,
     source_type: s.source_type,
     file_name: s.file_name,
+    file_url: s.file_url,
     url: s.url,
     raw_content: s.raw_content,
     transcription: s.transcription,
@@ -89,7 +96,7 @@ export function SourcesTab({ productId }: SourcesTabProps) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => regenerate.mutate()}
+            onClick={() => regenerate.mutate(undefined)}
             disabled={regenerate.isPending}
           >
             {regenerate.isPending ? (
@@ -158,6 +165,10 @@ export function SourcesTab({ productId }: SourcesTabProps) {
 
 function SourceCard({ source }: { source: SpecSource }) {
   const icon = SOURCE_ICONS[source.source_type] || <FileText className="h-4 w-4" />;
+  const hasExtractedContent =
+    source.source_type === "document" &&
+    source.raw_content &&
+    !source.raw_content.startsWith("[Binary file:");
 
   return (
     <Card>
@@ -173,16 +184,50 @@ function SourceCard({ source }: { source: SpecSource }) {
           {source.ai_summary && (
             <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{source.ai_summary}</p>
           )}
+          {hasExtractedContent && (
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-3">
+              {source.raw_content!.slice(0, 300)}
+            </p>
+          )}
           <p className="text-xs text-muted-foreground mt-1">
             Added {formatDistanceToNow(new Date(source.created_at), { addSuffix: true })}
           </p>
         </div>
-        {source.url && (
-          <a href={source.url} target="_blank" rel="noopener noreferrer">
-            <ExternalLink className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-          </a>
-        )}
+        <div className="flex items-center gap-1">
+          {source.file_url && <DownloadButton sourceId={source.id} />}
+          {source.url && (
+            <a href={source.url} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+            </a>
+          )}
+        </div>
       </CardContent>
     </Card>
+  );
+}
+
+function DownloadButton({ sourceId }: { sourceId: string }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleDownload = async () => {
+    setLoading(true);
+    try {
+      const url = await specificationsRepository.getDownloadUrl(sourceId);
+      window.open(url, "_blank");
+    } catch {
+      toast.error("Failed to get download link");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button type="button" onClick={handleDownload} disabled={loading} title="Download file">
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      ) : (
+        <Download className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+      )}
+    </button>
   );
 }
