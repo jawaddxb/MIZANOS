@@ -60,8 +60,8 @@ class SettingsService:
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def create_global_integration(self, data) -> GlobalIntegration:
-        integration = GlobalIntegration(**data.model_dump())
+    async def create_global_integration(self, data, user_id: UUID | None = None) -> GlobalIntegration:
+        integration = GlobalIntegration(**data.model_dump(), created_by=user_id)
         self.session.add(integration)
         await self.session.flush()
         await self.session.refresh(integration)
@@ -118,8 +118,8 @@ class SettingsService:
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def create_user_override(self, data) -> UserPermissionOverride:
-        override = UserPermissionOverride(**data.model_dump())
+    async def create_user_override(self, data, user_id: UUID | None = None) -> UserPermissionOverride:
+        override = UserPermissionOverride(**data.model_dump(), created_by=user_id)
         self.session.add(override)
         await self.session.flush()
         await self.session.refresh(override)

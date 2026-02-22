@@ -54,7 +54,7 @@ async def list_folders(product_id: UUID, user: CurrentUser = None, service: Docu
 
 @router.post("/folders", response_model=FolderResponse, status_code=201)
 async def create_folder(body: FolderCreate, user: CurrentUser = None, service: DocumentService = Depends(get_service)):
-    return await service.create_folder(body)
+    return await service.create_folder(body, user_id=user.profile_id if user else None)
 
 
 @router.get("/access-links", response_model=list[AccessLinkResponse])

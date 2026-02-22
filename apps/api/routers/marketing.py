@@ -39,7 +39,7 @@ async def list_domains(product_id: UUID, user: CurrentUser = None, service: Mark
 
 @router.post("/domains", response_model=DomainResponse, status_code=201)
 async def create_domain(body: DomainCreate, user: CurrentUser = None, service: MarketingService = Depends(get_service)):
-    return await service.create_domain(body)
+    return await service.create_domain(body, user_id=user.profile_id if user else None)
 
 
 @router.patch("/domains/{domain_id}", response_model=DomainResponse)

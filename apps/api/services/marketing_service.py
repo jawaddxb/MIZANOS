@@ -38,8 +38,8 @@ class MarketingService:
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def create_domain(self, data) -> MarketingDomain:
-        domain = MarketingDomain(**data.model_dump())
+    async def create_domain(self, data, user_id: UUID | None = None) -> MarketingDomain:
+        domain = MarketingDomain(**data.model_dump(), created_by=user_id)
         self.session.add(domain)
         await self.session.flush()
         await self.session.refresh(domain)
