@@ -8,7 +8,7 @@ from apps.api.config import settings
 
 logger = logging.getLogger(__name__)
 
-_LOCAL_UPLOAD_DIR = Path("uploads/sources")
+_LOCAL_UPLOAD_DIR = Path("uploads")
 
 
 def _get_gcs_client():
@@ -59,7 +59,7 @@ class GCSStorageService:
         dest = _LOCAL_UPLOAD_DIR / path
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes(content)
-        return f"/uploads/sources/{path}"
+        return f"/uploads/{path}"
 
     def generate_signed_url(self, file_path: str, expiration_minutes: int = 60) -> str:
         """Return a temporary download URL (signed for GCS, absolute for local)."""
