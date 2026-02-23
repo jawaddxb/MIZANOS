@@ -80,6 +80,23 @@ export class SpecificationsRepository extends BaseRepository<Specification> {
     return response.data;
   }
 
+  async uploadAudioSource(
+    productId: string,
+    file: File,
+    transcription?: string,
+  ): Promise<SpecificationSource> {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("source_type", "audio");
+    if (transcription) formData.append("transcription", transcription);
+    const response = await this.client.post<SpecificationSource>(
+      `/products/${productId}/specification-sources/upload`,
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } },
+    );
+    return response.data;
+  }
+
   async getDownloadUrl(sourceId: string): Promise<string> {
     const response = await this.client.get<{ download_url: string }>(
       `/products/specification-sources/${sourceId}/download-url`,
@@ -89,6 +106,17 @@ export class SpecificationsRepository extends BaseRepository<Specification> {
 
   async deleteSource(sourceId: string): Promise<void> {
     await this.client.delete(`/specification-sources/${sourceId}`);
+  }
+
+  async extractText(file: File): Promise<string> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await this.client.post<{ text: string; file_name: string }>(
+      "/utilities/extract-text",
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } },
+    );
+    return response.data.text;
   }
 
   async regenerateSpec(

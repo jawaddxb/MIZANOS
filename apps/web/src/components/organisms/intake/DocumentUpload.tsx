@@ -14,6 +14,7 @@ interface UploadedFile {
 
 interface DocumentUploadProps {
   onFilesChange: (files: File[]) => void;
+  initialFiles?: File[];
   className?: string;
 }
 
@@ -36,8 +37,14 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
 }
 
-export function DocumentUpload({ onFilesChange, className }: DocumentUploadProps) {
-  const [files, setFiles] = React.useState<UploadedFile[]>([]);
+export function DocumentUpload({ onFilesChange, initialFiles, className }: DocumentUploadProps) {
+  const [files, setFiles] = React.useState<UploadedFile[]>(() =>
+    (initialFiles ?? []).map((file) => ({
+      id: crypto.randomUUID(),
+      file,
+      preview: file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined,
+    })),
+  );
   const [isDragOver, setIsDragOver] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LayoutGrid, List, Sparkles, FileText, LayoutTemplate, Loader2, ClipboardCheck, Mail, MailX } from "lucide-react";
+import { LayoutGrid, List, Sparkles, FileText, LayoutTemplate, Loader2, ClipboardCheck, Mail, MailX, Trash2 } from "lucide-react";
 import { BaseSwitch } from "@/components/atoms/inputs/BaseSwitch";
 import { Button } from "@/components/molecules/buttons/Button";
 import { Badge } from "@/components/atoms/display/Badge";
@@ -14,11 +14,13 @@ import {
 import { KanbanBoard } from "@/components/organisms/kanban/KanbanBoard";
 import { TasksTab } from "@/components/organisms/product/TasksTab";
 import { DraftTaskReview } from "@/components/organisms/product/DraftTaskReview";
+import { ConfirmActionDialog } from "@/components/molecules/feedback/ConfirmActionDialog";
 import {
   useGenerateTasksFromSpec,
   useGenerateTasksFromTemplates,
 } from "@/hooks/mutations/useTaskGenerationMutations";
 import { useGeneratePortTasks } from "@/hooks/mutations/usePortGenerator";
+import { useDeleteAllDrafts } from "@/hooks/mutations/useTaskApprovalMutations";
 import { useProductDetail } from "@/hooks/queries/useProductDetail";
 import { useDraftTasks } from "@/hooks/queries/useDraftTasks";
 import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
@@ -26,6 +28,7 @@ import { useProductNotificationSettings } from "@/hooks/queries/useProductNotifi
 import { useUpdateProductNotificationSettings } from "@/hooks/mutations/useProductNotificationSettingsMutations";
 
 type ViewMode = "board" | "list" | "drafts";
+type GenerateSource = "spec" | "templates" | "port";
 
 interface TasksViewToggleProps {
   productId: string;
@@ -34,12 +37,14 @@ interface TasksViewToggleProps {
 
 export function TasksViewToggle({ productId, openTaskId }: TasksViewToggleProps) {
   const [view, setView] = useState<ViewMode>("list");
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const { data: productData } = useProductDetail(productId);
   const { data: drafts = [] } = useDraftTasks(productId);
   const { isAdmin, isProjectManager } = useRoleVisibility();
   const generateFromSpec = useGenerateTasksFromSpec(productId);
   const generateFromTemplates = useGenerateTasksFromTemplates(productId);
   const generateFromPort = useGeneratePortTasks(productId);
+  const deleteAllDrafts = useDeleteAllDrafts(productId);
 
   const { data: notifSettings } = useProductNotificationSettings(productId);
   const updateNotifSettings = useUpdateProductNotificationSettings(productId);
@@ -52,6 +57,12 @@ export function TasksViewToggle({ productId, openTaskId }: TasksViewToggleProps)
   const showLovable = productData?.product?.source_type?.includes("lovable");
   const showDraftsTab = isAdmin || isProjectManager;
   const draftCount = drafts.length;
+
+  const fireGenerate = (source: GenerateSource) => {
+    if (source === "spec") generateFromSpec.mutate();
+    else if (source === "templates") generateFromTemplates.mutate();
+    else generateFromPort.mutate(undefined);
+  };
 
   return (
     <div className="space-y-4">
@@ -94,7 +105,7 @@ export function TasksViewToggle({ productId, openTaskId }: TasksViewToggleProps)
         </div>
 
         <div className="flex items-center gap-3">
-          {(isAdmin || isProjectManager) && (
+          {view !== "drafts" && (isAdmin || isProjectManager) && (
             <div className="flex flex-col items-end gap-0.5">
               <label className="flex items-center gap-1.5 cursor-pointer">
                 {notifSettings?.email_enabled !== false ? (
@@ -118,41 +129,73 @@ export function TasksViewToggle({ productId, openTaskId }: TasksViewToggleProps)
           )}
 
         {(isAdmin || isProjectManager) && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" disabled={isGenerating}>
-              {isGenerating ? (
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-              ) : (
-                <Sparkles className="h-4 w-4 mr-1" />
-              )}
-              Generate Tasks
+          draftCount > 0 ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDiscardConfirm(true)}
+              className="text-red-600 border-red-200 hover:bg-red-50"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Discard Drafts
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => generateFromSpec.mutate()}>
-              <FileText className="h-4 w-4 mr-2" />
-              From Specification
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => generateFromTemplates.mutate()}>
-              <LayoutTemplate className="h-4 w-4 mr-2" />
-              From Templates
-            </DropdownMenuItem>
-            {showLovable && (
-              <DropdownMenuItem onClick={() => generateFromPort.mutate(undefined)}>
-                <Sparkles className="h-4 w-4 mr-2" />
-                From Lovable Manifest
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" disabled={isGenerating}>
+                  {isGenerating ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4 mr-1" />
+                  )}
+                  Generate Tasks
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => fireGenerate("spec")}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  From Specification
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => fireGenerate("templates")}>
+                  <LayoutTemplate className="h-4 w-4 mr-2" />
+                  From Templates
+                </DropdownMenuItem>
+                {showLovable && (
+                  <DropdownMenuItem onClick={() => fireGenerate("port")}>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    From Lovable Manifest
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
         )}
         </div>
       </div>
 
       {view === "board" && <KanbanBoard productId={productId} />}
       {view === "list" && <TasksTab productId={productId} openTaskId={openTaskId} />}
-      {view === "drafts" && <DraftTaskReview productId={productId} />}
+      {view === "drafts" && (
+        <DraftTaskReview
+          productId={productId}
+          onGenerateFromSpec={() => fireGenerate("spec")}
+          onGenerateFromTemplates={() => fireGenerate("templates")}
+          onGenerateFromPort={() => fireGenerate("port")}
+          isGenerating={isGenerating}
+          showLovable={!!showLovable}
+        />
+      )}
+
+      <ConfirmActionDialog
+        open={showDiscardConfirm}
+        onOpenChange={setShowDiscardConfirm}
+        title="Discard all draft tasks?"
+        description={`This will permanently delete ${draftCount} draft task${draftCount !== 1 ? "s" : ""}. This action cannot be undone.`}
+        confirmLabel="Discard All"
+        variant="destructive"
+        onConfirm={() => deleteAllDrafts.mutate(undefined, { onSuccess: () => setShowDiscardConfirm(false) })}
+        isPending={deleteAllDrafts.isPending}
+      />
     </div>
   );
 }

@@ -64,6 +64,14 @@ export class TasksRepository extends BaseRepository<Task> {
     return response.data;
   }
 
+  async deleteAllDrafts(productId: string): Promise<{ deleted_count: number }> {
+    const response = await this.client.delete<{ deleted_count: number }>(
+      `${this.basePath}/drafts`,
+      { params: { product_id: productId } },
+    );
+    return response.data;
+  }
+
   async approveTask(taskId: string): Promise<Task> {
     const response = await this.client.post<Task>(`${this.basePath}/${taskId}/approve`);
     return response.data;

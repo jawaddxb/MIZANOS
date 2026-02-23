@@ -10,9 +10,12 @@ import { CardHeader, CardTitle } from "@/components/atoms/display/Card";
 import {
   useSpecifications,
 } from "@/hooks/queries/useSpecifications";
+import { useSpecificationSources } from "@/hooks/queries/useSpecificationSources";
 import { useRegenerateSpecification } from "@/hooks/mutations/useSpecificationMutations";
-import type { Specification } from "@/lib/types";
-import { History, FileText, RefreshCw, Loader2, Sparkles, Layers } from "lucide-react";
+import type { Specification, JsonValue } from "@/lib/types";
+import { History, FileText, RefreshCw, Loader2, Sparkles, Layers, ChevronDown, FolderOpen } from "lucide-react";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/atoms/layout/Collapsible";
+import { SourceCard, type SpecSource } from "./SourceCard";
 import { cn } from "@/lib/utils/cn";
 import { parseSpecContent, SpecContentSections } from "./SpecContentSections";
 import { CustomInstructionsBadge } from "@/components/molecules/specifications/CustomInstructionsBadge";
@@ -162,13 +165,11 @@ function SpecViewer({ productId, productName, onNavigateToFeatures }: SpecViewer
           </div>
         </div>
 
-        {currentSpec.custom_instructions && (
-          <CustomInstructionsBadge
-            instructions={currentSpec.custom_instructions}
-            version={currentSpec.version}
-          />
-        )}
-
+        <SourceDocumentsSection
+          productId={productId}
+          customInstructions={currentSpec.custom_instructions}
+          specVersion={currentSpec.version}
+        />
         <SpecContentSections content={content} />
       </div>
 
@@ -181,6 +182,66 @@ function SpecViewer({ productId, productName, onNavigateToFeatures }: SpecViewer
         />
       </div>
     </div>
+  );
+}
+
+function SourceDocumentsSection({
+  productId,
+  customInstructions,
+  specVersion,
+}: {
+  productId: string;
+  customInstructions?: string | null;
+  specVersion?: number;
+}) {
+  const { data: specSources } = useSpecificationSources(productId);
+
+  const sources: SpecSource[] = (specSources ?? []).map((s) => ({
+    id: s.id,
+    source_type: s.source_type,
+    file_name: s.file_name,
+    file_url: s.file_url,
+    url: s.url,
+    raw_content: s.raw_content,
+    transcription: s.transcription,
+    ai_summary: s.ai_summary as Record<string, JsonValue> | null,
+    logo_url: s.logo_url ?? null,
+    screenshots: s.screenshots as Record<string, JsonValue> | null,
+    branding: s.branding as Record<string, JsonValue> | null,
+    created_at: s.created_at,
+  }));
+
+  const hasContent = sources.length > 0 || !!customInstructions;
+  if (!hasContent) return null;
+
+  return (
+    <Collapsible>
+      <Card>
+        <CollapsibleTrigger asChild>
+          <CardHeader className="cursor-pointer select-none">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <FolderOpen className="h-4 w-4" />
+              Source Documents
+              <Badge variant="secondary" className="ml-1">{sources.length}</Badge>
+              <ChevronDown className="h-4 w-4 ml-auto transition-transform [[data-state=closed]_&]:rotate-[-90deg]" />
+            </CardTitle>
+          </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent className="pt-0 space-y-3">
+            {customInstructions && (
+              <CustomInstructionsBadge
+                instructions={customInstructions}
+                version={specVersion ?? 1}
+              />
+            )}
+            {sources.map((source) => (
+              <SourceCard key={source.id} source={source} />
+            ))}
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 }
 

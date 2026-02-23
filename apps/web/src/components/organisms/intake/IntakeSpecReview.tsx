@@ -191,6 +191,8 @@ export function IntakeSpecReview({
         </CardContent>
       </Card>
 
+      {renderTopLevelList("features", "Features")}
+
       {hasFunctional && (
         <Card>
           <CardHeader className="pb-4"><CardTitle className="text-lg">Functional Specification</CardTitle></CardHeader>
@@ -218,8 +220,6 @@ export function IntakeSpecReview({
           </CardContent>
         </Card>
       )}
-
-      {renderTopLevelList("features", "Features")}
 
       {generatedSpec.techStack.length > 0 && (
         <Card>

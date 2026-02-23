@@ -97,11 +97,26 @@ export function IntakeForm() {
   const handleGenerateSpec = React.useCallback(async () => {
     setIsGenerating(true);
     try {
-      const sourceSummary = buildSourceSummary(formData.sources);
+      const { text: sourceSummary, images } = await buildSourceSummary(formData.sources);
       const prompt = [
-        `Generate a detailed product specification for "${formData.projectName}".`,
-        formData.description ? `Description: ${formData.description}` : "",
-        sourceSummary ? `\nSource material:\n${sourceSummary}` : "",
+        `Generate a comprehensive product specification for "${formData.projectName}".`,
+        formData.description ? `Project description: ${formData.description}` : "",
+        sourceSummary
+          ? [
+              "\n=== SOURCE DOCUMENTS (PRIMARY BASIS FOR SPECIFICATION) ===",
+              sourceSummary,
+              "=== END SOURCE DOCUMENTS ===",
+              "\nCRITICAL INSTRUCTIONS:",
+              "- The source documents above are the PRIMARY input. Your specification MUST be grounded in their content.",
+              "- Extract and incorporate specific features, workflows, terminology, entities, business rules, and domain details from the documents.",
+              "- Every user story, business rule, and acceptance criterion should trace back to concrete details found in the sources.",
+              "- Do NOT generate generic or placeholder content when the documents provide specific information.",
+              "- If the documents describe specific screens, APIs, data models, or integrations, include those details verbatim.",
+            ].join("\n")
+          : "",
+        images.length > 0
+          ? "\nThe attached images are uploaded source documents. Thoroughly analyze their visual content (text, diagrams, wireframes, screenshots) and incorporate all relevant details into the specification."
+          : "",
         formData.customInstructions?.trim()
           ? `\nCustom Instructions from the user:\n${formData.customInstructions}`
           : "",
@@ -128,7 +143,7 @@ export function IntakeForm() {
         .join("\n");
 
       const session = await aiRepository.createSession();
-      const response = await aiRepository.sendMessage(session.id, prompt);
+      const response = await aiRepository.sendMessage(session.id, prompt, images.length > 0 ? images : undefined);
       const content = response.content ?? "";
 
       let parsed: GeneratedSpec;

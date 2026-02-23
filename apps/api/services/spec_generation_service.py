@@ -15,6 +15,7 @@ from apps.api.models.specification import (
     SpecificationFeature,
     SpecificationSource,
 )
+from apps.api.services.gcs_storage_service import GCSStorageService
 from apps.api.services.spec_source_context import (
     build_source_context,
     build_spec_prompt,
@@ -54,11 +55,15 @@ class SpecGenerationService:
         )
         sources = list(sources_result.scalars().all())
 
-        context = build_source_context(sources, product_name, pillar)
-        prompt = build_spec_prompt(product_name, context, custom_instructions)
+        context, image_paths = build_source_context(sources, product_name, pillar)
+        image_urls = self._resolve_image_urls(image_paths)
+        prompt = build_spec_prompt(
+            product_name, context, custom_instructions,
+            has_images=len(image_urls) > 0,
+        )
 
         try:
-            spec_data = await self._call_ai(prompt)
+            spec_data = await self._call_ai(prompt, image_urls=image_urls)
             return await self._save_spec(
                 product_id, spec_data, custom_instructions, user_id=user_id
             )
@@ -77,7 +82,17 @@ class SpecGenerationService:
                 detail="Specification generation failed. Please try again.",
             )
 
-    async def _call_ai(self, prompt: str) -> dict:
+    @staticmethod
+    def _resolve_image_urls(image_paths: list[str]) -> list[str]:
+        """Convert stored file paths to downloadable URLs."""
+        if not image_paths:
+            return []
+        storage = GCSStorageService()
+        return [storage.generate_signed_url(path) for path in image_paths]
+
+    async def _call_ai(
+        self, prompt: str, image_urls: list[str] | None = None,
+    ) -> dict:
         """Send prompt to LLM and parse response."""
         import openai
 
@@ -99,14 +114,22 @@ class SpecGenerationService:
             else "gpt-4o"
         )
 
+        if image_urls:
+            content: list[dict] = [{"type": "text", "text": prompt}]
+            for url in image_urls:
+                content.append({"type": "image_url", "image_url": {"url": url}})
+            messages = [{"role": "user", "content": content}]
+        else:
+            messages = [{"role": "user", "content": prompt}]
+
         client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
         response = await client.chat.completions.create(
             model=model,
-            messages=[{"role": "user", "content": prompt}],
+            messages=messages,
         )
 
-        content = response.choices[0].message.content or "{}"
-        return parse_spec_response(content)
+        resp_content = response.choices[0].message.content or "{}"
+        return parse_spec_response(resp_content)
 
     async def _save_spec(
         self,

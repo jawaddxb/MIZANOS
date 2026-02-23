@@ -10,25 +10,33 @@ EXTRACTABLE_TYPES = {
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 }
 
+TEXT_EXTENSIONS = {".md", ".txt", ".json", ".yaml", ".yml", ".csv"}
+
 
 def can_extract_text(content_type: str, file_name: str) -> bool:
     """Return ``True`` when text can be extracted from this file type."""
     name_lower = file_name.lower()
+    ext = Path(name_lower).suffix
     return (
         content_type in EXTRACTABLE_TYPES
         or name_lower.endswith(".pdf")
         or name_lower.endswith(".docx")
+        or ext in TEXT_EXTENSIONS
+        or content_type.startswith("text/")
     )
 
 
 def extract_text(content: bytes, file_name: str) -> str:
-    """Extract text from PDF or DOCX bytes.  Returns ``""`` on failure."""
+    """Extract text from PDF, DOCX, or plain-text bytes.  Returns ``""`` on failure."""
     name_lower = file_name.lower()
+    ext = Path(name_lower).suffix
     try:
         if name_lower.endswith(".pdf"):
             return _extract_pdf(content)
         if name_lower.endswith(".docx"):
             return _extract_docx(content)
+        if ext in TEXT_EXTENSIONS:
+            return content.decode("utf-8")
     except Exception:
         logger.warning("Text extraction failed for %s", file_name, exc_info=True)
     return ""

@@ -47,6 +47,7 @@ export function useRejectDraftTask(productId: string) {
       tasksRepository.rejectTask(taskId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", productId, "drafts"] });
+      queryClient.invalidateQueries({ queryKey: ["product-detail", productId] });
       toast.success("Draft task rejected");
     },
     onError: (error: Error) => {
@@ -63,10 +64,28 @@ export function useBulkRejectDraftTasks(productId: string) {
       tasksRepository.bulkRejectTasks(taskIds),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", productId, "drafts"] });
+      queryClient.invalidateQueries({ queryKey: ["product-detail", productId] });
       toast.success("Draft tasks rejected");
     },
     onError: (error: Error) => {
       toast.error("Failed to reject tasks: " + error.message);
+    },
+  });
+}
+
+export function useDeleteAllDrafts(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => tasksRepository.deleteAllDrafts(productId),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["tasks", productId, "drafts"] });
+      queryClient.invalidateQueries({ queryKey: ["tasks", productId] });
+      queryClient.invalidateQueries({ queryKey: ["product-detail", productId] });
+      toast.success(`Deleted ${data.deleted_count} draft tasks`);
+    },
+    onError: (error: Error) => {
+      toast.error("Failed to delete drafts: " + error.message);
     },
   });
 }

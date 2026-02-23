@@ -118,6 +118,26 @@ async def update_product(
     return await service.update(product_id, body.model_dump(exclude_unset=True))
 
 
+@router.post("/{product_id}/lock-tasks", response_model=ProductResponse)
+async def lock_tasks(
+    product_id: UUID,
+    user: CurrentUser = None,
+    service: ProductService = Depends(get_service),
+):
+    """Lock tasks — disables generation, enables approve/reject."""
+    return await service.lock_tasks(product_id)
+
+
+@router.post("/{product_id}/unlock-tasks", response_model=ProductResponse)
+async def unlock_tasks(
+    product_id: UUID,
+    user: CurrentUser = None,
+    service: ProductService = Depends(get_service),
+):
+    """Unlock tasks — re-enables generation, enables new drafts."""
+    return await service.unlock_tasks(product_id)
+
+
 @router.post("/{product_id}/archive", response_model=ProductResponse)
 async def archive_product(
     product_id: UUID,

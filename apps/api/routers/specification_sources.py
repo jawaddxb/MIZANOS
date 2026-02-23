@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 
 from apps.api.dependencies import CurrentUser, DbSession
 from apps.api.schemas.products import (
@@ -57,12 +57,16 @@ async def create_product_source(
 async def upload_product_source(
     product_id: UUID,
     file: UploadFile = File(...),
+    source_type: str = Form("document"),
+    transcription: str | None = Form(None),
     user: CurrentUser = None,
     db: DbSession = None,
 ):
-    """Upload a binary source document (PDF, DOCX, images) to GCS."""
+    """Upload a binary source (document, audio, etc.) to GCS."""
     service = SourceUploadService(db)
-    return await service.upload_source(product_id, file)
+    return await service.upload_source(
+        product_id, file, source_type=source_type, transcription=transcription,
+    )
 
 
 @router.get("/specification-sources/{source_id}/download-url")

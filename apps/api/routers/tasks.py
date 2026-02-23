@@ -69,6 +69,17 @@ async def list_drafts(
     return await service.list_drafts(product_id)
 
 
+@router.delete("/drafts")
+async def delete_all_drafts(
+    product_id: UUID,
+    user: CurrentUser = None,
+    service: TaskService = Depends(get_service),
+):
+    """Delete all draft tasks for a product. PM/superadmin only."""
+    count = await service.delete_all_drafts(product_id)
+    return {"deleted_count": count}
+
+
 @router.post("/bulk-approve", response_model=TaskBulkApproveResponse)
 async def bulk_approve_tasks(
     body: TaskBulkApproveRequest,

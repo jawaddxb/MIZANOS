@@ -23,7 +23,7 @@ from apps.api.dependencies import AuthenticatedUser
 from apps.api.models.enums import AppRole
 from apps.api.services.base_service import BaseService
 from apps.api.services.product_member_service import ProductMemberService
-from packages.common.utils.error_handlers import forbidden, not_found
+from packages.common.utils.error_handlers import bad_request, forbidden, not_found
 
 
 class ProductService(BaseService[Product]):
@@ -31,6 +31,26 @@ class ProductService(BaseService[Product]):
 
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(Product, session)
+
+    async def lock_tasks(self, entity_id: UUID) -> Product:
+        """Lock tasks — disables generation, enables approve/reject."""
+        product = await self.get_or_404(entity_id)
+        if product.tasks_locked:
+            raise bad_request("Tasks are already locked")
+        product.tasks_locked = True
+        await self.repo.session.flush()
+        await self.repo.session.refresh(product)
+        return product
+
+    async def unlock_tasks(self, entity_id: UUID) -> Product:
+        """Unlock tasks — re-enables generation, disables approve/reject."""
+        product = await self.get_or_404(entity_id)
+        if not product.tasks_locked:
+            raise bad_request("Tasks are not locked")
+        product.tasks_locked = False
+        await self.repo.session.flush()
+        await self.repo.session.refresh(product)
+        return product
 
     async def archive(self, entity_id: UUID) -> Product:
         """Soft-archive a product by setting archived_at."""

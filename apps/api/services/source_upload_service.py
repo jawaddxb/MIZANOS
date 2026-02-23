@@ -27,6 +27,9 @@ class SourceUploadService:
         self,
         product_id: UUID,
         file: UploadFile,
+        *,
+        source_type: str = "document",
+        transcription: str | None = None,
     ) -> SpecificationSource:
         """Upload a binary file, extract text, and create a DB record."""
         content = await file.read()
@@ -40,15 +43,16 @@ class SourceUploadService:
         file_url = await self.storage.upload_file(content, dest_path, content_type)
 
         raw_content: str | None = None
-        if can_extract_text(content_type, file_name):
+        if source_type != "audio" and can_extract_text(content_type, file_name):
             raw_content = extract_text(content, file_name) or None
 
         source = SpecificationSource(
             product_id=product_id,
-            source_type="document",
+            source_type=source_type,
             file_name=file_name,
             file_url=file_url,
             raw_content=raw_content,
+            transcription=transcription,
         )
         self.session.add(source)
         await self.session.flush()

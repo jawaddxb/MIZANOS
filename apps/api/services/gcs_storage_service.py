@@ -73,7 +73,7 @@ class GCSStorageService:
 
     @staticmethod
     def build_source_path(product_id: str, file_name: str) -> str:
-        """Convention: ``sources/{product_id}/{uuid12}.{ext}``."""
-        ext = Path(file_name).suffix or ".bin"
-        unique = uuid_mod.uuid4().hex[:12]
-        return f"sources/{product_id}/{unique}{ext}"
+        """Convention: ``sources/{product_id}/{uuid8}_{original_name}``."""
+        unique = uuid_mod.uuid4().hex[:8]
+        safe_name = Path(file_name).name or "file.bin"
+        return f"sources/{product_id}/{unique}_{safe_name}"

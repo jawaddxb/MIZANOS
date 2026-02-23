@@ -5,7 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/atoms/layo
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/atoms/display/Avatar";
 import { BaseInput } from "@/components/atoms/inputs/BaseInput";
 import { Button } from "@/components/molecules/buttons/Button";
-import { ChevronDown, Loader2, CheckCircle2, Plus, Key } from "lucide-react";
+import { ChevronDown, Loader2, CheckCircle2, Plus, Key, ExternalLink } from "lucide-react";
 import { useGitHubPats } from "@/hooks/queries/useGitHubPats";
 import { useVerifyPat, useCreatePat } from "@/hooks/mutations/useGitHubPatMutations";
 import type { GitHubPat, GitHubPatVerifyResult } from "@/lib/types";
@@ -159,7 +159,23 @@ export function PatSelector({ selectedPatId, rawTokenActive, onPatSelect, onUseR
 
         <div className="max-h-48 overflow-y-auto p-2">
           {pats.length === 0 ? (
-            <p className="px-2 py-3 text-center text-xs text-muted-foreground">No PATs found</p>
+            <div className="px-2 py-3 text-center text-xs text-muted-foreground space-y-1">
+              <p>No PATs found</p>
+              <p>
+                Create one at{" "}
+                <a
+                  href="https://github.com/settings/personal-access-tokens"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline inline-flex items-center gap-0.5 text-primary"
+                >
+                  GitHub
+                  <ExternalLink className="h-2.5 w-2.5" />
+                </a>
+                {" "}with read-only Contents access, then manage tokens in{" "}
+                <a href="/settings" className="underline text-primary">Settings &gt; GitHub PATs</a>
+              </p>
+            </div>
           ) : (
             <div className="space-y-1">
               {pats.map((pat) => (
@@ -189,6 +205,19 @@ export function PatSelector({ selectedPatId, rawTokenActive, onPatSelect, onUseR
             </button>
           ) : (
             <div className="space-y-2 p-1">
+              <p className="text-[11px] text-muted-foreground">
+                Paste a{" "}
+                <a
+                  href="https://github.com/settings/personal-access-tokens"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline inline-flex items-center gap-0.5"
+                >
+                  fine-grained PAT
+                  <ExternalLink className="h-2.5 w-2.5" />
+                </a>
+                {" "}with read-only Contents permission
+              </p>
               <BaseInput
                 type="password"
                 placeholder="ghp_xxxxxxxxxxxx"

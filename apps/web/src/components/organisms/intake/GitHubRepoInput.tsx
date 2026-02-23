@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { Github, Loader2, AlertCircle, X } from "lucide-react";
+import { Github, Loader2, AlertCircle, X, Construction } from "lucide-react";
 import { BaseInput } from "@/components/atoms/inputs/BaseInput";
 import { BaseLabel } from "@/components/atoms/inputs/BaseLabel";
 import { BaseCheckbox } from "@/components/atoms/inputs/BaseCheckbox";
@@ -132,6 +132,13 @@ export function GitHubRepoInput({ githubData, onGitHubDataChange }: GitHubRepoIn
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50/50 p-3 text-sm text-amber-800">
+        <Construction className="h-4 w-4 shrink-0" />
+        <p>
+          Code-level scanning is coming soon. You can still enter a repository URL and scan repos, but they are not yet analyzed at the code level to understand functionalities based on the code and logic.
+        </p>
+      </div>
+
       <div className="space-y-2">
         <BaseLabel htmlFor="repo-url" className="flex items-center gap-2">
           <Github className="h-4 w-4" />

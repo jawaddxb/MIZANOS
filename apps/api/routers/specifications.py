@@ -190,13 +190,18 @@ async def generate_spec(
 @router.post("/{product_id}/generate-tasks")
 async def generate_tasks_from_spec(
     product_id: UUID,
+    db: DbSession,
     user: CurrentUser = None,
     service: SpecificationService = Depends(get_service),
 ):
     """Generate tasks from specification features. PM/superadmin only."""
     from apps.api.models.enums import AppRole
-    from packages.common.utils.error_handlers import forbidden
+    from apps.api.models.product import Product
+    from packages.common.utils.error_handlers import bad_request, forbidden
 
     if not user.has_any_role(AppRole.SUPERADMIN, AppRole.ADMIN, AppRole.PROJECT_MANAGER):
         raise forbidden("Only project managers and admins can generate tasks")
+    product = await db.get(Product, product_id)
+    if product and product.tasks_locked:
+        raise bad_request("Cannot generate tasks while tasks are locked")
     return await service.generate_tasks_from_spec(product_id)
