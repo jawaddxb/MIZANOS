@@ -113,23 +113,22 @@ export default function TasksPage() {
         icon={<ClipboardCheck className="h-5 w-5 text-primary" />}
       />
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="flex gap-2">
         {TASK_STATUSES.map((status) => {
           const config = TASK_STATUS_DISPLAY[status];
           const Icon = config.icon;
           const count = statusCounts[status] ?? 0;
+          const active = statusFilter === status;
           return (
             <Card
               key={status}
-              className="cursor-pointer hover:bg-accent/50 transition-colors"
-              onClick={() => setStatusFilter(statusFilter === status ? "all" : status)}
+              className={`flex-1 cursor-pointer hover:bg-accent/50 transition-colors ${active ? "border-primary/40" : ""}`}
+              onClick={() => setStatusFilter(active ? "all" : status)}
             >
-              <CardContent className="p-3 flex items-center gap-2">
-                <Icon className={`h-4 w-4 ${statusFilter === status ? config.color : "text-muted-foreground"}`} />
-                <div>
-                  <p className="text-lg font-semibold tabular-nums">{count}</p>
-                  <p className="text-xs text-muted-foreground">{config.label}</p>
-                </div>
+              <CardContent className="px-3 py-2 flex items-center gap-2">
+                <Icon className={`h-3.5 w-3.5 ${active ? config.color : "text-muted-foreground"}`} />
+                <span className="text-sm font-semibold tabular-nums">{count}</span>
+                <span className="text-xs text-muted-foreground">{config.label}</span>
               </CardContent>
             </Card>
           );

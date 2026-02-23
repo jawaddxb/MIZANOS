@@ -13,6 +13,8 @@ export function useGenerateTasksFromSpec(productId: string) {
     mutationFn: async (): Promise<Task[]> => {
       const response = await apiClient.post<Task[]>(
         `/specifications/${productId}/generate-tasks`,
+        null,
+        { timeout: 180_000 },
       );
       return response.data;
     },

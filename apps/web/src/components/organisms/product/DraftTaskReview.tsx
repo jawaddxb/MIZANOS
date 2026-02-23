@@ -81,11 +81,16 @@ export function DraftTaskReview({
             <DropdownMenuTrigger asChild>
               <Button variant="default" size="sm" className="mt-4" disabled={isGenerating}>
                 {isGenerating ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    Generating... hang tight
+                  </>
                 ) : (
-                  <Sparkles className="h-4 w-4 mr-1" />
+                  <>
+                    <Sparkles className="h-4 w-4 mr-1" />
+                    Generate Tasks
+                  </>
                 )}
-                Generate Tasks
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center">

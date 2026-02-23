@@ -6,8 +6,8 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.api.config import settings
 from apps.api.models.ai import AIChatMessage, AIChatSession
+from apps.api.services.llm_config import get_llm_config, get_system_prompt
 
 
 class AIService:
@@ -15,27 +15,6 @@ class AIService:
 
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
-
-    @staticmethod
-    def _get_llm_config() -> tuple[str, str | None, str]:
-        """Return (api_key, base_url, model) or raise with actionable message."""
-        api_key = settings.openrouter_api_key or settings.openai_api_key
-        if not api_key:
-            raise ValueError(
-                "No LLM API key configured. Set OPENROUTER_API_KEY or "
-                "OPENAI_API_KEY in your environment to enable AI features."
-            )
-        base_url = (
-            "https://openrouter.ai/api/v1"
-            if settings.openrouter_api_key
-            else None
-        )
-        model = (
-            "anthropic/claude-sonnet-4"
-            if settings.openrouter_api_key
-            else "gpt-4o"
-        )
-        return api_key, base_url, model
 
     async def get_sessions(self, user_id: str) -> list[AIChatSession]:
         stmt = (
@@ -117,24 +96,20 @@ class AIService:
         try:
             import openai
 
-            api_key, base_url, model = self._get_llm_config()
-            client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
+            config = await get_llm_config(self.session)
+            system_prompt = await get_system_prompt(self.session, "chat")
+            client = openai.AsyncOpenAI(
+                api_key=config.api_key, base_url=config.base_url,
+            )
 
             user_content = self._build_user_content(content, images)
             messages: list[dict] = [
-                {
-                    "role": "system",
-                    "content": (
-                        "You are Mizan, an AI assistant for product lifecycle management. "
-                        "When the user's message contains instructions to return JSON, "
-                        "respond with ONLY valid JSON — no markdown fences, no explanation."
-                    ),
-                },
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_content},
             ]
 
             response = await client.chat.completions.create(
-                model=model,
+                model=config.model,
                 messages=messages,
             )
             full_response = response.choices[0].message.content or ""
@@ -181,23 +156,19 @@ class AIService:
         try:
             import openai
 
-            api_key, base_url, model = self._get_llm_config()
+            config = await get_llm_config(self.session)
+            system_prompt = await get_system_prompt(self.session, "chat")
 
             messages: list[dict[str, str]] = [
-                {
-                    "role": "system",
-                    "content": (
-                        "You are Mizan, an AI assistant for product lifecycle management. "
-                        "When the user's message contains instructions to return JSON, "
-                        "respond with ONLY valid JSON — no markdown fences, no explanation."
-                    ),
-                },
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": content},
             ]
 
-            client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
+            client = openai.AsyncOpenAI(
+                api_key=config.api_key, base_url=config.base_url,
+            )
             stream = await client.chat.completions.create(
-                model=model,
+                model=config.model,
                 messages=messages,
                 stream=True,
             )

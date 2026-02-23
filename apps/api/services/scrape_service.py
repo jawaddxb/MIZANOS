@@ -241,12 +241,9 @@ class ScrapeService:
         """Use AI to extract structured product information from scraped markdown."""
         import openai
 
-        api_key = settings.openrouter_api_key or settings.openai_api_key
-        if not api_key:
-            raise ValueError("No AI API key configured. Set OPENROUTER_API_KEY or OPENAI_API_KEY.")
+        from apps.api.services.llm_config import get_llm_config
 
-        base_url = "https://openrouter.ai/api/v1" if settings.openrouter_api_key else None
-        model = "anthropic/claude-sonnet-4" if settings.openrouter_api_key else "gpt-4o"
+        config = await get_llm_config(self.session)
 
         truncated = content[:8000]
         prompt = (
@@ -259,9 +256,9 @@ class ScrapeService:
             '"socialHandles":[{"platform":"twitter|linkedin|instagram|...","handle":"@example"}]}'
         )
 
-        client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
+        client = openai.AsyncOpenAI(api_key=config.api_key, base_url=config.base_url)
         response = await client.chat.completions.create(
-            model=model,
+            model=config.model,
             messages=[{"role": "user", "content": prompt}],
         )
 

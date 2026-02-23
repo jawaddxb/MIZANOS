@@ -66,9 +66,9 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       >
         {collapsed ? (
           <div className="flex flex-col items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+            <Link href="/dashboard" className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
               <MizanLogo size={18} className="text-primary-foreground" />
-            </div>
+            </Link>
             <Button
               variant="ghost"
               size="icon"
@@ -80,14 +80,14 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
           </div>
         ) : (
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
+            <Link href="/dashboard" className="flex items-center gap-2.5">
               <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
                 <MizanLogo size={18} className="text-primary-foreground" />
               </div>
               <h1 className="text-base font-semibold text-foreground leading-tight">
                 Mizan AI
               </h1>
-            </div>
+            </Link>
             <Button
               variant="ghost"
               size="icon"

@@ -8,7 +8,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.api.config import settings
+from apps.api.models.audit import RepositoryAnalysis
 from apps.api.models.product import Product
 from apps.api.models.specification import (
     Specification,
@@ -16,6 +16,7 @@ from apps.api.models.specification import (
     SpecificationSource,
 )
 from apps.api.services.gcs_storage_service import GCSStorageService
+from apps.api.services.llm_config import get_llm_config, get_system_prompt
 from apps.api.services.spec_source_context import (
     build_source_context,
     build_spec_prompt,
@@ -55,11 +56,19 @@ class SpecGenerationService:
         )
         sources = list(sources_result.scalars().all())
 
+        detected_tech = await self._get_detected_tech_stack(product_id)
+
         context, image_paths = build_source_context(sources, product_name, pillar)
         image_urls = self._resolve_image_urls(image_paths)
+
+        feature_rules = await get_system_prompt(
+            self.session, "spec_generation_rules",
+        )
         prompt = build_spec_prompt(
             product_name, context, custom_instructions,
             has_images=len(image_urls) > 0,
+            detected_tech_stack=detected_tech,
+            feature_rules_override="\n\n" + feature_rules if feature_rules else None,
         )
 
         try:
@@ -82,6 +91,16 @@ class SpecGenerationService:
                 detail="Specification generation failed. Please try again.",
             )
 
+    async def _get_detected_tech_stack(self, product_id: UUID) -> dict | None:
+        """Return the latest detected tech stack for the product, if any."""
+        result = await self.session.execute(
+            select(RepositoryAnalysis.tech_stack)
+            .where(RepositoryAnalysis.product_id == product_id)
+            .order_by(RepositoryAnalysis.created_at.desc())
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
+
     @staticmethod
     def _resolve_image_urls(image_paths: list[str]) -> list[str]:
         """Convert stored file paths to downloadable URLs."""
@@ -96,23 +115,7 @@ class SpecGenerationService:
         """Send prompt to LLM and parse response."""
         import openai
 
-        api_key = settings.openrouter_api_key or settings.openai_api_key
-        if not api_key:
-            raise HTTPException(
-                status_code=400,
-                detail="No AI API key configured. Set OPENROUTER_API_KEY or OPENAI_API_KEY.",
-            )
-
-        base_url = (
-            "https://openrouter.ai/api/v1"
-            if settings.openrouter_api_key
-            else None
-        )
-        model = (
-            "anthropic/claude-sonnet-4"
-            if settings.openrouter_api_key
-            else "gpt-4o"
-        )
+        config = await get_llm_config(self.session)
 
         if image_urls:
             content: list[dict] = [{"type": "text", "text": prompt}]
@@ -122,9 +125,9 @@ class SpecGenerationService:
         else:
             messages = [{"role": "user", "content": prompt}]
 
-        client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
+        client = openai.AsyncOpenAI(api_key=config.api_key, base_url=config.base_url)
         response = await client.chat.completions.create(
-            model=model,
+            model=config.model,
             messages=messages,
         )
 

@@ -117,7 +117,7 @@ export function IntakeSourcesStep(props: IntakeSourcesStepProps) {
               <BaseLabel>Open Text</BaseLabel>
               <BaseTextarea
                 className="min-h-[200px] resize-y"
-                placeholder="Paste requirements, emails, meeting notes, etc."
+                placeholder="Type or paste requirements, emails, meeting notes, etc."
                 value={pasteContent}
                 onChange={(e) => onPasteContentChange(e.target.value)}
               />

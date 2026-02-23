@@ -11,6 +11,14 @@ export function useOrgSettings() {
   });
 }
 
+export function useAiDefaults() {
+  return useQuery({
+    queryKey: ["ai-defaults"],
+    queryFn: () => settingsRepository.getAiDefaults(),
+    staleTime: Infinity,
+  });
+}
+
 export function useShowPendingProfiles(): boolean {
   const { data: settings = [] } = useOrgSettings();
   const setting = settings.find(

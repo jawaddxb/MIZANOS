@@ -257,6 +257,28 @@ export class SettingsRepository {
     await this.client.patch(`${this.basePath}/users/${userId}/primary-role`, { role });
   }
 
+  async getAiDefaults(): Promise<{
+    model_config: { provider: string; model: string; temperature: number; max_tokens: number };
+    system_prompts: Record<string, string>;
+  }> {
+    const response = await this.client.get<{
+      model_config: { provider: string; model: string; temperature: number; max_tokens: number };
+      system_prompts: Record<string, string>;
+    }>(`${this.basePath}/org/ai-defaults`);
+    return response.data;
+  }
+
+  async verifyAiModel(
+    provider: string,
+    model: string,
+  ): Promise<{ valid: boolean; response: string }> {
+    const response = await this.client.post<{ valid: boolean; response: string }>(
+      `${this.basePath}/org/ai-model-config/verify`,
+      { provider, model },
+    );
+    return response.data;
+  }
+
   async getOrgSettings(): Promise<OrgSetting[]> {
     const response = await this.client.get<OrgSetting[]>(`${this.basePath}/org`);
     return response.data;

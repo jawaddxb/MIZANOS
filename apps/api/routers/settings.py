@@ -207,6 +207,38 @@ async def list_org_settings(
     return await service.get_all()
 
 
+@router.get("/org/ai-defaults")
+async def get_ai_defaults(user: CurrentUser):
+    """Return the immutable system-default AI config and prompts."""
+    from apps.api.services.llm_config import DEFAULT_PROMPTS
+
+    return {
+        "model_config": {
+            "provider": "openrouter",
+            "model": "anthropic/claude-sonnet-4",
+            "temperature": 0.7,
+            "max_tokens": 4096,
+        },
+        "system_prompts": {
+            k: v for k, v in DEFAULT_PROMPTS.items() if k != "system_docs"
+        },
+    }
+
+
+@router.post("/org/ai-model-config/verify")
+async def verify_ai_model_endpoint(
+    body: dict,
+    user: AuthenticatedUser = require_super_admin(),
+):
+    """Make a tiny test call to verify the model works with the provider."""
+    from apps.api.routers.ai_config_validation import verify_model
+
+    return await verify_model(
+        provider=body.get("provider", "openrouter"),
+        model=body.get("model", ""),
+    )
+
+
 @router.patch("/org/{key}", response_model=OrgSettingResponse)
 async def update_org_setting(
     key: str,
@@ -214,4 +246,7 @@ async def update_org_setting(
     user: AuthenticatedUser = require_super_admin(),
     service: OrgSettingsService = Depends(get_org_settings_service),
 ):
+    from apps.api.routers.ai_config_validation import validate_ai_org_setting
+
+    validate_ai_org_setting(key, body.value)
     return await service.update(key, body.value, user.profile_id)
