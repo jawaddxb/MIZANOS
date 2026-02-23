@@ -63,8 +63,10 @@ function TasksTab({ productId, openTaskId }: TasksTabProps) {
       if (myTasksOnly && task.assignee_id !== user?.profile_id && task.created_by !== user?.profile_id) return false;
       if (statusFilter !== "all" && task.status !== statusFilter) return false;
       if (priorityFilter !== "all" && task.priority !== priorityFilter) return false;
-      if (assigneeFilter === "__unassigned__" && task.assignee_id) return false;
-      if (assigneeFilter !== "all" && assigneeFilter !== "__unassigned__" && task.assignee_id !== assigneeFilter) return false;
+      if (!myTasksOnly) {
+        if (assigneeFilter === "__unassigned__" && task.assignee_id) return false;
+        if (assigneeFilter !== "all" && assigneeFilter !== "__unassigned__" && task.assignee_id !== assigneeFilter) return false;
+      }
       return true;
     });
   }, [tasks, statusFilter, priorityFilter, assigneeFilter, myTasksOnly, user?.profile_id]);
