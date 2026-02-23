@@ -134,7 +134,16 @@ class ProductService(BaseService[Product]):
                 "Only superadmins and project managers can create projects"
             )
         product = Product(**data.model_dump(), created_by=user.profile_id)
-        return await self.repo.create(product)
+        created = await self.repo.create(product)
+        if user.has_any_role(AppRole.PROJECT_MANAGER):
+            member = ProductMember(
+                product_id=created.id,
+                profile_id=user.profile_id,
+                role="project_manager",
+            )
+            self.repo.session.add(member)
+            await self.repo.session.flush()
+        return created
 
     async def update(self, entity_id: UUID, data: dict) -> Product:
         """Update a product. Guards activation on team readiness."""

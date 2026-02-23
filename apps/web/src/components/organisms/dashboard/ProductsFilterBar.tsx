@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/molecules/buttons/Button";
 import { cn } from "@/lib/utils/cn";
 import type { ProfileSummary } from "@/lib/types";
-import { Search, Filter, X } from "lucide-react";
+import { Search, Filter, X, User } from "lucide-react";
 
 interface RoleFilterConfig {
   value: string;
@@ -31,6 +31,8 @@ interface ProductsFilterBarProps {
   onStageChange: (v: string) => void;
   stages: string[];
   roleFilters: RoleFilterConfig[];
+  myProjectsActive?: boolean;
+  onMyProjectsToggle?: () => void;
   hasActiveFilters: boolean;
   onClearFilters: () => void;
 }
@@ -46,6 +48,8 @@ export function ProductsFilterBar({
   onStageChange,
   stages,
   roleFilters,
+  myProjectsActive,
+  onMyProjectsToggle,
   hasActiveFilters,
   onClearFilters,
 }: ProductsFilterBarProps) {
@@ -70,6 +74,18 @@ export function ProductsFilterBar({
           </button>
         )}
       </div>
+
+      {onMyProjectsToggle && (
+        <Button
+          variant={myProjectsActive ? "default" : "outline"}
+          size="sm"
+          onClick={onMyProjectsToggle}
+          className="text-xs shrink-0"
+        >
+          <User className="h-3 w-3 mr-1" /> My Projects
+        </Button>
+      )}
+
       <Select value={statusFilter} onValueChange={onStatusChange}>
         <SelectTrigger
           className={cn(

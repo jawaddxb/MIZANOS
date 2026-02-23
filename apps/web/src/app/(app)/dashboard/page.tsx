@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { Plus } from "lucide-react";
+import { useMemo } from "react";
+import { User } from "lucide-react";
 import { MizanLogo } from "@/components/atoms/brand/MizanLogo";
 import { Button } from "@/components/molecules/buttons/Button";
 import { PageHeader } from "@/components/molecules/layout/PageHeader";
@@ -11,8 +11,36 @@ import { ProductionHealth } from "@/components/organisms/dashboard/ProductionHea
 import { StageChart } from "@/components/organisms/dashboard/StageChart";
 import { RecentActivity } from "@/components/organisms/dashboard/RecentActivity";
 import { ProductsSection } from "@/components/organisms/dashboard/ProductsSection";
+import { useProducts } from "@/hooks/queries/useProducts";
+import { useMyDashboard } from "@/hooks/utils/useMyDashboard";
 
 export default function DashboardPage() {
+  const { enabled: myDashboard, toggle, myProductIds } = useMyDashboard();
+  const { data: products = [] } = useProducts();
+
+  const filteredProducts = useMemo(() => {
+    if (!myProductIds) return products;
+    return products.filter((p) => myProductIds.has(p.id));
+  }, [products, myProductIds]);
+
+  const stageDistribution = useMemo(() => {
+    const source = myProductIds ? filteredProducts : products;
+    const map: Record<string, number> = {};
+    for (const p of source) {
+      const stage = p.stage || "Unknown";
+      map[stage] = (map[stage] || 0) + 1;
+    }
+    return Object.entries(map).map(([stage, count]) => ({ stage, count }));
+  }, [myProductIds, filteredProducts, products]);
+
+  const quickStats = useMemo(() => {
+    const source = myProductIds ? filteredProducts : products;
+    const total = source.length;
+    const healthy = source.filter((p) => p.stage === "Complete").length;
+    const deployment = source.filter((p) => p.stage === "Deployment").length;
+    return { totalProducts: total, healthyCount: healthy, deploymentStageCount: deployment };
+  }, [myProductIds, filteredProducts, products]);
+
   return (
     <div className="p-6 space-y-4 w-full">
       <PageHeader
@@ -20,15 +48,22 @@ export default function DashboardPage() {
         subtitle="Project health overview and key action points"
         icon={<MizanLogo size={22} className="text-primary" />}
       >
-        <Link href="/intake">
-          <Button className="shadow-sm hover:shadow-md transition-shadow">
-            <Plus className="h-4 w-4 mr-2" />
-            New Project
-          </Button>
-        </Link>
+        <Button
+          variant={myDashboard ? "default" : "outline"}
+          size="sm"
+          onClick={toggle}
+          className="text-xs"
+        >
+          <User className="h-3 w-3 mr-1" /> My Dashboard
+        </Button>
       </PageHeader>
 
-      <QuickStats />
+      <QuickStats
+        totalProducts={quickStats.totalProducts}
+        healthyCount={quickStats.healthyCount}
+        deploymentStageCount={quickStats.deploymentStageCount}
+        filterProductIds={myProductIds}
+      />
 
       {/* Main Dashboard Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -36,26 +71,26 @@ export default function DashboardPage() {
           className="lg:col-span-1 min-w-0 animate-fade-in"
           style={{ animationDelay: "100ms" }}
         >
-          <ActionItems />
+          <ActionItems filterProductIds={myProductIds} />
         </div>
 
         <div
           className="lg:col-span-1 min-w-0 animate-fade-in"
           style={{ animationDelay: "150ms" }}
         >
-          <ProductionHealth />
+          <ProductionHealth filterProductIds={myProductIds} />
         </div>
 
         <div
           className="lg:col-span-1 min-w-0 space-y-4 animate-fade-in"
           style={{ animationDelay: "200ms" }}
         >
-          <StageChart />
-          <RecentActivity />
+          <StageChart data={stageDistribution} />
+          <RecentActivity filterProductIds={myProductIds} />
         </div>
       </div>
 
-      <ProductsSection />
+      <ProductsSection filterProductIds={myProductIds} />
     </div>
   );
 }

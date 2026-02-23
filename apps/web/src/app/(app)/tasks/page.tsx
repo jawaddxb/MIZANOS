@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/atoms/display/Card";
 import { Badge } from "@/components/atoms/display/Badge";
 import { Skeleton } from "@/components/atoms/display/Skeleton";
@@ -14,6 +14,7 @@ import { useProducts } from "@/hooks/queries/useProducts";
 import { useAllProductMembers } from "@/hooks/queries/useProductMembers";
 import { useProfiles } from "@/hooks/queries/useProfiles";
 import { TASK_STATUS_DISPLAY, TASK_PRIORITY_COLORS, TASK_STATUSES } from "@/lib/constants";
+import { isMyDashboardEnabled } from "@/hooks/utils/useMyDashboard";
 import type { Task, KanbanTask } from "@/lib/types";
 import { ClipboardCheck, ListTodo } from "lucide-react";
 
@@ -25,17 +26,24 @@ export default function TasksPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [pillarFilter, setPillarFilter] = useState("all");
-  const [myWorkEnabled, setMyWorkEnabled] = useState(false);
   const [editTask, setEditTask] = useState<KanbanTask | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const { user } = useAuth();
 
+  const myDashboardApplied = useRef(false);
+  useEffect(() => {
+    if (myDashboardApplied.current) return;
+    if (user?.profile_id && isMyDashboardEnabled()) {
+      myDashboardApplied.current = true;
+      setAssigneeFilter(user.profile_id);
+    }
+  }, [user?.profile_id]);
+
   const filters = {
     product_id: projectFilter !== "all" ? projectFilter : undefined,
     assignee_id: assigneeFilter !== "all" ? assigneeFilter : undefined,
     pm_id: pmFilter !== "all" ? pmFilter : undefined,
-    member_id: myWorkEnabled && user?.profile_id ? user.profile_id : undefined,
     status: statusFilter !== "all" ? statusFilter : undefined,
     priority: priorityFilter !== "all" ? priorityFilter : undefined,
     pillar: pillarFilter !== "all" ? pillarFilter : undefined,
@@ -85,8 +93,7 @@ export default function TasksPage() {
     pmFilter !== "all" ||
     statusFilter !== "all" ||
     priorityFilter !== "all" ||
-    pillarFilter !== "all" ||
-    myWorkEnabled;
+    pillarFilter !== "all";
 
   const clearFilters = () => {
     setSearch("");
@@ -96,7 +103,6 @@ export default function TasksPage() {
     setStatusFilter("all");
     setPriorityFilter("all");
     setPillarFilter("all");
-    setMyWorkEnabled(false);
   };
 
   return (
@@ -145,8 +151,6 @@ export default function TasksPage() {
         onPriorityChange={setPriorityFilter}
         pillarFilter={pillarFilter}
         onPillarChange={setPillarFilter}
-        myWorkEnabled={myWorkEnabled}
-        onMyWorkToggle={setMyWorkEnabled}
         projects={products.filter((p) => !p.archived_at)}
         profiles={profiles}
         pmProfiles={pmProfiles}

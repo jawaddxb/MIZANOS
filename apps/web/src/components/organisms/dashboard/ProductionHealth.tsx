@@ -104,12 +104,18 @@ function LoadingSkeleton() {
   );
 }
 
-export function ProductionHealth() {
+interface ProductionHealthProps {
+  filterProductIds?: Set<string>;
+}
+
+export function ProductionHealth({ filterProductIds }: ProductionHealthProps) {
   const { data: products = [], isLoading } = useProducts();
 
-  const projects = products.filter((p) =>
-    PRODUCTION_STAGES.includes(p.stage || ""),
-  );
+  const projects = products.filter((p) => {
+    if (!PRODUCTION_STAGES.includes(p.stage || "")) return false;
+    if (filterProductIds && !filterProductIds.has(p.id)) return false;
+    return true;
+  });
 
   if (isLoading) return <LoadingSkeleton />;
 

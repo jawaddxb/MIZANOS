@@ -35,6 +35,7 @@ class PortTaskGenerator:
 
     async def generate_tasks(
         self, manifest: LovableManifest, product_id: UUID,
+        *, created_by: "UUID | None" = None,
     ) -> list[Task]:
         """Generate all porting tasks for a product.
 
@@ -68,6 +69,7 @@ class PortTaskGenerator:
                 domain_group="review",
                 phase="schema_review",
                 is_draft=True,
+                created_by=created_by,
             )
             self.session.add(schema_review_task)
             tasks.append(schema_review_task)
@@ -93,6 +95,7 @@ class PortTaskGenerator:
             domain_group="setup",
             phase="scaffold",
             is_draft=True,
+            created_by=created_by,
         )
         self.session.add(setup_task)
         tasks.append(setup_task)
@@ -126,6 +129,11 @@ class PortTaskGenerator:
             self.session.add(task)
             tasks.append(task)
             order += 1
+
+        # Set created_by on all generated tasks
+        if created_by:
+            for task in tasks:
+                task.created_by = created_by
 
         await self.session.flush()
         return tasks

@@ -9,6 +9,7 @@ import { TaskRow } from "@/components/molecules/tasks/TaskRow";
 import { TaskDetailDrawer } from "@/components/organisms/product/TaskDetailDrawer";
 import { AddTaskDialog } from "@/components/organisms/kanban/AddTaskDialog";
 import { toKanbanTask } from "@/components/organisms/kanban/kanban-utils";
+import { useAuth } from "@/contexts/AuthContext";
 import { useTasks } from "@/hooks/queries/useTasks";
 import { useProductMembers } from "@/hooks/queries/useProductMembers";
 import { useCreateTask } from "@/hooks/mutations/useTaskMutations";
@@ -22,12 +23,14 @@ type FilterStatus = TaskStatus | "all";
 type FilterPriority = TaskPriority | "all";
 
 function TasksTab({ productId, openTaskId }: TasksTabProps) {
+  const { user } = useAuth();
   const { data: tasks, isLoading } = useTasks(productId);
   const { data: members = [] } = useProductMembers(productId);
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
   const [priorityFilter, setPriorityFilter] = useState<FilterPriority>("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
+  const [myTasksOnly, setMyTasksOnly] = useState(false);
   const [editTask, setEditTask] = useState<KanbanTask | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -57,13 +60,14 @@ function TasksTab({ productId, openTaskId }: TasksTabProps) {
   const filteredTasks = useMemo(() => {
     if (!tasks) return [];
     return tasks.filter((task) => {
+      if (myTasksOnly && task.assignee_id !== user?.profile_id && task.created_by !== user?.profile_id) return false;
       if (statusFilter !== "all" && task.status !== statusFilter) return false;
       if (priorityFilter !== "all" && task.priority !== priorityFilter) return false;
       if (assigneeFilter === "__unassigned__" && task.assignee_id) return false;
       if (assigneeFilter !== "all" && assigneeFilter !== "__unassigned__" && task.assignee_id !== assigneeFilter) return false;
       return true;
     });
-  }, [tasks, statusFilter, priorityFilter, assigneeFilter]);
+  }, [tasks, statusFilter, priorityFilter, assigneeFilter, myTasksOnly, user?.profile_id]);
 
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -163,6 +167,14 @@ function TasksTab({ productId, openTaskId }: TasksTabProps) {
             {priority}
           </Button>
         ))}
+        <Button
+          variant={myTasksOnly ? "default" : "outline"}
+          size="sm"
+          onClick={() => setMyTasksOnly((prev) => !prev)}
+          className="text-xs ml-2"
+        >
+          <User className="h-3 w-3 mr-1" /> My Tasks
+        </Button>
         <div className="ml-auto flex items-center gap-2">
           <User className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">Assignee:</span>

@@ -58,6 +58,7 @@ class TaskResponse(TaskBase):
     id: UUID
     product_id: UUID
     assignee_id: UUID | None = None
+    created_by: UUID | None = None
     is_draft: bool
     approved_by: UUID | None = None
     approved_at: datetime | None = None

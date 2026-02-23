@@ -17,14 +17,21 @@ import {
   List,
 } from "lucide-react";
 
-export function ProductsSection() {
+interface ProductsSectionProps {
+  filterProductIds?: Set<string>;
+}
+
+export function ProductsSection({ filterProductIds }: ProductsSectionProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [pillarFilter, setPillarFilter] = useState("all");
   const [stageFilter, setStageFilter] = useState("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  const { data: products = [], isLoading } = useProducts();
+  const { data: allProducts = [], isLoading } = useProducts();
+  const products = filterProductIds
+    ? allProducts.filter((p) => filterProductIds.has(p.id))
+    : allProducts;
   const { roleFilters, anyActive: anyRoleActive, matchesProduct, reset: resetRoles } =
     useProductRoleFilters();
 

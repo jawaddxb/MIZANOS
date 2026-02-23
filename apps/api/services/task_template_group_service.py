@@ -71,7 +71,8 @@ class TaskTemplateGroupService(BaseService[TaskTemplateGroup]):
         await self.repo.session.flush()
 
     async def apply_group(
-        self, group_id: UUID, product_id: UUID
+        self, group_id: UUID, product_id: UUID,
+        *, created_by: "UUID | None" = None,
     ) -> list:
         """Create tasks from all active items within the group."""
         from apps.api.models.task import Task
@@ -90,6 +91,7 @@ class TaskTemplateGroupService(BaseService[TaskTemplateGroup]):
                 pillar=item.pillar,
                 generation_source="template",
                 is_draft=True,
+                created_by=created_by,
             )
             self.repo.session.add(task)
             tasks.append(task)

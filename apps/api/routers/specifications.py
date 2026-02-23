@@ -151,7 +151,9 @@ async def queue_feature(
     service: SpecificationService = Depends(get_service),
 ):
     """Create a task from feature data and link it."""
-    return await service.queue_feature(feature_id)
+    return await service.queue_feature(
+        feature_id, created_by=user.profile_id if user else None,
+    )
 
 
 @router.post(
@@ -196,12 +198,10 @@ async def generate_tasks_from_spec(
 ):
     """Generate tasks from specification features. PM/superadmin only."""
     from apps.api.models.enums import AppRole
-    from apps.api.models.product import Product
-    from packages.common.utils.error_handlers import bad_request, forbidden
+    from packages.common.utils.error_handlers import forbidden
 
     if not user.has_any_role(AppRole.SUPERADMIN, AppRole.ADMIN, AppRole.PROJECT_MANAGER):
         raise forbidden("Only project managers and admins can generate tasks")
-    product = await db.get(Product, product_id)
-    if product and product.tasks_locked:
-        raise bad_request("Cannot generate tasks while tasks are locked")
-    return await service.generate_tasks_from_spec(product_id)
+    return await service.generate_tasks_from_spec(
+        product_id, created_by=user.profile_id if user else None,
+    )

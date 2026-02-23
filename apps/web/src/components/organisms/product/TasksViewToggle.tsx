@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { LayoutGrid, List, Sparkles, FileText, LayoutTemplate, Loader2, ClipboardCheck, Mail, MailX, Trash2, Lock } from "lucide-react";
+import { useState, useMemo } from "react";
+import { LayoutGrid, List, Sparkles, FileText, LayoutTemplate, Loader2, ClipboardCheck, Mail, MailX, Trash2 } from "lucide-react";
 import { BaseSwitch } from "@/components/atoms/inputs/BaseSwitch";
 import { Button } from "@/components/molecules/buttons/Button";
 import { Badge } from "@/components/atoms/display/Badge";
@@ -21,9 +21,9 @@ import {
 } from "@/hooks/mutations/useTaskGenerationMutations";
 import { useGeneratePortTasks } from "@/hooks/mutations/usePortGenerator";
 import { useDeleteAllDrafts } from "@/hooks/mutations/useTaskApprovalMutations";
-import { useLockTasks } from "@/hooks/mutations/useProductMutations";
 import { useProductDetail } from "@/hooks/queries/useProductDetail";
 import { useDraftTasks } from "@/hooks/queries/useDraftTasks";
+import { useTasks } from "@/hooks/queries/useTasks";
 import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
 import { useProductNotificationSettings } from "@/hooks/queries/useProductNotificationSettings";
 import { useUpdateProductNotificationSettings } from "@/hooks/mutations/useProductNotificationSettingsMutations";
@@ -37,18 +37,23 @@ interface TasksViewToggleProps {
 }
 
 export function TasksViewToggle({ productId, openTaskId }: TasksViewToggleProps) {
-  const [view, setView] = useState<ViewMode>("list");
-  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
-  const [showLockConfirm, setShowLockConfirm] = useState(false);
   const { data: productData } = useProductDetail(productId);
   const { data: drafts = [] } = useDraftTasks(productId);
+  const { data: approvedTasks } = useTasks(productId);
   const { isAdmin, isProjectManager } = useRoleVisibility();
+
+  const defaultView = useMemo<ViewMode>(() => {
+    if ((isAdmin || isProjectManager) && (!approvedTasks || approvedTasks.length === 0)) return "drafts";
+    return "list";
+  }, [isAdmin, isProjectManager, approvedTasks]);
+
+  const [view, setView] = useState<ViewMode | null>(null);
+  const activeView = view ?? defaultView;
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const generateFromSpec = useGenerateTasksFromSpec(productId);
   const generateFromTemplates = useGenerateTasksFromTemplates(productId);
   const generateFromPort = useGeneratePortTasks(productId);
   const deleteAllDrafts = useDeleteAllDrafts(productId);
-  const lockTasks = useLockTasks(productId);
-
   const { data: notifSettings } = useProductNotificationSettings(productId);
   const updateNotifSettings = useUpdateProductNotificationSettings(productId);
 
@@ -58,7 +63,6 @@ export function TasksViewToggle({ productId, openTaskId }: TasksViewToggleProps)
     generateFromPort.isPending;
 
   const showLovable = productData?.product?.source_type?.includes("lovable");
-  const tasksLocked = productData?.product?.tasks_locked ?? false;
   const showDraftsTab = isAdmin || isProjectManager;
   const draftCount = drafts.length;
 
@@ -73,7 +77,7 @@ export function TasksViewToggle({ productId, openTaskId }: TasksViewToggleProps)
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1 rounded-lg border p-1">
           <Button
-            variant={view === "board" ? "default" : "ghost"}
+            variant={activeView === "board" ? "default" : "ghost"}
             size="sm"
             onClick={() => setView("board")}
             className="h-8 px-3"
@@ -82,7 +86,7 @@ export function TasksViewToggle({ productId, openTaskId }: TasksViewToggleProps)
             Board
           </Button>
           <Button
-            variant={view === "list" ? "default" : "ghost"}
+            variant={activeView === "list" ? "default" : "ghost"}
             size="sm"
             onClick={() => setView("list")}
             className="h-8 px-3"
@@ -92,7 +96,7 @@ export function TasksViewToggle({ productId, openTaskId }: TasksViewToggleProps)
           </Button>
           {showDraftsTab && (
             <Button
-              variant={view === "drafts" ? "default" : "ghost"}
+              variant={activeView === "drafts" ? "default" : "ghost"}
               size="sm"
               onClick={() => setView("drafts")}
               className="h-8 px-3"
@@ -109,7 +113,7 @@ export function TasksViewToggle({ productId, openTaskId }: TasksViewToggleProps)
         </div>
 
         <div className="flex items-center gap-3">
-          {view !== "drafts" && (isAdmin || isProjectManager) && (
+          {activeView !== "drafts" && (isAdmin || isProjectManager) && (
             <div className="flex flex-col items-end gap-0.5">
               <label className="flex items-center gap-1.5 cursor-pointer">
                 {notifSettings?.email_enabled !== false ? (
@@ -134,28 +138,15 @@ export function TasksViewToggle({ productId, openTaskId }: TasksViewToggleProps)
 
         {(isAdmin || isProjectManager) && (
           draftCount > 0 ? (
-            <div className="flex items-center gap-2">
-              {!tasksLocked && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowLockConfirm(true)}
-                  disabled={lockTasks.isPending}
-                >
-                  <Lock className="h-4 w-4 mr-1" />
-                  Lock Tasks
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowDiscardConfirm(true)}
-                className="text-red-600 border-red-200 hover:bg-red-50"
-              >
-                <Trash2 className="h-4 w-4 mr-1" />
-                Discard Drafts
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDiscardConfirm(true)}
+              className="text-red-600 border-red-200 hover:bg-red-50"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Discard Drafts
+            </Button>
           ) : (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -190,9 +181,9 @@ export function TasksViewToggle({ productId, openTaskId }: TasksViewToggleProps)
         </div>
       </div>
 
-      {view === "board" && <KanbanBoard productId={productId} />}
-      {view === "list" && <TasksTab productId={productId} openTaskId={openTaskId} />}
-      {view === "drafts" && (
+      {activeView === "board" && <KanbanBoard productId={productId} />}
+      {activeView === "list" && <TasksTab productId={productId} openTaskId={openTaskId} />}
+      {activeView === "drafts" && (
         <DraftTaskReview
           productId={productId}
           onGenerateFromSpec={() => fireGenerate("spec")}
@@ -202,16 +193,6 @@ export function TasksViewToggle({ productId, openTaskId }: TasksViewToggleProps)
           showLovable={!!showLovable}
         />
       )}
-
-      <ConfirmActionDialog
-        open={showLockConfirm}
-        onOpenChange={setShowLockConfirm}
-        title="Lock tasks for review?"
-        description="Locking will enable approve and reject actions on draft tasks. You won't be able to generate new tasks until all drafts are resolved or discarded."
-        confirmLabel="Lock Tasks"
-        onConfirm={() => lockTasks.mutate(undefined, { onSuccess: () => setShowLockConfirm(false) })}
-        isPending={lockTasks.isPending}
-      />
 
       <ConfirmActionDialog
         open={showDiscardConfirm}
