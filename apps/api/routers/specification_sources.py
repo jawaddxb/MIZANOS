@@ -85,6 +85,8 @@ async def get_source_download_url(
     gcs_path = source.file_url
     if gcs_path.startswith("gs://"):
         gcs_path = "/".join(gcs_path.split("/")[3:])
+    # Fix legacy records with double sources/ prefix
+    gcs_path = gcs_path.replace("/uploads/sources/sources/", "/uploads/sources/")
     return {"download_url": storage.generate_signed_url(gcs_path)}
 
 
