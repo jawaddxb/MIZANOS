@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     gcs_bucket_name: str = ""
     gcs_project_id: str = ""
     gcs_credentials_path: str = ""
+    gcs_credentials_json: str = ""
 
     # Email (Resend)
     resend_api_key: str = ""

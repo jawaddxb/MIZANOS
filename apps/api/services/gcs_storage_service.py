@@ -1,5 +1,6 @@
 """Google Cloud Storage service with local filesystem fallback."""
 
+import json
 import logging
 import uuid as uuid_mod
 from pathlib import Path
@@ -18,6 +19,9 @@ def _get_gcs_client():
     try:
         from google.cloud import storage  # noqa: WPS433
 
+        if settings.gcs_credentials_json:
+            info = json.loads(settings.gcs_credentials_json)
+            return storage.Client.from_service_account_info(info)
         if settings.gcs_credentials_path:
             return storage.Client.from_service_account_json(
                 settings.gcs_credentials_path
