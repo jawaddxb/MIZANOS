@@ -15,8 +15,8 @@ export function isMyDashboardEnabled(): boolean {
 export function useMyDashboard() {
   const [enabled, setEnabled] = useState(isMyDashboardEnabled);
   const { user } = useAuth();
-  const { data: allTasks = [] } = useAllTasks();
-  const { data: allMembers = [] } = useAllProductMembers();
+  const { data: allTasks = [], isLoading: tasksLoading } = useAllTasks();
+  const { data: allMembers = [], isLoading: membersLoading } = useAllProductMembers();
 
   const toggle = useCallback(() => {
     setEnabled((prev) => {
@@ -26,10 +26,12 @@ export function useMyDashboard() {
     });
   }, []);
 
+  const dataLoading = tasksLoading || membersLoading;
+
   const myProductIds = useMemo<Set<string> | undefined>(() => {
     if (!enabled) return undefined;
     const userId = user?.profile_id;
-    if (!userId) return undefined;
+    if (!userId || dataLoading) return undefined;
 
     const ids = new Set<string>();
     for (const m of allMembers) {
@@ -41,7 +43,7 @@ export function useMyDashboard() {
       }
     }
     return ids;
-  }, [enabled, user?.profile_id, allMembers, allTasks]);
+  }, [enabled, user?.profile_id, dataLoading, allMembers, allTasks]);
 
   return { enabled, toggle, myProductIds };
 }
