@@ -138,16 +138,9 @@ class TaskService(BaseService[Task]):
                 product.tasks_locked = False
                 await self.repo.session.flush()
 
-    async def _require_tasks_locked(self, product_id: UUID) -> None:
-        """Gate: approve/reject requires tasks to be locked first."""
-        product = await self.repo.session.get(Product, product_id)
-        if not product or not product.tasks_locked:
-            raise bad_request("Tasks must be locked before approving or rejecting")
-
     async def approve_task(self, task_id: UUID, approver_id: UUID) -> Task:
         """Approve a draft task, making it a real assignable task."""
         task = await self.get_or_404(task_id)
-        await self._require_tasks_locked(task.product_id)
         result = await self.repo.update(task, {
             "is_draft": False,
             "approved_by": approver_id,
@@ -160,9 +153,9 @@ class TaskService(BaseService[Task]):
         self, task_ids: list[UUID], approver_id: UUID
     ) -> dict:
         """Approve multiple draft tasks."""
-        if task_ids:
-            first = await self.get_or_404(task_ids[0])
-            await self._require_tasks_locked(first.product_id)
+        if not task_ids:
+            return {"approved_count": 0, "task_ids": []}
+        first = await self.get_or_404(task_ids[0])
         now = datetime.now(timezone.utc)
         product_id = first.product_id
         for tid in task_ids:
@@ -177,7 +170,6 @@ class TaskService(BaseService[Task]):
         """PM/superadmin hard-deletes a draft task."""
         task = await self.get_or_404(task_id)
         product_id = task.product_id
-        await self._require_tasks_locked(product_id)
         if not self._can_manage_tasks(user):
             raise forbidden("Only superadmins and project managers can reject tasks")
         if not task.is_draft:
@@ -244,6 +236,7 @@ class TaskService(BaseService[Task]):
     async def create_task(self, data: TaskCreate, user: AuthenticatedUser) -> Task:
         """Create a new task. Engineers are auto-assigned to self."""
         task_data = data.model_dump()
+        task_data["created_by"] = user.profile_id
         if not self._can_manage_tasks(user):
             task_data["assignee_id"] = user.profile_id
         if task_data.get("assignee_id"):
@@ -263,12 +256,17 @@ class TaskService(BaseService[Task]):
         """Update a task with assignee validation and status/assignee auth."""
         if "assignee_id" in data and data["assignee_id"]:
             await self._validate_assignee(UUID(str(data["assignee_id"])))
+        task = None
         if user is not None and not self._can_manage_tasks(user):
-            allowed = {"status"}
+            task = await self.get_or_404(entity_id)
+            is_creator = task.created_by is not None and task.created_by == user.profile_id
+            allowed = {"status", "title", "description", "priority", "pillar", "due_date"} if is_creator else {"status"}
             restricted = set(data.keys()) - allowed
             if restricted:
-                raise forbidden("Engineers can only update task status")
-        task = None
+                raise forbidden(
+                    "Engineers can only update task status" if not is_creator
+                    else "Engineers can only update details of their own tasks"
+                )
         if "assignee_id" in data and user is not None and not self._can_manage_tasks(user):
             task = await self.get_or_404(entity_id)
             current_assignee = str(task.assignee_id) if task.assignee_id else None
@@ -292,6 +290,35 @@ class TaskService(BaseService[Task]):
             if task.assignee_id is not None:
                 await self._authorize_status_change(task, user_id)
         return await super().update(entity_id, data)
+
+    # Statuses safe to delete without extra confirmation
+    SAFE_DELETE_STATUSES = {"draft", "backlog", "cancelled"}
+
+    async def delete_task(
+        self, task_id: UUID, user: AuthenticatedUser,
+    ) -> None:
+        """Hard-delete a task. Clears FK references first.
+
+        Any editor (PM/superadmin/creator) may delete draft/backlog/cancelled.
+        Only PM/superadmin may delete tasks in other statuses.
+        """
+        task = await self.get_or_404(task_id)
+        is_manager = self._can_manage_tasks(user)
+        is_creator = (
+            task.created_by is not None and task.created_by == user.profile_id
+        )
+
+        if not is_manager and not is_creator:
+            raise forbidden("You do not have permission to delete this task")
+
+        status = task.status or "backlog"
+        if status not in self.SAFE_DELETE_STATUSES and not is_manager:
+            raise forbidden(
+                "Only superadmins and project managers can delete active tasks"
+            )
+
+        await self._clear_task_references(task_id)
+        await self.repo.delete(task)
 
     async def _authorize_status_change(
         self, task: Task, user_id: UUID

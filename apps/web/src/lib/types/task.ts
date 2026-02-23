@@ -6,6 +6,7 @@ export interface Task {
   description: string | null;
   product_id: string;
   assignee_id: string | null;
+  created_by: string | null;
   status: string | null;
   priority: string | null;
   pillar: string | null;
@@ -65,6 +66,7 @@ export interface KanbanTask {
   status: TaskStatus;
   assignee?: string;
   assigneeId?: string;
+  createdBy?: string;
   productId?: string;
   dueDate?: string;
   commentCount: number;

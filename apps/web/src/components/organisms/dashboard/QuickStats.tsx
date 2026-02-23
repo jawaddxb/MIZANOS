@@ -20,6 +20,7 @@ interface QuickStatsProps {
   warningCount?: number;
   criticalCount?: number;
   deploymentStageCount?: number;
+  filterProductIds?: Set<string>;
 }
 
 
@@ -71,8 +72,15 @@ export function QuickStats(props: QuickStatsProps) {
   const totalProducts = props.totalProducts ?? stageDistribution.reduce((sum, s) => sum + s.count, 0);
   const deploymentStageCount = props.deploymentStageCount ?? (stageDistribution.find((s) => s.stage === "Deployment")?.count ?? 0);
   const healthyCount = props.healthyCount ?? (stageDistribution.find((s) => s.stage === "Complete")?.count ?? 0);
-  const warningCount = props.warningCount ?? (metrics?.overdueTasks.length ?? 0);
-  const criticalCount = props.criticalCount ?? (metrics?.failedQAChecks.length ?? 0);
+  const filter = props.filterProductIds;
+  const overdueTasks = metrics?.overdueTasks ?? [];
+  const failedQAChecks = metrics?.failedQAChecks ?? [];
+  const warningCount = props.warningCount ?? (filter
+    ? overdueTasks.filter((t) => filter.has(t.product_id)).length
+    : overdueTasks.length);
+  const criticalCount = props.criticalCount ?? (filter
+    ? failedQAChecks.filter((q) => filter.has(q.product_id)).length
+    : failedQAChecks.length);
   const inProgressCount = props.inProgressCount ?? (stageDistribution.find((s) => s.stage === "Development")?.count ?? 0);
 
   const hasAllProps = props.totalProducts !== undefined;

@@ -48,10 +48,6 @@ async def generate_tasks(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    if product.tasks_locked:
-        from packages.common.utils.error_handlers import bad_request
-        raise bad_request("Cannot generate tasks while tasks are locked")
-
     # Resolve source path
     source_path = body.source_path
     temp_dir = None
@@ -91,7 +87,9 @@ async def generate_tasks(
 
         # Generate tasks
         generator = PortTaskGenerator(db)
-        tasks = await generator.generate_tasks(manifest, product_id)
+        tasks = await generator.generate_tasks(
+            manifest, product_id, created_by=user.profile_id if user else None,
+        )
 
         return GenerateResponse(
             tasks_created=len(tasks),

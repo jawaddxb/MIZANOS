@@ -28,10 +28,9 @@ interface DraftRowProps {
   onApprove: () => void;
   onReject: () => void;
   onViewDetail: () => void;
-  tasksLocked: boolean;
 }
 
-export function DraftRow({ task, selected, onToggle, onApprove, onReject, onViewDetail, tasksLocked }: DraftRowProps) {
+export function DraftRow({ task, selected, onToggle, onApprove, onReject, onViewDetail }: DraftRowProps) {
   const source = SOURCE_CONFIG[task.generation_source ?? ""] ?? null;
 
   return (
@@ -63,7 +62,6 @@ export function DraftRow({ task, selected, onToggle, onApprove, onReject, onView
           size="icon"
           className="h-7 w-7 text-green-600"
           onClick={onApprove}
-          disabled={!tasksLocked}
         >
           <Check className="h-4 w-4" />
         </Button>
@@ -72,7 +70,6 @@ export function DraftRow({ task, selected, onToggle, onApprove, onReject, onView
           size="icon"
           className="h-7 w-7 text-red-600"
           onClick={onReject}
-          disabled={!tasksLocked}
         >
           <X className="h-4 w-4" />
         </Button>

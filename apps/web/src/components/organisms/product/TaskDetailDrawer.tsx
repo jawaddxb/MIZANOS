@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,11 +17,12 @@ import { BaseInput } from "@/components/atoms/inputs/BaseInput";
 import { BaseTextarea } from "@/components/atoms/inputs/BaseTextarea";
 import { BaseLabel } from "@/components/atoms/inputs/BaseLabel";
 import { SelectField } from "@/components/molecules/forms/SelectField";
+import { DeleteTaskDialog } from "@/components/molecules/feedback/DeleteTaskDialog";
 import { CommentThread } from "@/components/molecules/comments/CommentThread";
 import { useProductMembers } from "@/hooks/queries/useProductMembers";
-import { useUpdateTask } from "@/hooks/mutations/useTaskMutations";
+import { useUpdateTask, useDeleteTask } from "@/hooks/mutations/useTaskMutations";
 import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
-import type { KanbanTask, TaskStatus, PillarType, TaskPriority } from "@/lib/types";
+import type { KanbanTask, TaskStatus, PillarType, TaskPriority, ProductMember } from "@/lib/types";
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -71,8 +73,13 @@ export function TaskDetailDrawer({
 }: TaskDetailDrawerProps) {
   const { data: members = [] } = useProductMembers(productId);
   const updateTask = useUpdateTask(productId);
+  const deleteTask = useDeleteTask(productId);
+  const { user } = useAuth();
   const { isAdmin, isProjectManager } = useRoleVisibility();
   const canManageTasks = isAdmin || isProjectManager;
+  const isCreator = !!task?.createdBy && task.createdBy === user?.profile_id;
+  const canEditDetails = canManageTasks || isCreator;
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const assigneeOptions = [
     { value: "__none__", label: "Unassigned" },
@@ -124,7 +131,17 @@ export function TaskDetailDrawer({
           due_date: values.due_date || null,
           assignee_id: values.assignee_id === "__none__" ? null : (values.assignee_id ?? null),
         }
-      : { id: task.id, status: values.status };
+      : isCreator
+        ? {
+            id: task.id,
+            title: values.title,
+            description: values.description ?? null,
+            pillar: values.pillar,
+            priority: values.priority,
+            status: values.status,
+            due_date: values.due_date || null,
+          }
+        : { id: task.id, status: values.status };
     updateTask.mutate(payload, { onSuccess: () => onOpenChange(false) });
   };
 
@@ -147,13 +164,13 @@ export function TaskDetailDrawer({
           <form id="task-detail-form" onSubmit={handleSubmit(onFormSubmit)} className="space-y-3">
             <div className="space-y-1">
               <BaseLabel htmlFor="drawer-title">Title</BaseLabel>
-              <BaseInput id="drawer-title" {...register("title")} aria-invalid={!!errors.title} disabled={!canManageTasks} />
+              <BaseInput id="drawer-title" {...register("title")} aria-invalid={!!errors.title} disabled={!canEditDetails} />
               {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
             </div>
 
             <div className="space-y-1">
               <BaseLabel htmlFor="drawer-desc">Description</BaseLabel>
-              <BaseTextarea id="drawer-desc" className="resize-y" rows={7} {...register("description")} disabled={!canManageTasks} />
+              <BaseTextarea id="drawer-desc" className="resize-y" rows={7} {...register("description")} disabled={!canEditDetails} />
             </div>
 
             {canManageTasks && (
@@ -173,8 +190,8 @@ export function TaskDetailDrawer({
               />
             )}
 
-            <div className={canManageTasks ? "grid grid-cols-3 gap-3" : ""}>
-              {canManageTasks && (
+            <div className={canEditDetails ? "grid grid-cols-3 gap-3" : ""}>
+              {canEditDetails && (
                 <>
                   <SelectField label="Vertical" placeholder="Vertical" options={PILLAR_OPTIONS} value={currentPillar} onValueChange={(v) => setValue("pillar", v as PillarType)} />
                   <SelectField label="Priority" placeholder="Priority" options={PRIORITY_OPTIONS} value={currentPriority} onValueChange={(v) => setValue("priority", v as TaskPriority)} />
@@ -202,14 +219,25 @@ export function TaskDetailDrawer({
               </p>
             )}
 
-            {canManageTasks && (
+            {canEditDetails && (
               <div className="space-y-1">
                 <BaseLabel htmlFor="drawer-due">Due Date</BaseLabel>
-                <BaseInput id="drawer-due" type="date" {...register("due_date")} />
+                <BaseInput id="drawer-due" type="date" min={new Date().toISOString().split("T")[0]} {...register("due_date")} />
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-1">
+            <div className="flex items-center gap-2 pt-1">
+              {canEditDetails && (
+                <BaseButton
+                  type="button"
+                  variant="outline"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
+                  onClick={() => setDeleteDialogOpen(true)}
+                >
+                  Delete
+                </BaseButton>
+              )}
+              <div className="flex-1" />
               <BaseButton type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</BaseButton>
               <BaseButton type="submit" disabled={updateTask.isPending}>
                 {updateTask.isPending ? "Saving..." : "Save"}
@@ -217,11 +245,52 @@ export function TaskDetailDrawer({
             </div>
           </form>
 
+          {task?.createdAt && (
+            <TaskMetaInfo task={task} members={members} />
+          )}
+
           <div className="border-t pt-4">
             {task && <CommentThread taskId={task.id} productId={productId} />}
           </div>
         </div>
+
+        {task && (
+          <DeleteTaskDialog
+            open={deleteDialogOpen}
+            onOpenChange={setDeleteDialogOpen}
+            taskTitle={task.title}
+            taskStatus={task.status}
+            isPending={deleteTask.isPending}
+            onConfirm={() => {
+              deleteTask.mutate(task.id, {
+                onSuccess: () => {
+                  setDeleteDialogOpen(false);
+                  onOpenChange(false);
+                },
+              });
+            }}
+          />
+        )}
       </SheetContent>
     </Sheet>
+  );
+}
+
+function TaskMetaInfo({ task, members }: { task: KanbanTask; members: ProductMember[] }) {
+  const creatorName = useMemo(() => {
+    if (!task.createdBy) return null;
+    const member = members.find((m) => m.profile_id === task.createdBy);
+    return member?.profile?.full_name ?? member?.profile?.email ?? null;
+  }, [task.createdBy, members]);
+
+  const createdDate = new Date(task.createdAt).toLocaleDateString("en-US", {
+    year: "numeric", month: "short", day: "numeric",
+  });
+
+  return (
+    <div className="flex items-center gap-3 text-xs text-muted-foreground border-t pt-3">
+      {creatorName && <span>Created by <span className="font-medium text-foreground">{creatorName}</span></span>}
+      <span>on {createdDate}</span>
+    </div>
   );
 }

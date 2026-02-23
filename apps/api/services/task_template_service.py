@@ -46,7 +46,8 @@ class TaskTemplateService(BaseService[TaskTemplate]):
         await self.repo.session.flush()
 
     async def apply_templates(
-        self, product_id: UUID, source_type: str
+        self, product_id: UUID, source_type: str,
+        *, created_by: UUID | None = None,
     ) -> list:
         """Apply groups first, then ungrouped templates for backward compat."""
         from apps.api.models.task import Task
@@ -63,7 +64,7 @@ class TaskTemplateService(BaseService[TaskTemplate]):
             if group_row.get("is_active") is False:
                 continue
             group_tasks = await group_svc.apply_group(
-                group_row["id"], product_id
+                group_row["id"], product_id, created_by=created_by,
             )
             tasks.extend(group_tasks)
 
@@ -81,6 +82,7 @@ class TaskTemplateService(BaseService[TaskTemplate]):
                 pillar=template.pillar,
                 generation_source="template",
                 is_draft=True,
+                created_by=created_by,
             )
             self.repo.session.add(task)
             tasks.append(task)

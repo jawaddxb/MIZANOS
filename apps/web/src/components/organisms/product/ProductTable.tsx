@@ -5,6 +5,8 @@ import type { Product } from "@/lib/types";
 
 interface ProductTableProps {
   products: Product[];
+  taskCountMap?: Map<string, number>;
+  pmNameMap?: Map<string, string>;
 }
 
 const COLUMNS = [
@@ -12,12 +14,13 @@ const COLUMNS = [
   { label: "Status", className: "w-[90px]" },
   { label: "Vertical", className: "w-[100px]" },
   { label: "Stage", className: "w-[90px]" },
+  { label: "PM", className: "w-[120px]" },
+  { label: "Tasks", className: "w-[50px] text-right" },
   { label: "Progress", className: "w-[100px]" },
   { label: "Health", className: "w-[50px] text-right" },
-  { label: "Updated", className: "w-[60px] text-right" },
 ] as const;
 
-function ProductTable({ products }: ProductTableProps) {
+function ProductTable({ products, taskCountMap, pmNameMap }: ProductTableProps) {
   return (
     <div className="rounded-lg border overflow-hidden">
       <div className="flex items-center gap-3 px-4 py-2 bg-secondary/50 rounded-t-lg">
@@ -33,7 +36,12 @@ function ProductTable({ products }: ProductTableProps) {
 
       <div className="divide-y">
         {products.map((product) => (
-          <ProductRow key={product.id} product={product} />
+          <ProductRow
+            key={product.id}
+            product={product}
+            taskCount={taskCountMap?.get(product.id) ?? 0}
+            pmName={pmNameMap?.get(product.id)}
+          />
         ))}
       </div>
     </div>

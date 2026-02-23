@@ -215,7 +215,8 @@ async def delete_task(
     user: CurrentUser = None,
     service: TaskService = Depends(get_service),
 ):
-    await service.delete(task_id)
+    """Hard-delete a task with authorization checks."""
+    await service.delete_task(task_id, user)
 
 
 @router.patch("/{task_id}/reorder")

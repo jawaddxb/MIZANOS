@@ -13,9 +13,8 @@ import { SearchableSelect } from "@/components/molecules/forms/SearchableSelect"
 import { Button } from "@/components/molecules/buttons/Button";
 import { TASK_STATUSES, TASK_PRIORITIES, TASK_PILLARS, TASK_STATUS_DISPLAY } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
-import { BaseSwitch } from "@/components/atoms/inputs/BaseSwitch";
 import { cn } from "@/lib/utils/cn";
-import { Search, Filter, X } from "lucide-react";
+import { Search, Filter, X, User } from "lucide-react";
 import type { Product, Profile } from "@/lib/types";
 
 interface TasksFilterBarProps {
@@ -33,8 +32,6 @@ interface TasksFilterBarProps {
   onPriorityChange: (v: string) => void;
   pillarFilter: string;
   onPillarChange: (v: string) => void;
-  myWorkEnabled: boolean;
-  onMyWorkToggle: (v: boolean) => void;
   projects: Product[];
   profiles: Profile[];
   pmProfiles: Profile[];
@@ -57,8 +54,6 @@ export function TasksFilterBar({
   onPriorityChange,
   pillarFilter,
   onPillarChange,
-  myWorkEnabled,
-  onMyWorkToggle,
   projects,
   profiles,
   pmProfiles,
@@ -66,6 +61,12 @@ export function TasksFilterBar({
   onClearFilters,
 }: TasksFilterBarProps) {
   const { user } = useAuth();
+  const myTasksActive = assigneeFilter === user?.profile_id;
+
+  const projectOptions = useMemo(
+    () => projects.map((p) => ({ value: p.id, label: p.name })),
+    [projects],
+  );
 
   const assigneeOptions = useMemo(() => {
     const currentUserId = user?.profile_id;
@@ -89,11 +90,6 @@ export function TasksFilterBar({
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      <label className="flex items-center gap-1.5 shrink-0 cursor-pointer">
-        <BaseSwitch checked={myWorkEnabled} onCheckedChange={onMyWorkToggle} />
-        <span className="text-sm font-medium whitespace-nowrap">My Work</span>
-      </label>
-
       <div className="relative flex-1 min-w-[160px] max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <BaseInput
@@ -112,17 +108,25 @@ export function TasksFilterBar({
         )}
       </div>
 
-      <Select value={projectFilter} onValueChange={onProjectChange}>
-        <SelectTrigger className={cn("w-[150px] shrink-0 bg-card", projectFilter !== "all" && "border-primary/30")}>
-          <SelectValue placeholder="Project" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Projects</SelectItem>
-          {projects.map((p) => (
-            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <Button
+        variant={myTasksActive ? "default" : "outline"}
+        size="sm"
+        onClick={() => onAssigneeChange(myTasksActive ? "all" : (user?.profile_id ?? "all"))}
+        className="text-xs shrink-0"
+      >
+        <User className="h-3 w-3 mr-1" /> My Tasks
+      </Button>
+
+      <div className="w-[150px] shrink-0">
+        <SearchableSelect
+          options={projectOptions}
+          value={projectFilter === "all" ? "" : projectFilter}
+          onValueChange={(v) => onProjectChange(v || "all")}
+          placeholder="All Projects"
+          allowClear
+          clearLabel="All Projects"
+        />
+      </div>
 
       <div className="w-[150px] shrink-0">
         <SearchableSelect

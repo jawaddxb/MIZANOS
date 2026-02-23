@@ -52,12 +52,19 @@ const defaultConfig = {
   bg: "bg-secondary",
 };
 
-export function RecentActivity() {
+interface RecentActivityProps {
+  filterProductIds?: Set<string>;
+}
+
+export function RecentActivity({ filterProductIds }: RecentActivityProps) {
   const { data: metrics, isLoading } = useDashboardMetrics();
 
   if (isLoading) return <LoadingSkeleton />;
 
-  const activities = metrics?.recentActivity || [];
+  const allActivities = metrics?.recentActivity || [];
+  const activities = filterProductIds
+    ? allActivities.filter((a) => filterProductIds.has(a.product_id))
+    : allActivities;
 
   return (
     <Card className="animate-fade-in" style={{ animationDelay: "100ms" }}>

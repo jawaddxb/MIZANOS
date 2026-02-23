@@ -18,7 +18,6 @@ import {
   useRejectDraftTask,
   useBulkRejectDraftTasks,
 } from "@/hooks/mutations/useTaskApprovalMutations";
-import { useProductDetail } from "@/hooks/queries/useProductDetail";
 import { DraftDetailDialog } from "./DraftDetailDialog";
 
 interface DraftTaskReviewProps {
@@ -37,8 +36,6 @@ export function DraftTaskReview({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [viewTask, setViewTask] = useState<DraftTask | null>(null);
   const { data: drafts = [], isLoading } = useDraftTasks(productId);
-  const { data: productData } = useProductDetail(productId);
-  const tasksLocked = productData?.product?.tasks_locked ?? false;
   const approveTask = useApproveTask(productId);
   const bulkApprove = useBulkApproveTasks(productId);
   const rejectTask = useRejectDraftTask(productId);
@@ -126,7 +123,6 @@ export function DraftTaskReview({
         onReject={handleBulkReject}
         isApproving={bulkApprove.isPending}
         isRejecting={bulkReject.isPending}
-        tasksLocked={tasksLocked}
       />
       <div className="border rounded-lg divide-y">
         {drafts.map((task) => (
@@ -138,7 +134,6 @@ export function DraftTaskReview({
             onApprove={() => approveTask.mutate(task.id)}
             onReject={() => rejectTask.mutate(task.id)}
             onViewDetail={() => setViewTask(task)}
-            tasksLocked={tasksLocked}
           />
         ))}
       </div>
@@ -160,13 +155,12 @@ interface DraftToolbarProps {
   onReject: () => void;
   isApproving: boolean;
   isRejecting: boolean;
-  tasksLocked: boolean;
 }
 
 function DraftToolbar({
   draftCount, selectedCount, allSelected,
   onToggleAll, onApprove, onReject,
-  isApproving, isRejecting, tasksLocked,
+  isApproving, isRejecting,
 }: DraftToolbarProps) {
   return (
     <div className="flex items-center justify-between">
@@ -181,7 +175,7 @@ function DraftToolbar({
           variant="outline"
           size="sm"
           onClick={onApprove}
-          disabled={selectedCount === 0 || isApproving || !tasksLocked}
+          disabled={selectedCount === 0 || isApproving}
           className="text-green-600 border-green-200 hover:bg-green-50"
         >
           <Check className="h-4 w-4 mr-1" />
@@ -191,7 +185,7 @@ function DraftToolbar({
           variant="outline"
           size="sm"
           onClick={onReject}
-          disabled={selectedCount === 0 || isRejecting || !tasksLocked}
+          disabled={selectedCount === 0 || isRejecting}
           className="text-red-600 border-red-200 hover:bg-red-50"
         >
           <X className="h-4 w-4 mr-1" />

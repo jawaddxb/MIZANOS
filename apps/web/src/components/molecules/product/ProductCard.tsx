@@ -3,12 +3,15 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
 import type { Product } from "@/lib/types";
+import { ClipboardList, UserCircle } from "lucide-react";
 
 interface ProductCardProps {
   product: Product;
+  taskCount?: number;
+  pmName?: string;
 }
 
-function ProductCard({ product }: ProductCardProps) {
+function ProductCard({ product, taskCount = 0, pmName }: ProductCardProps) {
   const progress = product.progress ?? 0;
 
   return (
@@ -23,9 +26,22 @@ function ProductCard({ product }: ProductCardProps) {
         {product.name}
       </h3>
 
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
+      <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
         <span>{product.stage || "No stage"}</span>
         <span className="font-mono tabular-nums">{progress}%</span>
+      </div>
+
+      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <ClipboardList className="h-3 w-3" />
+          {taskCount} {taskCount === 1 ? "task" : "tasks"}
+        </span>
+        {pmName && (
+          <span className="flex items-center gap-1 truncate">
+            <UserCircle className="h-3 w-3 shrink-0" />
+            <span className="truncate">{pmName}</span>
+          </span>
+        )}
       </div>
     </Link>
   );

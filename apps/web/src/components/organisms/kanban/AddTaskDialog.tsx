@@ -17,6 +17,8 @@ import { BaseTextarea } from "@/components/atoms/inputs/BaseTextarea";
 import { BaseLabel } from "@/components/atoms/inputs/BaseLabel";
 import { SelectField } from "@/components/molecules/forms/SelectField";
 import { useProductMembers } from "@/hooks/queries/useProductMembers";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
 import type { TaskStatus, PillarType, TaskPriority } from "@/lib/types";
 
 /* ------------------------------------------------------------------ */
@@ -77,6 +79,9 @@ export function AddTaskDialog({
   productId,
 }: AddTaskDialogProps) {
   const { data: members = [] } = useProductMembers(productId);
+  const { user } = useAuth();
+  const { isAdmin, isProjectManager } = useRoleVisibility();
+  const canAssignOthers = isAdmin || isProjectManager;
 
   const assigneeOptions = [
     { value: "__none__", label: "Unassigned" },
@@ -120,7 +125,8 @@ export function AddTaskDialog({
       ...values,
       status: defaultStatus,
       assignee_id:
-        values.assignee_id === "__none__" ? undefined : values.assignee_id,
+        !values.assignee_id || values.assignee_id === "__none__" ? undefined : values.assignee_id,
+      due_date: values.due_date || undefined,
     });
   };
 
@@ -167,13 +173,22 @@ export function AddTaskDialog({
           </div>
 
           {/* Assignee */}
-          <SelectField
-            label="Assignee"
-            placeholder="Select assignee"
-            options={assigneeOptions}
-            value={currentAssignee || "__none__"}
-            onValueChange={(v) => setValue("assignee_id", v)}
-          />
+          {canAssignOthers ? (
+            <SelectField
+              label="Assignee"
+              placeholder="Select assignee"
+              options={assigneeOptions}
+              value={currentAssignee || "__none__"}
+              onValueChange={(v) => setValue("assignee_id", v)}
+            />
+          ) : (
+            <div className="space-y-2">
+              <BaseLabel>Assignee</BaseLabel>
+              <p className="text-sm text-muted-foreground rounded-md border px-3 py-2">
+                Assigned to you ({user?.full_name ?? user?.email})
+              </p>
+            </div>
+          )}
 
           {/* Vertical + Priority row */}
           <div className="grid grid-cols-2 gap-4">
@@ -203,6 +218,7 @@ export function AddTaskDialog({
             <BaseInput
               id="task-due-date"
               type="date"
+              min={new Date().toISOString().split("T")[0]}
               {...register("due_date")}
             />
           </div>

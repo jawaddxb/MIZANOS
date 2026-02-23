@@ -30,6 +30,7 @@ interface ActionItem {
 
 interface ActionItemsProps {
   metrics?: DashboardMetrics | undefined;
+  filterProductIds?: Set<string>;
 }
 
 const iconMap: Record<ActionItem["type"], React.ReactNode> = {
@@ -113,10 +114,13 @@ function buildActionItems(metrics: DashboardMetrics | undefined): ActionItem[] {
   return items;
 }
 
-export function ActionItems({ metrics: metricsProp }: ActionItemsProps) {
+export function ActionItems({ metrics: metricsProp, filterProductIds }: ActionItemsProps) {
   const { data: fetchedMetrics } = useDashboardMetrics();
   const metrics = metricsProp ?? fetchedMetrics;
-  const actionItems = buildActionItems(metrics);
+  const allItems = buildActionItems(metrics);
+  const actionItems = filterProductIds
+    ? allItems.filter((i) => filterProductIds.has(i.productId))
+    : allItems;
   const criticalCount = actionItems.filter((i) => i.severity === "critical").length;
   const warningCount = actionItems.filter((i) => i.severity === "warning").length;
 

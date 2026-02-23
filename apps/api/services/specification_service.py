@@ -17,7 +17,7 @@ from apps.api.schemas.specifications import (
 )
 from apps.api.services.base_service import BaseService
 from apps.api.services.task_description_builder import build_task_description
-from packages.common.utils.error_handlers import not_found
+from packages.common.utils.error_handlers import bad_request, not_found
 
 logger = logging.getLogger(__name__)
 
@@ -161,9 +161,13 @@ class SpecificationService(BaseService[Specification]):
         result = await self.repo.session.execute(stmt)
         return result.scalar_one()
 
-    async def queue_feature(self, feature_id: UUID) -> SpecificationFeature:
+    async def queue_feature(
+        self, feature_id: UUID, *, created_by: UUID | None = None,
+    ) -> SpecificationFeature:
         """Create a task from feature data and link it."""
         feature = await self._get_feature_or_404(feature_id)
+        if feature.task_id is not None:
+            raise bad_request("This feature already has a linked task")
         spec_content = await self._get_spec_content(feature.specification_id)
         description = build_task_description(feature, spec_content)
         task = Task(
@@ -175,6 +179,7 @@ class SpecificationService(BaseService[Specification]):
             pillar="development",
             is_draft=True,
             generation_source="specification",
+            created_by=created_by,
         )
         self.repo.session.add(task)
         await self.repo.session.flush()
@@ -215,7 +220,9 @@ class SpecificationService(BaseService[Specification]):
         spec = await self.repo.session.get(Specification, spec_id)
         return spec.content if spec else None
 
-    async def generate_tasks_from_spec(self, product_id: UUID) -> list:
+    async def generate_tasks_from_spec(
+        self, product_id: UUID, *, created_by: UUID | None = None,
+    ) -> list:
         """Create tasks from the latest specification's features."""
         specs = await self.get_by_product(product_id)
         if not specs:
@@ -233,9 +240,18 @@ class SpecificationService(BaseService[Specification]):
                 detail="No features found in specification.",
             )
 
+        # Only create tasks for features that don't already have one
+        pending_features = [f for f in features if f.task_id is None]
+
+        if not pending_features:
+            raise HTTPException(
+                status_code=400,
+                detail=f"All {len(features)} tasks have already been generated from this specification.",
+            )
+
         spec_content = latest_spec.content
         tasks: list[Task] = []
-        for feature in features:
+        for feature in pending_features:
             description = build_task_description(feature, spec_content)
             task = Task(
                 product_id=product_id,
@@ -246,6 +262,7 @@ class SpecificationService(BaseService[Specification]):
                 pillar="development",
                 generation_source="specification",
                 is_draft=True,
+                created_by=created_by,
             )
             self.repo.session.add(task)
             tasks.append(task)
@@ -253,8 +270,7 @@ class SpecificationService(BaseService[Specification]):
         await self.repo.session.flush()
         for i, task in enumerate(tasks):
             await self.repo.session.refresh(task)
-            if i < len(features):
-                features[i].task_id = task.id
+            pending_features[i].task_id = task.id
 
         await self.repo.session.flush()
         return tasks

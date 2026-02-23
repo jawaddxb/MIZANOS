@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/atoms/display/Badge";
 import { Button } from "@/components/molecules/buttons/Button";
@@ -8,9 +8,14 @@ import { PageHeader } from "@/components/molecules/layout/PageHeader";
 import { ProductCard } from "@/components/molecules/product/ProductCard";
 import { ProductTable } from "@/components/organisms/product/ProductTable";
 import { ProductsFilterBar } from "@/components/organisms/dashboard/ProductsFilterBar";
+import { useAuth } from "@/contexts/AuthContext";
+import { useAllTasks } from "@/hooks/queries/useAllTasks";
+import { useAllProductMembers } from "@/hooks/queries/useProductMembers";
 import { useProducts } from "@/hooks/queries/useProducts";
+import { useProfiles } from "@/hooks/queries/useProfiles";
 import { useProductRoleFilters } from "@/hooks/utils/useProductRoleFilters";
 import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
+import { isMyDashboardEnabled } from "@/hooks/utils/useMyDashboard";
 import { PRODUCT_STAGES } from "@/lib/constants";
 import { cn } from "@/lib/utils/cn";
 import {
@@ -27,14 +32,51 @@ export default function ProductsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [pillarFilter, setPillarFilter] = useState("all");
   const [stageFilter, setStageFilter] = useState("all");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showArchived, setShowArchived] = useState(false);
+  const [myProjectsOnly, setMyProjectsOnly] = useState(isMyDashboardEnabled);
 
+  const { user } = useAuth();
   const { data: products = [], isLoading } = useProducts();
+  const { data: allTasks = [] } = useAllTasks();
   const { roleFilters, anyActive: anyRoleActive, matchesProduct, reset: resetRoles } =
     useProductRoleFilters();
+  const { data: allMembers = [] } = useAllProductMembers();
+  const { data: profiles = [] } = useProfiles();
   const { isSuperAdmin, isProjectManager } = useRoleVisibility();
   const canCreateProject = isSuperAdmin || isProjectManager;
+
+  const taskCountMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const task of allTasks) {
+      map.set(task.product_id, (map.get(task.product_id) ?? 0) + 1);
+    }
+    return map;
+  }, [allTasks]);
+
+  const pmNameMap = useMemo(() => {
+    const profileMap = new Map<string, string>();
+    for (const p of profiles) profileMap.set(p.id, p.full_name ?? p.email ?? "Unknown");
+    const map = new Map<string, string>();
+    for (const m of allMembers) {
+      if (m.role === "project_manager") {
+        map.set(m.product_id, profileMap.get(m.profile_id) ?? "Unknown");
+      }
+    }
+    return map;
+  }, [allMembers, profiles]);
+
+  const myProjectIds = useMemo(() => {
+    const userId = user?.profile_id;
+    if (!userId) return new Set<string>();
+    const ids = new Set<string>();
+    for (const task of allTasks) {
+      if (task.assignee_id === userId || task.created_by === userId) {
+        ids.add(task.product_id);
+      }
+    }
+    return ids;
+  }, [allTasks, user?.profile_id]);
 
   const archivedCount = products.filter((p) => p.archived_at).length;
 
@@ -54,7 +96,11 @@ export default function ProductsPage() {
       pillarFilter === "all" || product.pillar === pillarFilter;
     const matchesStage =
       stageFilter === "all" || product.stage === stageFilter;
-    return matchesSearch && matchesStatus && matchesPillar && matchesStage && matchesProduct(product.id);
+    const matchesMine =
+      !myProjectsOnly ||
+      product.created_by === user?.profile_id ||
+      myProjectIds.has(product.id);
+    return matchesSearch && matchesStatus && matchesPillar && matchesStage && matchesProduct(product.id) && matchesMine;
   });
 
   const hasActiveFilters =
@@ -62,6 +108,7 @@ export default function ProductsPage() {
     pillarFilter !== "all" ||
     stageFilter !== "all" ||
     searchQuery !== "" ||
+    myProjectsOnly ||
     anyRoleActive;
 
   const clearFilters = () => {
@@ -69,6 +116,7 @@ export default function ProductsPage() {
     setStatusFilter("all");
     setPillarFilter("all");
     setStageFilter("all");
+    setMyProjectsOnly(false);
     resetRoles();
   };
 
@@ -109,6 +157,8 @@ export default function ProductsPage() {
             onStageChange={setStageFilter}
             stages={stages}
             roleFilters={roleFilters}
+            myProjectsActive={myProjectsOnly}
+            onMyProjectsToggle={() => setMyProjectsOnly((v) => !v)}
             hasActiveFilters={hasActiveFilters}
             onClearFilters={clearFilters}
           />
@@ -159,13 +209,18 @@ export default function ProductsPage() {
       {!isLoading && filteredProducts.length > 0 && viewMode === "grid" && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard
+              key={product.id}
+              product={product}
+              taskCount={taskCountMap.get(product.id) ?? 0}
+              pmName={pmNameMap.get(product.id)}
+            />
           ))}
         </div>
       )}
 
       {!isLoading && filteredProducts.length > 0 && viewMode === "list" && (
-        <ProductTable products={filteredProducts} />
+        <ProductTable products={filteredProducts} taskCountMap={taskCountMap} pmNameMap={pmNameMap} />
       )}
 
       {!isLoading && filteredProducts.length === 0 && (

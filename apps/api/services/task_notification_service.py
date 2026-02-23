@@ -10,6 +10,7 @@ from apps.api.models.notification import Notification
 from apps.api.models.product import Product, ProductNotificationSetting
 from apps.api.models.task import Task
 from apps.api.models.user import Profile, UserNotificationPreference
+from apps.api.config import settings
 from apps.api.services.email_service import EmailService
 
 logger = logging.getLogger(__name__)
@@ -47,7 +48,7 @@ class TaskNotificationService:
         if not await self._product_email_enabled(task.product_id):
             return
 
-        task_url = f"/products/{task.product_id}"
+        task_url = f"{settings.app_base_url}/projects/{task.product_id}?tab=tasks&task={task.id}"
         await EmailService.send_task_assignment_email(
             to_email=profile.email or "",
             full_name=profile.full_name or "Team Member",
@@ -122,7 +123,7 @@ class TaskNotificationService:
         if not await self._product_email_enabled(task.product_id):
             return
 
-        task_url = f"/products/{task.product_id}"
+        task_url = f"{settings.app_base_url}/projects/{task.product_id}?tab=tasks&task={task.id}"
         await EmailService.send_comment_mention_email(
             to_email=profile.email or "",
             full_name=profile.full_name or "Team Member",

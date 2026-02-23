@@ -50,6 +50,7 @@ class AuthService:
             "must_reset_password": must_reset,
             "user": {
                 "id": str(profile.user_id),
+                "profile_id": str(profile.id),
                 "email": profile.email,
                 "full_name": profile.full_name,
                 "role": profile.role,
@@ -267,6 +268,7 @@ class AuthService:
             "must_reset_password": False,
             "user": {
                 "id": str(profile.user_id),
+                "profile_id": str(profile.id),
                 "email": profile.email,
                 "full_name": profile.full_name,
                 "role": profile.role,

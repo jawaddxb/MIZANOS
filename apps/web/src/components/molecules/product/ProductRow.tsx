@@ -9,6 +9,8 @@ import type { Product } from "@/lib/types";
 
 interface ProductRowProps {
   product: Product;
+  taskCount?: number;
+  pmName?: string;
 }
 
 function getHealthColor(score: number): string {
@@ -17,21 +19,7 @@ function getHealthColor(score: number): string {
   return "text-red-600";
 }
 
-function formatRelativeTime(dateStr: string): string {
-  const now = Date.now();
-  const diff = now - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  const months = Math.floor(days / 30);
-  return `${months}mo ago`;
-}
-
-function ProductRow({ product }: ProductRowProps) {
+function ProductRow({ product, taskCount = 0, pmName }: ProductRowProps) {
   const statusConfig = product.status
     ? PRODUCT_STATUS_CONFIG[product.status]
     : null;
@@ -70,6 +58,14 @@ function ProductRow({ product }: ProductRowProps) {
         {product.stage || "Unknown"}
       </span>
 
+      <span className="w-[120px] shrink-0 text-xs text-muted-foreground truncate">
+        {pmName || "—"}
+      </span>
+
+      <span className="w-[50px] shrink-0 text-xs font-mono tabular-nums text-right">
+        {taskCount}
+      </span>
+
       <span className="w-[100px] shrink-0 flex items-center gap-2">
         <div className="h-1.5 flex-1 bg-secondary rounded-full overflow-hidden">
           <div
@@ -84,10 +80,6 @@ function ProductRow({ product }: ProductRowProps) {
 
       <span className={cn("w-[50px] shrink-0 text-xs font-bold tabular-nums text-right", getHealthColor(health))}>
         {health}
-      </span>
-
-      <span className="w-[60px] shrink-0 text-[11px] text-muted-foreground text-right">
-        {formatRelativeTime(product.updated_at)}
       </span>
     </Link>
   );
