@@ -181,7 +181,7 @@ export function EditTaskDialog({
             value={currentAssignee || "__none__"}
             onValueChange={(v) => {
               setValue("assignee_id", v);
-              if ((!v || v === "__none__") && currentStatus !== "backlog") {
+              if ((!v || v === "__none__") && currentStatus !== "backlog" && currentStatus !== "cancelled") {
                 setValue("status", "backlog");
                 setAssignWarning(true);
                 setTimeout(() => setAssignWarning(false), 3000);
@@ -210,7 +210,7 @@ export function EditTaskDialog({
               options={STATUS_OPTIONS}
               value={currentStatus}
               onValueChange={(v) => {
-                if (isUnassigned && v !== "backlog") {
+                if (isUnassigned && v !== "backlog" && v !== "cancelled") {
                   setAssignWarning(true);
                   setTimeout(() => setAssignWarning(false), 3000);
                   return;

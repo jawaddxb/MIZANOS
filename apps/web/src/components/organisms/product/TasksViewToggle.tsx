@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LayoutGrid, List, Sparkles, FileText, LayoutTemplate, Loader2, ClipboardCheck, Mail, MailX, Trash2 } from "lucide-react";
+import { LayoutGrid, List, Sparkles, FileText, LayoutTemplate, Loader2, ClipboardCheck, Mail, MailX, Trash2, Lock } from "lucide-react";
 import { BaseSwitch } from "@/components/atoms/inputs/BaseSwitch";
 import { Button } from "@/components/molecules/buttons/Button";
 import { Badge } from "@/components/atoms/display/Badge";
@@ -21,6 +21,7 @@ import {
 } from "@/hooks/mutations/useTaskGenerationMutations";
 import { useGeneratePortTasks } from "@/hooks/mutations/usePortGenerator";
 import { useDeleteAllDrafts } from "@/hooks/mutations/useTaskApprovalMutations";
+import { useLockTasks } from "@/hooks/mutations/useProductMutations";
 import { useProductDetail } from "@/hooks/queries/useProductDetail";
 import { useDraftTasks } from "@/hooks/queries/useDraftTasks";
 import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
@@ -38,6 +39,7 @@ interface TasksViewToggleProps {
 export function TasksViewToggle({ productId, openTaskId }: TasksViewToggleProps) {
   const [view, setView] = useState<ViewMode>("list");
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [showLockConfirm, setShowLockConfirm] = useState(false);
   const { data: productData } = useProductDetail(productId);
   const { data: drafts = [] } = useDraftTasks(productId);
   const { isAdmin, isProjectManager } = useRoleVisibility();
@@ -45,6 +47,7 @@ export function TasksViewToggle({ productId, openTaskId }: TasksViewToggleProps)
   const generateFromTemplates = useGenerateTasksFromTemplates(productId);
   const generateFromPort = useGeneratePortTasks(productId);
   const deleteAllDrafts = useDeleteAllDrafts(productId);
+  const lockTasks = useLockTasks(productId);
 
   const { data: notifSettings } = useProductNotificationSettings(productId);
   const updateNotifSettings = useUpdateProductNotificationSettings(productId);
@@ -55,6 +58,7 @@ export function TasksViewToggle({ productId, openTaskId }: TasksViewToggleProps)
     generateFromPort.isPending;
 
   const showLovable = productData?.product?.source_type?.includes("lovable");
+  const tasksLocked = productData?.product?.tasks_locked ?? false;
   const showDraftsTab = isAdmin || isProjectManager;
   const draftCount = drafts.length;
 
@@ -130,15 +134,28 @@ export function TasksViewToggle({ productId, openTaskId }: TasksViewToggleProps)
 
         {(isAdmin || isProjectManager) && (
           draftCount > 0 ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowDiscardConfirm(true)}
-              className="text-red-600 border-red-200 hover:bg-red-50"
-            >
-              <Trash2 className="h-4 w-4 mr-1" />
-              Discard Drafts
-            </Button>
+            <div className="flex items-center gap-2">
+              {!tasksLocked && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowLockConfirm(true)}
+                  disabled={lockTasks.isPending}
+                >
+                  <Lock className="h-4 w-4 mr-1" />
+                  Lock Tasks
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDiscardConfirm(true)}
+                className="text-red-600 border-red-200 hover:bg-red-50"
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Discard Drafts
+              </Button>
+            </div>
           ) : (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -185,6 +202,16 @@ export function TasksViewToggle({ productId, openTaskId }: TasksViewToggleProps)
           showLovable={!!showLovable}
         />
       )}
+
+      <ConfirmActionDialog
+        open={showLockConfirm}
+        onOpenChange={setShowLockConfirm}
+        title="Lock tasks for review?"
+        description="Locking will enable approve and reject actions on draft tasks. You won't be able to generate new tasks until all drafts are resolved or discarded."
+        confirmLabel="Lock Tasks"
+        onConfirm={() => lockTasks.mutate(undefined, { onSuccess: () => setShowLockConfirm(false) })}
+        isPending={lockTasks.isPending}
+      />
 
       <ConfirmActionDialog
         open={showDiscardConfirm}

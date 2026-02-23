@@ -182,7 +182,7 @@ export function KanbanBoard({ productId }: KanbanBoardProps) {
         const targetStatus = isOverColumn
           ? overId
           : tasks.find((t) => t.id === overId)?.status;
-        if (targetStatus && targetStatus !== "backlog") {
+        if (targetStatus && targetStatus !== "backlog" && targetStatus !== "cancelled") {
           setLocalTasks([]);
           toast.warning("Please assign this task before changing its status", {
             duration: 3000,

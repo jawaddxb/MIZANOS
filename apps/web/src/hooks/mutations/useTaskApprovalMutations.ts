@@ -14,6 +14,7 @@ export function useApproveTask(productId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", productId] });
       queryClient.invalidateQueries({ queryKey: ["tasks", productId, "drafts"] });
+      queryClient.invalidateQueries({ queryKey: ["product-detail", productId] });
       toast.success("Task approved");
     },
     onError: (error: Error) => {
@@ -31,6 +32,7 @@ export function useBulkApproveTasks(productId: string) {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["tasks", productId] });
       queryClient.invalidateQueries({ queryKey: ["tasks", productId, "drafts"] });
+      queryClient.invalidateQueries({ queryKey: ["product-detail", productId] });
       toast.success(`Approved ${data.approved_count} tasks`);
     },
     onError: (error: Error) => {
