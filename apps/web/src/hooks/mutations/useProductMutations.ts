@@ -39,6 +39,36 @@ export function useUpdateProduct() {
   });
 }
 
+export function useLockTasks(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (): Promise<Product> => productsRepository.lockTasks(productId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["product-detail", productId] });
+      toast.success("Tasks locked");
+    },
+    onError: (error: Error) => {
+      toast.error("Failed to lock tasks: " + error.message);
+    },
+  });
+}
+
+export function useUnlockTasks(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (): Promise<Product> => productsRepository.unlockTasks(productId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["product-detail", productId] });
+      toast.success("Tasks unlocked");
+    },
+    onError: (error: Error) => {
+      toast.error("Failed to unlock tasks: " + error.message);
+    },
+  });
+}
+
 export function useArchiveProduct() {
   const queryClient = useQueryClient();
 

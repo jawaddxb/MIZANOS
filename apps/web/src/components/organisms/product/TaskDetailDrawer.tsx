@@ -153,7 +153,7 @@ export function TaskDetailDrawer({
 
             <div className="space-y-1">
               <BaseLabel htmlFor="drawer-desc">Description</BaseLabel>
-              <BaseTextarea id="drawer-desc" className="resize-none" rows={3} {...register("description")} disabled={!canManageTasks} />
+              <BaseTextarea id="drawer-desc" className="resize-y" rows={7} {...register("description")} disabled={!canManageTasks} />
             </div>
 
             {canManageTasks && (

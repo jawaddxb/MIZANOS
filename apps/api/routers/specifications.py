@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from apps.api.dependencies import CurrentUser, DbSession
+from apps.api.schemas.base import BaseSchema
 from apps.api.schemas.specifications import (
     ImportFeatureRequest,
     LibraryFeatureResponse,
@@ -16,6 +17,7 @@ from apps.api.schemas.specifications import (
     SpecificationResponse,
     SpecificationUpdate,
 )
+from apps.api.services.spec_generation_service import SpecGenerationService
 from apps.api.services.specification_service import SpecificationService
 
 router = APIRouter()
@@ -23,6 +25,10 @@ router = APIRouter()
 
 def get_service(db: DbSession) -> SpecificationService:
     return SpecificationService(db)
+
+
+def get_gen_service(db: DbSession) -> SpecGenerationService:
+    return SpecGenerationService(db)
 
 
 @router.get("", response_model=list[SpecificationResponse])
@@ -37,7 +43,7 @@ async def get_spec(spec_id: UUID, user: CurrentUser = None, service: Specificati
 
 @router.post("", response_model=SpecificationResponse, status_code=201)
 async def create_spec(body: SpecificationCreate, user: CurrentUser = None, service: SpecificationService = Depends(get_service)):
-    return await service.create_spec(body)
+    return await service.create_spec(body, user_id=user.profile_id if user else None)
 
 
 @router.patch("/{spec_id}", response_model=SpecificationResponse)
@@ -161,22 +167,41 @@ async def unqueue_feature(
     return await service.unqueue_feature(feature_id)
 
 
+class GenerateSpecRequest(BaseSchema):
+    """Request body for specification generation."""
+
+    product_id: UUID
+    custom_instructions: str | None = None
+
+
 @router.post("/generate")
-async def generate_spec(product_id: UUID, user: CurrentUser = None, service: SpecificationService = Depends(get_service)):
+async def generate_spec(
+    body: GenerateSpecRequest,
+    user: CurrentUser = None,
+    service: SpecGenerationService = Depends(get_gen_service),
+):
     """AI-generate specification from product context."""
-    return await service.generate_specification(product_id)
+    return await service.generate_specification(
+        body.product_id, body.custom_instructions,
+        user_id=user.profile_id if user else None,
+    )
 
 
 @router.post("/{product_id}/generate-tasks")
 async def generate_tasks_from_spec(
     product_id: UUID,
+    db: DbSession,
     user: CurrentUser = None,
     service: SpecificationService = Depends(get_service),
 ):
     """Generate tasks from specification features. PM/superadmin only."""
     from apps.api.models.enums import AppRole
-    from packages.common.utils.error_handlers import forbidden
+    from apps.api.models.product import Product
+    from packages.common.utils.error_handlers import bad_request, forbidden
 
     if not user.has_any_role(AppRole.SUPERADMIN, AppRole.ADMIN, AppRole.PROJECT_MANAGER):
         raise forbidden("Only project managers and admins can generate tasks")
+    product = await db.get(Product, product_id)
+    if product and product.tasks_locked:
+        raise bad_request("Cannot generate tasks while tasks are locked")
     return await service.generate_tasks_from_spec(product_id)

@@ -62,6 +62,10 @@ async def apply_templates(
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Product not found")
 
+    if product.tasks_locked:
+        from packages.common.utils.error_handlers import bad_request
+        raise bad_request("Cannot generate tasks while tasks are locked")
+
     source_type = product.source_type or "general"
     return await service.apply_templates(product_id, source_type)
 

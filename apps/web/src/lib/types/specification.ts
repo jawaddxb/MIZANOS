@@ -5,6 +5,7 @@ export interface Specification {
   product_id: string;
   content: JsonValue;
   version: number;
+  custom_instructions: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;

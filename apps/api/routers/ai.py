@@ -40,7 +40,9 @@ async def list_messages(session_id: UUID, user: CurrentUser, service: AIService 
 @router.post("/chat/sessions/{session_id}/messages", response_model=ChatMessageResponse, status_code=201)
 async def send_message(session_id: UUID, body: SendMessageBody, user: CurrentUser, service: AIService = Depends(get_service)):
     """Send a message and get a non-streaming AI response."""
-    return await service.send_and_respond(session_id, body.content, user.id)
+    return await service.send_and_respond(
+        session_id, body.content, user.id, images=body.images,
+    )
 
 
 @router.post("/chat", response_class=StreamingResponse)

@@ -43,10 +43,19 @@ export class AIRepository {
     return response.data;
   }
 
-  async sendMessage(sessionId: string, content: string): Promise<AIChatMessage> {
+  async sendMessage(
+    sessionId: string,
+    content: string,
+    images?: string[],
+  ): Promise<AIChatMessage> {
     const response = await this.client.post<AIChatMessage>(
       `${this.basePath}/sessions/${sessionId}/messages`,
-      { content, role: "user" },
+      {
+        content,
+        role: "user",
+        ...(images?.length ? { images } : {}),
+      },
+      { timeout: 120_000 },
     );
     return response.data;
   }

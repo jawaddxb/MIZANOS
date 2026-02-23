@@ -33,6 +33,7 @@ class SendMessageBody(BaseSchema):
     """Send a message (non-streaming — session_id comes from URL path)."""
 
     content: str
+    images: list[str] | None = None
 
 
 class ChatMessageResponse(BaseSchema):

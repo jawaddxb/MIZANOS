@@ -36,7 +36,8 @@ export function useRegenerateSpecification(productId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => specificationsRepository.regenerateSpec(productId),
+    mutationFn: (customInstructions?: string) =>
+      specificationsRepository.regenerateSpec(productId, customInstructions),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["specifications", productId] });
       toast.success("Specification regenerated from sources");

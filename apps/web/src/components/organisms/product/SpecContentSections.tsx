@@ -76,6 +76,19 @@ export function SpecContentSections({ content }: { content: SpecContent }) {
         </Card>
       )}
 
+      {content.features && content.features.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Features</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BulletList
+              items={content.features.map((f) => (typeof f === "string" ? f : f.name))}
+            />
+          </CardContent>
+        </Card>
+      )}
+
       {content.functionalSpec && (
         <Card>
           <CardHeader>
@@ -144,19 +157,6 @@ export function SpecContentSections({ content }: { content: SpecContent }) {
                 <Badge key={i} variant="secondary">{tech}</Badge>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {content.features && content.features.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Features</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <BulletList
-              items={content.features.map((f) => (typeof f === "string" ? f : f.name))}
-            />
           </CardContent>
         </Card>
       )}

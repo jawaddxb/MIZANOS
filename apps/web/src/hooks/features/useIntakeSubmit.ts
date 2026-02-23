@@ -8,8 +8,8 @@ import {
   productsRepository,
   specificationsRepository,
 } from "@/lib/api/repositories";
-import type { PillarType, ProjectSourceType } from "@/lib/types";
-import type { IntakeFormData } from "@/components/organisms/intake/types";
+import type { JsonValue, PillarType, ProjectSourceType } from "@/lib/types";
+import type { IntakeFormData, ScrapedWebsite } from "@/components/organisms/intake/types";
 
 type SubmitPhase = "idle" | "creating" | "generating" | "saving-spec" | "done";
 
@@ -19,11 +19,6 @@ const SUBMIT_STEPS = {
   "saving-spec": { progress: 80, label: "Saving specification..." },
   done: { progress: 100, label: "Complete!" },
 } as const;
-
-function isTextLikeFile(file: File): boolean {
-  const textExtensions = [".md", ".txt", ".json", ".yaml", ".yml", ".csv"];
-  return textExtensions.some((ext) => file.name.toLowerCase().endsWith(ext));
-}
 
 export function useIntakeSubmit() {
   const router = useRouter();
@@ -45,6 +40,7 @@ export function useIntakeSubmit() {
       setSubmitPhase("creating");
       const product = await productsRepository.create({
         name: formData.projectName,
+        description: formData.description || undefined,
         pillar: formData.pillar as PillarType,
         source_type: formData.sourceType as ProjectSourceType,
       });
@@ -59,6 +55,7 @@ export function useIntakeSubmit() {
         await specificationsRepository.createSpecification({
           product_id: product.id,
           content: formData.generatedSpec as unknown as Record<string, unknown>,
+          custom_instructions: formData.customInstructions || undefined,
         });
       }
 
@@ -76,28 +73,7 @@ export function useIntakeSubmit() {
 
 async function persistSources(productId: string, sources: IntakeFormData["sources"]) {
   for (const doc of sources.documents) {
-    if (isTextLikeFile(doc)) {
-      try {
-        const content = await doc.text();
-        if (content.trim()) {
-          await specificationsRepository.createSource({
-            product_id: productId,
-            source_type: "markdown",
-            raw_content: content,
-            file_name: doc.name,
-          });
-        }
-      } catch (err) {
-        console.warn(`Failed to read text file ${doc.name}:`, err);
-      }
-    } else {
-      await specificationsRepository.createSource({
-        product_id: productId,
-        source_type: "document",
-        file_name: doc.name,
-        raw_content: `[Binary file: ${doc.name}, ${doc.size} bytes, type: ${doc.type}]`,
-      });
-    }
+    await specificationsRepository.uploadSource(productId, doc);
   }
 
   if (sources.markdownContent.trim()) {
@@ -117,7 +93,14 @@ async function persistSources(productId: string, sources: IntakeFormData["source
   }
 
   for (const note of sources.audioNotes) {
-    if (note.transcription) {
+    if (note.blob && note.blob.size > 0) {
+      const file = new File([note.blob], `recording-${note.id}.webm`, {
+        type: note.blob.type || "audio/webm",
+      });
+      await specificationsRepository.uploadAudioSource(
+        productId, file, note.transcription || undefined,
+      );
+    } else if (note.transcription) {
       await specificationsRepository.createSource({
         product_id: productId,
         source_type: "audio",
@@ -133,6 +116,9 @@ async function persistSources(productId: string, sources: IntakeFormData["source
       raw_content: site.markdown,
       url: site.url,
       branding: site.branding ?? undefined,
+      logo_url: site.logo ?? undefined,
+      screenshots: site.screenshots ? { items: site.screenshots } : undefined,
+      ai_summary: buildWebsiteAiSummary(site),
     });
   }
 
@@ -154,7 +140,6 @@ async function autoPopulateMarketing(productId: string, sources: IntakeFormData[
   const websites = sources.scrapedWebsites.filter((s) => s.marketing);
   if (websites.length === 0) return;
 
-  // Collect and deduplicate domains
   const domainMap = new Map<string, { domain_name: string; ssl_status?: string; is_secured?: boolean }>();
   for (const site of websites) {
     const d = site.marketing!.domain;
@@ -167,7 +152,6 @@ async function autoPopulateMarketing(productId: string, sources: IntakeFormData[
     }
   }
 
-  // Collect and deduplicate social handles
   const handleMap = new Map<string, { platform: string; handle: string; url?: string }>();
   for (const site of websites) {
     for (const h of site.marketing!.socialHandles) {
@@ -192,6 +176,15 @@ async function autoPopulateMarketing(productId: string, sources: IntakeFormData[
   } catch (err) {
     console.warn("Auto-populate marketing failed:", err);
   }
+}
+
+function buildWebsiteAiSummary(site: ScrapedWebsite): { [key: string]: JsonValue | undefined } | undefined {
+  if (!site.aiSummary && !site.analysis) return undefined;
+  return {
+    ...(site.aiSummary ? { summary: site.aiSummary } : {}),
+    ...(site.analysis ? { analysis: site.analysis as unknown as JsonValue } : {}),
+    ...(site.metadata?.title ? { title: site.metadata.title } : {}),
+  };
 }
 
 async function autoSetLogo(productId: string, sources: IntakeFormData["sources"]) {

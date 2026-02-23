@@ -15,6 +15,7 @@ class Product(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "products"
 
     name: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     status: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     stage: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     pillar: Mapped[Optional[str]] = mapped_column(String, nullable=True)
@@ -29,6 +30,9 @@ class Product(Base, UUIDMixin, TimestampMixin):
     )
     archived_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
+    )
+    tasks_locked: Mapped[bool] = mapped_column(
+        Boolean, server_default="false", nullable=False
     )
 
     creator: Mapped[Optional["Profile"]] = relationship(

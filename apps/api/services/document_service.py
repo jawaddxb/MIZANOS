@@ -75,8 +75,8 @@ class DocumentService(BaseService[ProductDocument]):
         result = await self.repo.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def create_folder(self, data: FolderCreate) -> DocumentFolder:
-        folder = DocumentFolder(**data.model_dump())
+    async def create_folder(self, data: FolderCreate, user_id: UUID | None = None) -> DocumentFolder:
+        folder = DocumentFolder(**data.model_dump(), created_by=user_id)
         self.repo.session.add(folder)
         await self.repo.session.flush()
         await self.repo.session.refresh(folder)

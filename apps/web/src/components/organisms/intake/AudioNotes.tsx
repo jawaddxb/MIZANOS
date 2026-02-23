@@ -10,6 +10,7 @@ import type { AudioNote } from "./types";
 
 interface AudioNotesProps {
   onNotesChange: (notes: AudioNote[]) => void;
+  initialNotes?: AudioNote[];
   className?: string;
 }
 
@@ -19,8 +20,13 @@ function formatTime(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
-export function AudioNotes({ onNotesChange, className }: AudioNotesProps) {
-  const [notes, setNotes] = React.useState<AudioNote[]>([]);
+export function AudioNotes({ onNotesChange, initialNotes, className }: AudioNotesProps) {
+  const [notes, setNotes] = React.useState<AudioNote[]>(() =>
+    (initialNotes ?? []).map((note) => ({
+      ...note,
+      objectUrl: note.blob ? URL.createObjectURL(note.blob) : undefined,
+    })),
+  );
   const [isRecording, setIsRecording] = React.useState(false);
   const [recordingTime, setRecordingTime] = React.useState(0);
   const [playingId, setPlayingId] = React.useState<string | null>(null);
@@ -29,18 +35,26 @@ export function AudioNotes({ onNotesChange, className }: AudioNotesProps) {
   const audioChunksRef = React.useRef<Blob[]>([]);
   const timerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
   const audioRefs = React.useRef<Map<string, HTMLAudioElement>>(new Map());
+  const onNotesChangeRef = React.useRef(onNotesChange);
+  onNotesChangeRef.current = onNotesChange;
+
+  // Sync notes to parent via effect to avoid setState-during-render warnings
+  const isInitialMount = React.useRef(true);
+  React.useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    onNotesChangeRef.current(notes);
+  }, [notes]);
 
   const updateNote = React.useCallback(
     (noteId: string, patch: Partial<AudioNote>) => {
-      setNotes((prev) => {
-        const updated = prev.map((n) =>
-          n.id === noteId ? { ...n, ...patch } : n,
-        );
-        onNotesChange(updated);
-        return updated;
-      });
+      setNotes((prev) =>
+        prev.map((n) => (n.id === noteId ? { ...n, ...patch } : n)),
+      );
     },
-    [onNotesChange],
+    [],
   );
 
   const transcribeAudio = React.useCallback(
@@ -79,11 +93,7 @@ export function AudioNotes({ onNotesChange, className }: AudioNotesProps) {
           isTranscribing: true,
         };
 
-        setNotes((prev) => {
-          const updated = [...prev, newNote];
-          onNotesChange(updated);
-          return updated;
-        });
+        setNotes((prev) => [...prev, newNote]);
 
         stream.getTracks().forEach((track) => track.stop());
         transcribeAudio(noteId, blob);
@@ -99,7 +109,7 @@ export function AudioNotes({ onNotesChange, className }: AudioNotesProps) {
       console.error("Error accessing microphone:", error);
       toast.error("Could not access microphone");
     }
-  }, [onNotesChange, transcribeAudio]);
+  }, [transcribeAudio]);
 
   const stopRecording = React.useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
@@ -117,13 +127,11 @@ export function AudioNotes({ onNotesChange, className }: AudioNotesProps) {
       setNotes((prev) => {
         const note = prev.find((n) => n.id === id);
         if (note?.objectUrl) URL.revokeObjectURL(note.objectUrl);
-        const updated = prev.filter((n) => n.id !== id);
-        onNotesChange(updated);
-        return updated;
+        return prev.filter((n) => n.id !== id);
       });
       audioRefs.current.delete(id);
     },
-    [onNotesChange],
+    [],
   );
 
   const togglePlayback = React.useCallback(

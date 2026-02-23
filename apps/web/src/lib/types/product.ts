@@ -3,6 +3,7 @@ import type { EnvironmentType, ProjectSourceType } from "./enums";
 export interface Product {
   id: string;
   name: string;
+  description: string | null;
   status: string | null;
   stage: string | null;
   pillar: string | null;
@@ -15,6 +16,7 @@ export interface Product {
   created_by: string | null;
   created_by_name: string | null;
   archived_at: string | null;
+  tasks_locked: boolean;
   created_at: string;
   updated_at: string;
 }

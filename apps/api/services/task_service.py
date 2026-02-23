@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.api.dependencies import AuthenticatedUser
 from apps.api.models.enums import AppRole
 from apps.api.models.notification import Notification
-from apps.api.models.product import ProductMember
+from apps.api.models.product import Product, ProductMember
 from apps.api.models.settings import OrgSetting
 from apps.api.models.specification import SpecificationFeature
 from apps.api.models.task import Task
@@ -117,6 +117,27 @@ class TaskService(BaseService[Task]):
         result = await self.repo.session.execute(stmt)
         return list(result.scalars().all())
 
+    async def delete_all_drafts(self, product_id: UUID) -> int:
+        """Delete all draft tasks for a product. Auto-unlocks. Returns count deleted."""
+        drafts = await self.list_drafts(product_id)
+        for task in drafts:
+            await self._clear_task_references(task.id)
+            await self.repo.delete(task)
+        product = await self.repo.session.get(Product, product_id)
+        if product and product.tasks_locked:
+            product.tasks_locked = False
+            await self.repo.session.flush()
+        return len(drafts)
+
+    async def _auto_unlock_if_empty(self, product_id: UUID) -> None:
+        """Unlock tasks if no drafts remain after rejection."""
+        remaining = await self.list_drafts(product_id)
+        if len(remaining) == 0:
+            product = await self.repo.session.get(Product, product_id)
+            if product and product.tasks_locked:
+                product.tasks_locked = False
+                await self.repo.session.flush()
+
     async def approve_task(self, task_id: UUID, approver_id: UUID) -> Task:
         """Approve a draft task, making it a real assignable task."""
         task = await self.get_or_404(task_id)
@@ -141,12 +162,14 @@ class TaskService(BaseService[Task]):
     async def reject_task(self, task_id: UUID, user: AuthenticatedUser) -> dict:
         """PM/superadmin hard-deletes a draft task."""
         task = await self.get_or_404(task_id)
+        product_id = task.product_id
         if not self._can_manage_tasks(user):
             raise forbidden("Only superadmins and project managers can reject tasks")
         if not task.is_draft:
             raise bad_request("Only draft tasks can be rejected")
         await self._clear_task_references(task_id)
         await self.repo.delete(task)
+        await self._auto_unlock_if_empty(product_id)
         return {"action": "deleted", "task_id": task_id}
 
     async def _clear_task_references(self, task_id: UUID) -> None:

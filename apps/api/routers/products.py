@@ -16,8 +16,6 @@ from apps.api.schemas.products import (
     ProductListResponse,
     ProductResponse,
     ProductUpdate,
-    SpecificationSourceCreate,
-    SpecificationSourceResponse,
 )
 from apps.api.services.product_service import ProductService
 
@@ -118,6 +116,26 @@ async def update_product(
 ):
     """Update a product."""
     return await service.update(product_id, body.model_dump(exclude_unset=True))
+
+
+@router.post("/{product_id}/lock-tasks", response_model=ProductResponse)
+async def lock_tasks(
+    product_id: UUID,
+    user: CurrentUser = None,
+    service: ProductService = Depends(get_service),
+):
+    """Lock tasks — disables generation, enables approve/reject."""
+    return await service.lock_tasks(product_id)
+
+
+@router.post("/{product_id}/unlock-tasks", response_model=ProductResponse)
+async def unlock_tasks(
+    product_id: UUID,
+    user: CurrentUser = None,
+    service: ProductService = Depends(get_service),
+):
+    """Unlock tasks — re-enables generation, enables new drafts."""
+    return await service.unlock_tasks(product_id)
 
 
 @router.post("/{product_id}/archive", response_model=ProductResponse)
@@ -239,39 +257,6 @@ async def list_product_features(
     return await service.get_specification_features(product_id)
 
 
-@router.get(
-    "/{product_id}/specification-sources",
-    response_model=list[SpecificationSourceResponse],
-)
-async def list_product_sources(
-    product_id: UUID,
-    user: CurrentUser = None,
-    service: ProductService = Depends(get_service),
-):
-    """Get all specification sources for a product."""
-    return await service.get_specification_sources(product_id)
 
-
-@router.post(
-    "/{product_id}/specification-sources",
-    response_model=SpecificationSourceResponse,
-    status_code=201,
-)
-async def create_product_source(
-    product_id: UUID,
-    body: SpecificationSourceCreate,
-    user: CurrentUser = None,
-    service: ProductService = Depends(get_service),
-):
-    """Create a specification source for a product."""
-    return await service.create_specification_source(product_id, body)
-
-
-@router.delete("/specification-sources/{source_id}", status_code=204)
-async def delete_product_source(
-    source_id: UUID,
-    user: CurrentUser = None,
-    service: ProductService = Depends(get_service),
-):
-    """Delete a specification source."""
-    await service.delete_specification_source(source_id)
+# NOTE: Specification source endpoints have been moved to
+# apps/api/routers/specification_sources.py for LOC compliance.

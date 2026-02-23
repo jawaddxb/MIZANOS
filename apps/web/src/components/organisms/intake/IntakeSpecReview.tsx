@@ -1,13 +1,16 @@
 "use client";
 
 import * as React from "react";
-import { Sparkles, Loader2, RefreshCw, Pencil, Check } from "lucide-react";
+import { Sparkles, Loader2, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/display/Card";
 import { Badge } from "@/components/atoms/display/Badge";
 import { BaseTextarea } from "@/components/atoms/inputs/BaseTextarea";
 import { Progress } from "@/components/atoms/feedback/Progress";
 import { Button } from "@/components/molecules/buttons/Button";
-import type { GeneratedSpec, FunctionalSpec, TechnicalSpec, IntakeSourceData } from "./types";
+import { EditableListItem } from "@/components/molecules/intake/EditableListItem";
+import { EditableText } from "@/components/molecules/intake/EditableText";
+import { CustomInstructionsInput } from "@/components/molecules/intake/CustomInstructionsInput";
+import type { GeneratedSpec, FunctionalSpec, IntakeSourceData } from "./types";
 
 interface IntakeSpecReviewProps {
   generatedSpec: GeneratedSpec | null;
@@ -16,68 +19,14 @@ interface IntakeSpecReviewProps {
   projectName: string;
   isGenerating: boolean;
   onGenerate: () => void;
+  customInstructions: string;
+  onCustomInstructionsChange: (value: string) => void;
 }
 
-function EditableListItem({ value, onSave, onRemove }: {
-  value: string; onSave: (next: string) => void; onRemove: () => void;
-}) {
-  const [editing, setEditing] = React.useState(false);
-  const [draft, setDraft] = React.useState(value);
-  const commit = () => {
-    const trimmed = draft.trim();
-    trimmed.length === 0 ? onRemove() : onSave(trimmed);
-    setEditing(false);
-  };
-  if (editing) {
-    return (
-      <div className="flex items-center gap-2">
-        <input className="flex-1 rounded-md border bg-background px-2 py-1 text-sm" value={draft}
-          onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && commit()} autoFocus />
-        <button type="button" onClick={commit} className="text-green-600"><Check className="h-4 w-4" /></button>
-      </div>
-    );
-  }
-  return (
-    <div className="group flex items-center justify-between text-sm">
-      <span>{value}</span>
-      <button type="button" onClick={() => setEditing(true)} className="opacity-0 transition-opacity group-hover:opacity-100">
-        <Pencil className="h-3 w-3 text-muted-foreground" />
-      </button>
-    </div>
-  );
-}
-
-function EditableText({ value, onSave }: { value: string; onSave: (v: string) => void }) {
-  const [editing, setEditing] = React.useState(false);
-  const [draft, setDraft] = React.useState(value);
-
-  React.useEffect(() => { setDraft(value); }, [value]);
-
-  const commit = () => {
-    onSave(draft.trim());
-    setEditing(false);
-  };
-
-  if (editing) {
-    return (
-      <div className="space-y-2">
-        <BaseTextarea value={draft} onChange={(e) => setDraft(e.target.value)} className="min-h-[80px]" />
-        <div className="flex justify-end gap-2">
-          <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
-          <Button size="sm" onClick={commit}>Save</Button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <button type="button" className="w-full text-left text-sm leading-relaxed hover:bg-muted/50 rounded-md p-2 -m-2" onClick={() => setEditing(true)}>
-      {value || <span className="text-muted-foreground italic">Click to add...</span>}
-    </button>
-  );
-}
-
-export function IntakeSpecReview({ generatedSpec, onSpecChange, sources, projectName, isGenerating, onGenerate }: IntakeSpecReviewProps) {
+export function IntakeSpecReview({
+  generatedSpec, onSpecChange, sources, projectName, isGenerating, onGenerate,
+  customInstructions, onCustomInstructionsChange,
+}: IntakeSpecReviewProps) {
   const [editingSummary, setEditingSummary] = React.useState(false);
   const [summaryDraft, setSummaryDraft] = React.useState(generatedSpec?.summary ?? "");
 
@@ -155,18 +104,21 @@ export function IntakeSpecReview({ generatedSpec, onSpecChange, sources, project
 
   if (!generatedSpec) {
     return (
-      <Card>
-        <CardContent className="py-12">
-          <div className="flex flex-col items-center gap-4">
-            <Sparkles className="h-8 w-8 text-muted-foreground" />
-            <p className="font-medium">Ready to generate specification</p>
-            <p className="max-w-md text-center text-sm text-muted-foreground">
-              Click below to have AI analyze your sources and create a project specification.
-            </p>
-            <Button onClick={onGenerate} leftIcon={<Sparkles className="h-4 w-4" />}>Generate Spec</Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <CustomInstructionsInput value={customInstructions} onChange={onCustomInstructionsChange} />
+        <Card>
+          <CardContent className="py-12">
+            <div className="flex flex-col items-center gap-4">
+              <Sparkles className="h-8 w-8 text-muted-foreground" />
+              <p className="font-medium">Ready to generate specification</p>
+              <p className="max-w-md text-center text-sm text-muted-foreground">
+                Click below to have AI analyze your sources and create a project specification.
+              </p>
+              <Button onClick={onGenerate} leftIcon={<Sparkles className="h-4 w-4" />}>Generate Spec</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
@@ -213,7 +165,8 @@ export function IntakeSpecReview({ generatedSpec, onSpecChange, sources, project
 
   return (
     <div className="space-y-6">
-      {/* Summary */}
+      <CustomInstructionsInput value={customInstructions} onChange={onCustomInstructionsChange} />
+
       <Card>
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
@@ -238,68 +191,35 @@ export function IntakeSpecReview({ generatedSpec, onSpecChange, sources, project
         </CardContent>
       </Card>
 
-      {/* Functional Specification */}
+      {renderTopLevelList("features", "Features")}
+
       {hasFunctional && (
         <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Functional Specification</CardTitle>
-          </CardHeader>
+          <CardHeader className="pb-4"><CardTitle className="text-lg">Functional Specification</CardTitle></CardHeader>
           <CardContent className="space-y-6">
-            {renderEditableList(
-              functionalSpec.userStories, "User Stories",
-              (idx, v) => updateFunctionalList("userStories", idx, v),
-              (idx) => removeFunctionalItem("userStories", idx),
-            )}
-            {renderEditableList(
-              functionalSpec.businessRules, "Business Rules",
-              (idx, v) => updateFunctionalList("businessRules", idx, v),
-              (idx) => removeFunctionalItem("businessRules", idx),
-            )}
-            {renderEditableList(
-              functionalSpec.acceptanceCriteria, "Acceptance Criteria",
-              (idx, v) => updateFunctionalList("acceptanceCriteria", idx, v),
-              (idx) => removeFunctionalItem("acceptanceCriteria", idx),
-            )}
+            {renderEditableList(functionalSpec.userStories, "User Stories", (i, v) => updateFunctionalList("userStories", i, v), (i) => removeFunctionalItem("userStories", i))}
+            {renderEditableList(functionalSpec.businessRules, "Business Rules", (i, v) => updateFunctionalList("businessRules", i, v), (i) => removeFunctionalItem("businessRules", i))}
+            {renderEditableList(functionalSpec.acceptanceCriteria, "Acceptance Criteria", (i, v) => updateFunctionalList("acceptanceCriteria", i, v), (i) => removeFunctionalItem("acceptanceCriteria", i))}
           </CardContent>
         </Card>
       )}
 
-      {/* Technical Specification */}
       {hasTechnical && (
         <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Technical Specification</CardTitle>
-          </CardHeader>
+          <CardHeader className="pb-4"><CardTitle className="text-lg">Technical Specification</CardTitle></CardHeader>
           <CardContent className="space-y-6">
             {technicalSpec.architecture && (
               <div className="space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Architecture</p>
-                <EditableText
-                  value={technicalSpec.architecture}
-                  onSave={(v) => onSpecChange({ ...generatedSpec, technicalSpec: { ...technicalSpec, architecture: v } })}
-                />
+                <EditableText value={technicalSpec.architecture} onSave={(v) => onSpecChange({ ...generatedSpec, technicalSpec: { ...technicalSpec, architecture: v } })} />
               </div>
             )}
-            {renderEditableList(
-              technicalSpec.dataModels, "Data Models",
-              (idx, v) => updateTechnicalList("dataModels", idx, v),
-              (idx) => removeTechnicalItem("dataModels", idx),
-            )}
-            {renderEditableList(
-              technicalSpec.integrations, "Integrations",
-              (idx, v) => updateTechnicalList("integrations", idx, v),
-              (idx) => removeTechnicalItem("integrations", idx),
-            )}
-            {renderEditableList(
-              technicalSpec.nonFunctionalRequirements, "Non-Functional Requirements",
-              (idx, v) => updateTechnicalList("nonFunctionalRequirements", idx, v),
-              (idx) => removeTechnicalItem("nonFunctionalRequirements", idx),
-            )}
+            {renderEditableList(technicalSpec.dataModels, "Data Models", (i, v) => updateTechnicalList("dataModels", i, v), (i) => removeTechnicalItem("dataModels", i))}
+            {renderEditableList(technicalSpec.integrations, "Integrations", (i, v) => updateTechnicalList("integrations", i, v), (i) => removeTechnicalItem("integrations", i))}
+            {renderEditableList(technicalSpec.nonFunctionalRequirements, "Non-Functional Requirements", (i, v) => updateTechnicalList("nonFunctionalRequirements", i, v), (i) => removeTechnicalItem("nonFunctionalRequirements", i))}
           </CardContent>
         </Card>
       )}
-
-      {renderTopLevelList("features", "Features")}
 
       {generatedSpec.techStack.length > 0 && (
         <Card>

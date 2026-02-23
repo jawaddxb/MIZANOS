@@ -23,8 +23,8 @@ interface AddSourceDialogProps {
 const SOURCE_TYPES = [
   { value: "website", label: "Website URL" },
   { value: "markdown", label: "Markdown" },
-  { value: "paste", label: "Pasted Text" },
-  { value: "document", label: "Text File" },
+  { value: "paste", label: "Open Text" },
+  { value: "document", label: "File Upload" },
 ] as const;
 
 type SourceType = (typeof SOURCE_TYPES)[number]["value"];
@@ -34,24 +34,17 @@ export function AddSourceDialog({ open, onOpenChange, productId }: AddSourceDial
   const [sourceType, setSourceType] = useState<SourceType>("website");
   const [url, setUrl] = useState("");
   const [textContent, setTextContent] = useState("");
-  const [fileName, setFileName] = useState("");
-  const [fileContent, setFileContent] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   const resetForm = () => {
     setUrl("");
     setTextContent("");
-    setFileName("");
-    setFileContent("");
+    setSelectedFile(null);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = () => setFileContent(reader.result as string);
-    reader.readAsText(file);
+    setSelectedFile(e.target.files?.[0] ?? null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,13 +68,8 @@ export function AddSourceDialog({ open, onOpenChange, productId }: AddSourceDial
           source_type: sourceType,
           raw_content: textContent,
         });
-      } else if (sourceType === "document") {
-        await specificationsRepository.createSource({
-          product_id: productId,
-          source_type: "document",
-          raw_content: fileContent,
-          file_name: fileName,
-        });
+      } else if (sourceType === "document" && selectedFile) {
+        await specificationsRepository.uploadSource(productId, selectedFile);
       }
 
       queryClient.invalidateQueries({ queryKey: ["specification-sources", productId] });
@@ -98,7 +86,7 @@ export function AddSourceDialog({ open, onOpenChange, productId }: AddSourceDial
   const isValid =
     (sourceType === "website" && url.trim().length > 0) ||
     ((sourceType === "markdown" || sourceType === "paste") && textContent.trim().length > 0) ||
-    (sourceType === "document" && fileContent.length > 0);
+    (sourceType === "document" && selectedFile !== null);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -136,7 +124,7 @@ export function AddSourceDialog({ open, onOpenChange, productId }: AddSourceDial
           {(sourceType === "markdown" || sourceType === "paste") && (
             <div>
               <label className="text-sm font-medium">
-                {sourceType === "markdown" ? "Markdown Content" : "Pasted Text"} *
+                {sourceType === "markdown" ? "Markdown Content" : "Open Text"} *
               </label>
               <textarea
                 value={textContent}
@@ -151,16 +139,16 @@ export function AddSourceDialog({ open, onOpenChange, productId }: AddSourceDial
 
           {sourceType === "document" && (
             <div>
-              <label className="text-sm font-medium">Text File *</label>
+              <label className="text-sm font-medium">Upload File *</label>
               <input
                 type="file"
-                accept=".txt,.md,.csv,.json,.xml,.html,.log"
+                accept=".pdf,.doc,.docx,.md,.txt,.csv,.json,.yaml,.yml,.png,.jpg,.jpeg,.webp"
                 onChange={handleFileChange}
                 className="w-full mt-1 px-3 py-2 text-sm border rounded-md bg-background"
                 required
               />
-              {fileName && (
-                <p className="text-xs text-muted-foreground mt-1">Selected: {fileName}</p>
+              {selectedFile && (
+                <p className="text-xs text-muted-foreground mt-1">Selected: {selectedFile.name}</p>
               )}
             </div>
           )}

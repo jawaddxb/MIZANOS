@@ -73,8 +73,24 @@ class AIService:
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
+    @staticmethod
+    def _build_user_content(
+        content: str, images: list[str] | None = None,
+    ) -> str | list[dict]:
+        """Build user message content — plain string or multimodal parts."""
+        if not images:
+            return content
+        parts: list[dict] = [{"type": "text", "text": content}]
+        for img in images:
+            parts.append({"type": "image_url", "image_url": {"url": img}})
+        return parts
+
     async def send_and_respond(
-        self, session_id: UUID, content: str, user_id: str
+        self,
+        session_id: UUID,
+        content: str,
+        user_id: str,
+        images: list[str] | None = None,
     ) -> AIChatMessage:
         """Send a message and get a non-streaming AI response."""
         import logging
@@ -104,7 +120,8 @@ class AIService:
             api_key, base_url, model = self._get_llm_config()
             client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
 
-            messages: list[dict[str, str]] = [
+            user_content = self._build_user_content(content, images)
+            messages: list[dict] = [
                 {
                     "role": "system",
                     "content": (
@@ -113,7 +130,7 @@ class AIService:
                         "respond with ONLY valid JSON — no markdown fences, no explanation."
                     ),
                 },
-                {"role": "user", "content": content},
+                {"role": "user", "content": user_content},
             ]
 
             response = await client.chat.completions.create(

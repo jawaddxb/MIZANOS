@@ -10,6 +10,7 @@ class ProductBase(BaseSchema):
     """Shared product fields."""
 
     name: str
+    description: str | None = None
     status: str | None = "intake"
     stage: str | None = "Intake"
     pillar: str | None = None
@@ -29,6 +30,7 @@ class ProductUpdate(BaseSchema):
     """Product update schema (all optional)."""
 
     name: str | None = None
+    description: str | None = None
     status: str | None = None
     stage: str | None = None
     pillar: str | None = None
@@ -47,6 +49,7 @@ class ProductResponse(ProductBase):
     created_by: UUID | None = None
     created_by_name: str | None = None
     archived_at: datetime | None = None
+    tasks_locked: bool = False
     created_at: datetime
     updated_at: datetime
 

@@ -259,6 +259,20 @@ export class ProductsRepository extends BaseRepository<Product> {
     return response.data;
   }
 
+  async lockTasks(productId: string): Promise<Product> {
+    const response = await this.client.post<Product>(
+      `${this.basePath}/${productId}/lock-tasks`,
+    );
+    return response.data;
+  }
+
+  async unlockTasks(productId: string): Promise<Product> {
+    const response = await this.client.post<Product>(
+      `${this.basePath}/${productId}/unlock-tasks`,
+    );
+    return response.data;
+  }
+
   async archive(productId: string): Promise<Product> {
     const response = await this.client.post<Product>(
       `${this.basePath}/${productId}/archive`,

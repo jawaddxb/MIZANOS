@@ -14,6 +14,7 @@ interface UploadedFile {
 
 interface DocumentUploadProps {
   onFilesChange: (files: File[]) => void;
+  initialFiles?: File[];
   className?: string;
 }
 
@@ -36,10 +37,28 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
 }
 
-export function DocumentUpload({ onFilesChange, className }: DocumentUploadProps) {
-  const [files, setFiles] = React.useState<UploadedFile[]>([]);
+export function DocumentUpload({ onFilesChange, initialFiles, className }: DocumentUploadProps) {
+  const [files, setFiles] = React.useState<UploadedFile[]>(() =>
+    (initialFiles ?? []).map((file) => ({
+      id: crypto.randomUUID(),
+      file,
+      preview: file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined,
+    })),
+  );
   const [isDragOver, setIsDragOver] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
+
+  const onFilesChangeRef = React.useRef(onFilesChange);
+  onFilesChangeRef.current = onFilesChange;
+
+  const isInitialMount = React.useRef(true);
+  React.useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    onFilesChangeRef.current(files.map((f) => f.file));
+  }, [files]);
 
   const handleFiles = React.useCallback(
     (newFiles: FileList | null) => {
@@ -49,13 +68,9 @@ export function DocumentUpload({ onFilesChange, className }: DocumentUploadProps
         file,
         preview: file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined,
       }));
-      setFiles((prev) => {
-        const updated = [...prev, ...uploaded];
-        onFilesChange(updated.map((f) => f.file));
-        return updated;
-      });
+      setFiles((prev) => [...prev, ...uploaded]);
     },
-    [onFilesChange],
+    [],
   );
 
   const removeFile = React.useCallback(
@@ -63,12 +78,10 @@ export function DocumentUpload({ onFilesChange, className }: DocumentUploadProps
       setFiles((prev) => {
         const target = prev.find((f) => f.id === id);
         if (target?.preview) URL.revokeObjectURL(target.preview);
-        const updated = prev.filter((f) => f.id !== id);
-        onFilesChange(updated.map((f) => f.file));
-        return updated;
+        return prev.filter((f) => f.id !== id);
       });
     },
-    [onFilesChange],
+    [],
   );
 
   const handleDrop = React.useCallback(

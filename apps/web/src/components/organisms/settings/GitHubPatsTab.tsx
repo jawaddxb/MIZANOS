@@ -14,7 +14,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/atoms/layout/Dialog";
-import { Github, Plus, Trash2, Loader2 } from "lucide-react";
+import { Github, Plus, Trash2, Loader2, ExternalLink, Info, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/atoms/layout/Collapsible";
 import { useGitHubPats } from "@/hooks/queries/useGitHubPats";
 import { useUpdatePat, useDeletePat } from "@/hooks/mutations/useGitHubPatMutations";
 import type { GitHubPat } from "@/lib/types";
@@ -111,7 +112,42 @@ export function GitHubPatsTab({ onAddPat }: GitHubPatsTabProps) {
   }
 
   return (
-    <div>
+    <div className="space-y-4">
+      <Collapsible defaultOpen>
+        <div className="rounded-lg border border-blue-200 bg-blue-50/50">
+          <CollapsibleTrigger className="flex w-full items-center justify-between p-4">
+            <div className="flex items-center gap-2">
+              <Info className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-900">How to create a read-only GitHub PAT</span>
+            </div>
+            <ChevronDown className="h-4 w-4 text-blue-600 transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="px-4 pb-4 pt-0">
+              <ol className="list-decimal list-inside space-y-1 text-sm text-blue-800">
+                <li>
+                  Go to{" "}
+                  <a
+                    href="https://github.com/settings/personal-access-tokens"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline font-medium inline-flex items-center gap-0.5"
+                  >
+                    GitHub Token Settings
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                  {" "}and click <strong>Generate new token</strong> (Fine-grained)
+                </li>
+                <li>Give it a name, set an expiration, and select the repositories you need</li>
+                <li>Under <strong>Permissions &rarr; Repository permissions</strong>, set <strong>Contents</strong> to <strong>Read-only</strong></li>
+                <li>Leave all other permissions as <strong>No access</strong></li>
+                <li>Click <strong>Generate token</strong> and paste it here</li>
+              </ol>
+            </div>
+          </CollapsibleContent>
+        </div>
+      </Collapsible>
+
       <Card>
         <div className="p-6">
           <div className="flex items-center justify-between">

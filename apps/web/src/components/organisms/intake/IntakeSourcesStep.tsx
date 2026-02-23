@@ -36,7 +36,7 @@ const SOURCE_TABS: Array<{ id: string; label: string; icon: React.ElementType }>
   { id: "documents", label: "Documents", icon: FileText },
   { id: "audio", label: "Audio", icon: Mic },
   { id: "markdown", label: "Markdown", icon: Code },
-  { id: "paste", label: "Paste", icon: ClipboardPaste },
+  { id: "paste", label: "Open Text", icon: ClipboardPaste },
   { id: "website", label: "Website", icon: Globe },
   { id: "github", label: "GitHub", icon: Github },
 ];
@@ -101,11 +101,11 @@ export function IntakeSourcesStep(props: IntakeSourcesStepProps) {
           </TabsList>
 
           <TabsContent value="documents">
-            <DocumentUpload onFilesChange={onDocumentsChange} />
+            <DocumentUpload onFilesChange={onDocumentsChange} initialFiles={documents} />
           </TabsContent>
 
           <TabsContent value="audio">
-            <AudioNotes onNotesChange={onAudioNotesChange} />
+            <AudioNotes onNotesChange={onAudioNotesChange} initialNotes={audioNotes} />
           </TabsContent>
 
           <TabsContent value="markdown">
@@ -114,7 +114,7 @@ export function IntakeSourcesStep(props: IntakeSourcesStepProps) {
 
           <TabsContent value="paste">
             <div className="space-y-3">
-              <BaseLabel>Paste Project Information</BaseLabel>
+              <BaseLabel>Open Text</BaseLabel>
               <BaseTextarea
                 className="min-h-[200px] resize-y"
                 placeholder="Paste requirements, emails, meeting notes, etc."

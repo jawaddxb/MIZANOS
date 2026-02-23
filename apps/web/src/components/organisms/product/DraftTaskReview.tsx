@@ -1,9 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Check, X, FileText, LayoutTemplate, Sparkles } from "lucide-react";
+import { Check, X, FileText, LayoutTemplate, Sparkles, Loader2 } from "lucide-react";
+import { DraftRow, type DraftTask } from "./DraftRow";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/atoms/layout/DropdownMenu";
 import { Button } from "@/components/molecules/buttons/Button";
-import { Badge } from "@/components/atoms/display/Badge";
 import { BaseCheckbox } from "@/components/atoms/inputs/BaseCheckbox";
 import { useDraftTasks } from "@/hooks/queries/useDraftTasks";
 import {
@@ -12,21 +18,24 @@ import {
   useRejectDraftTask,
   useBulkRejectDraftTasks,
 } from "@/hooks/mutations/useTaskApprovalMutations";
+import { DraftDetailDialog } from "./DraftDetailDialog";
 
 interface DraftTaskReviewProps {
   productId: string;
+  onGenerateFromSpec?: () => void;
+  onGenerateFromTemplates?: () => void;
+  onGenerateFromPort?: () => void;
+  isGenerating?: boolean;
+  showLovable?: boolean;
 }
 
-const SOURCE_CONFIG: Record<string, { label: string; icon: typeof FileText }> = {
-  specification: { label: "Spec", icon: FileText },
-  template: { label: "Template", icon: LayoutTemplate },
-  lovable_port: { label: "Lovable", icon: Sparkles },
-};
-
-export function DraftTaskReview({ productId }: DraftTaskReviewProps) {
+export function DraftTaskReview({
+  productId, onGenerateFromSpec, onGenerateFromTemplates, onGenerateFromPort,
+  isGenerating, showLovable,
+}: DraftTaskReviewProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [viewTask, setViewTask] = useState<DraftTask | null>(null);
   const { data: drafts = [], isLoading } = useDraftTasks(productId);
-
   const approveTask = useApproveTask(productId);
   const bulkApprove = useBulkApproveTasks(productId);
   const rejectTask = useRejectDraftTask(productId);
@@ -35,11 +44,7 @@ export function DraftTaskReview({ productId }: DraftTaskReviewProps) {
   const allSelected = drafts.length > 0 && selectedIds.size === drafts.length;
 
   const toggleSelectAll = () => {
-    if (allSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(drafts.map((t) => t.id)));
-    }
+    setSelectedIds(allSelected ? new Set() : new Set(drafts.map((t) => t.id)));
   };
 
   const toggleSelect = (id: string) => {
@@ -52,15 +57,11 @@ export function DraftTaskReview({ productId }: DraftTaskReviewProps) {
   };
 
   const handleBulkApprove = () => {
-    bulkApprove.mutate([...selectedIds], {
-      onSuccess: () => setSelectedIds(new Set()),
-    });
+    bulkApprove.mutate([...selectedIds], { onSuccess: () => setSelectedIds(new Set()) });
   };
 
   const handleBulkReject = () => {
-    bulkReject.mutate([...selectedIds], {
-      onSuccess: () => setSelectedIds(new Set()),
-    });
+    bulkReject.mutate([...selectedIds], { onSuccess: () => setSelectedIds(new Set()) });
   };
 
   if (isLoading) {
@@ -71,7 +72,42 @@ export function DraftTaskReview({ productId }: DraftTaskReviewProps) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
         <FileText className="h-10 w-10 mb-3 opacity-40" />
-        <p className="text-sm">No draft tasks to review</p>
+        <p className="text-sm font-medium">No draft tasks to review</p>
+        <p className="text-xs mt-1 max-w-sm text-center">
+          Generate tasks from your specification, templates, or a Lovable manifest. They will appear here as drafts for review.
+        </p>
+        {onGenerateFromSpec && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="default" size="sm" className="mt-4" disabled={isGenerating}>
+                {isGenerating ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4 mr-1" />
+                )}
+                Generate Tasks
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center">
+              <DropdownMenuItem onClick={onGenerateFromSpec}>
+                <FileText className="h-4 w-4 mr-2" />
+                From Specification
+              </DropdownMenuItem>
+              {onGenerateFromTemplates && (
+                <DropdownMenuItem onClick={onGenerateFromTemplates}>
+                  <LayoutTemplate className="h-4 w-4 mr-2" />
+                  From Templates
+                </DropdownMenuItem>
+              )}
+              {showLovable && onGenerateFromPort && (
+                <DropdownMenuItem onClick={onGenerateFromPort}>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  From Lovable Manifest
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
     );
   }
@@ -97,9 +133,15 @@ export function DraftTaskReview({ productId }: DraftTaskReviewProps) {
             onToggle={() => toggleSelect(task.id)}
             onApprove={() => approveTask.mutate(task.id)}
             onReject={() => rejectTask.mutate(task.id)}
+            onViewDetail={() => setViewTask(task)}
           />
         ))}
       </div>
+      <DraftDetailDialog
+        task={viewTask}
+        open={viewTask !== null}
+        onOpenChange={(open) => { if (!open) setViewTask(null); }}
+      />
     </div>
   );
 }
@@ -116,14 +158,9 @@ interface DraftToolbarProps {
 }
 
 function DraftToolbar({
-  draftCount,
-  selectedCount,
-  allSelected,
-  onToggleAll,
-  onApprove,
-  onReject,
-  isApproving,
-  isRejecting,
+  draftCount, selectedCount, allSelected,
+  onToggleAll, onApprove, onReject,
+  isApproving, isRejecting,
 }: DraftToolbarProps) {
   return (
     <div className="flex items-center justify-between">
@@ -159,52 +196,3 @@ function DraftToolbar({
   );
 }
 
-interface DraftRowProps {
-  task: { id: string; title: string; description: string | null; generation_source: string | null; pillar: string | null; priority: string | null };
-  selected: boolean;
-  onToggle: () => void;
-  onApprove: () => void;
-  onReject: () => void;
-}
-
-function DraftRow({ task, selected, onToggle, onApprove, onReject }: DraftRowProps) {
-  const source = SOURCE_CONFIG[task.generation_source ?? ""] ?? null;
-
-  return (
-    <div className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50">
-      <BaseCheckbox checked={selected} onCheckedChange={onToggle} />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{task.title}</p>
-        {task.description && (
-          <p className="text-xs text-muted-foreground truncate mt-0.5">
-            {task.description}
-          </p>
-        )}
-      </div>
-      <div className="flex items-center gap-2 shrink-0">
-        {source && (
-          <Badge variant="secondary" className="text-xs">
-            <source.icon className="h-3 w-3 mr-1" />
-            {source.label}
-          </Badge>
-        )}
-        {task.pillar && (
-          <Badge variant="outline" className="text-xs capitalize">
-            {task.pillar}
-          </Badge>
-        )}
-        {task.priority && (
-          <Badge variant="outline" className="text-xs capitalize">
-            {task.priority}
-          </Badge>
-        )}
-        <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600" onClick={onApprove}>
-          <Check className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7 text-red-600" onClick={onReject}>
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
-  );
-}

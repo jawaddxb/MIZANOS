@@ -30,16 +30,22 @@ class Settings(BaseSettings):
     github_webhook_secret: str = ""
     firecrawl_api_key: str = ""
 
-    # Storage
+    # Storage (S3 — legacy, unused)
     s3_bucket: str = ""
     s3_region: str = "us-east-1"
     s3_access_key: str = ""
     s3_secret_key: str = ""
 
+    # Storage (GCS)
+    gcs_bucket_name: str = ""
+    gcs_project_id: str = ""
+    gcs_credentials_path: str = ""
+
     # Email (Resend)
     resend_api_key: str = ""
     email_from: str = "Mizan <onboarding@resend.dev>"
     app_base_url: str = "http://localhost:3006"
+    api_base_url: str = "http://localhost:8000"
 
     # Google OAuth
     google_oauth_client_id: str = ""

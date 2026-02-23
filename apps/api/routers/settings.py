@@ -70,7 +70,7 @@ async def list_global_integrations(user: CurrentUser = None, service: SettingsSe
 
 @router.post("/integrations/global", response_model=IntegrationResponse, status_code=201)
 async def create_global_integration(body: GlobalIntegrationCreate, user: CurrentUser = None, service: SettingsService = Depends(get_service)):
-    return await service.create_global_integration(body)
+    return await service.create_global_integration(body, user_id=user.profile_id if user else None)
 
 
 @router.get("/integrations/project/{product_id}", response_model=list[IntegrationResponse])
@@ -116,7 +116,7 @@ async def list_user_overrides(user_id: UUID | None = None, user: CurrentUser = N
 
 @router.post("/user-overrides", response_model=UserOverrideResponse, status_code=201)
 async def create_user_override(body: UserOverrideCreate, user: CurrentUser = None, service: SettingsService = Depends(get_service)):
-    return await service.create_user_override(body)
+    return await service.create_user_override(body, user_id=user.profile_id if user else None)
 
 
 @router.patch("/user-overrides/{override_id}", response_model=UserOverrideResponse)
