@@ -60,7 +60,7 @@ function TasksTab({ productId, openTaskId }: TasksTabProps) {
   const filteredTasks = useMemo(() => {
     if (!tasks) return [];
     return tasks.filter((task) => {
-      if (myTasksOnly && task.assignee_id !== user?.profile_id && task.created_by !== user?.profile_id) return false;
+      if (myTasksOnly && user?.profile_id && task.assignee_id !== user.profile_id && task.created_by !== user.profile_id) return false;
       if (statusFilter !== "all" && task.status !== statusFilter) return false;
       if (priorityFilter !== "all" && task.priority !== priorityFilter) return false;
       if (!myTasksOnly) {
