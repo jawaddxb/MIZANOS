@@ -138,31 +138,46 @@ class TaskService(BaseService[Task]):
                 product.tasks_locked = False
                 await self.repo.session.flush()
 
+    async def _require_tasks_locked(self, product_id: UUID) -> None:
+        """Gate: approve/reject requires tasks to be locked first."""
+        product = await self.repo.session.get(Product, product_id)
+        if not product or not product.tasks_locked:
+            raise bad_request("Tasks must be locked before approving or rejecting")
+
     async def approve_task(self, task_id: UUID, approver_id: UUID) -> Task:
         """Approve a draft task, making it a real assignable task."""
         task = await self.get_or_404(task_id)
-        return await self.repo.update(task, {
+        await self._require_tasks_locked(task.product_id)
+        result = await self.repo.update(task, {
             "is_draft": False,
             "approved_by": approver_id,
             "approved_at": datetime.now(timezone.utc),
         })
+        await self._auto_unlock_if_empty(task.product_id)
+        return result
 
     async def bulk_approve_tasks(
         self, task_ids: list[UUID], approver_id: UUID
     ) -> dict:
         """Approve multiple draft tasks."""
+        if task_ids:
+            first = await self.get_or_404(task_ids[0])
+            await self._require_tasks_locked(first.product_id)
         now = datetime.now(timezone.utc)
+        product_id = first.product_id
         for tid in task_ids:
             task = await self.get_or_404(tid)
             await self.repo.update(task, {
                 "is_draft": False, "approved_by": approver_id, "approved_at": now,
             })
+        await self._auto_unlock_if_empty(product_id)
         return {"approved_count": len(task_ids), "task_ids": task_ids}
 
     async def reject_task(self, task_id: UUID, user: AuthenticatedUser) -> dict:
         """PM/superadmin hard-deletes a draft task."""
         task = await self.get_or_404(task_id)
         product_id = task.product_id
+        await self._require_tasks_locked(product_id)
         if not self._can_manage_tasks(user):
             raise forbidden("Only superadmins and project managers can reject tasks")
         if not task.is_draft:
@@ -261,7 +276,7 @@ class TaskService(BaseService[Task]):
             if current_assignee != new_assignee:
                 if not await self._is_product_pm(task.product_id, user.profile_id):
                     raise forbidden("Only superadmins and project managers can reassign tasks")
-        if "status" in data and data["status"] != "backlog":
+        if "status" in data and data["status"] not in ("backlog", "cancelled"):
             if task is None:
                 task = await self.get_or_404(entity_id)
             effective_assignee = (

@@ -5,7 +5,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/atoms/layout/Dialog";
 
 interface DraftDetailDialogProps {
@@ -19,13 +18,13 @@ export function DraftDetailDialog({ task, open, onOpenChange }: DraftDetailDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{task.title}</DialogTitle>
-          <DialogDescription>
-            {task.description || "No description provided."}
-          </DialogDescription>
         </DialogHeader>
+        <p className="text-sm text-muted-foreground whitespace-pre-line">
+          {task.description || "No description provided."}
+        </p>
       </DialogContent>
     </Dialog>
   );
