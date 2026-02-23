@@ -22,9 +22,9 @@ export function DraftDetailDialog({ task, open, onOpenChange }: DraftDetailDialo
         <DialogHeader>
           <DialogTitle>{task.title}</DialogTitle>
         </DialogHeader>
-        <p className="text-sm text-muted-foreground whitespace-pre-line">
+        <div className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
           {task.description || "No description provided."}
-        </p>
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -8,37 +8,14 @@ from uuid import UUID
 from sqlalchemy import select, func as sa_func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.api.config import settings
 from apps.api.models.product import Product
 from apps.api.models.specification import Specification, SpecificationSource
 from apps.api.models.system_document import SystemDocument
+from apps.api.services.llm_config import get_llm_config, get_system_doc_prompt
 from apps.api.services.scrape_service import ScrapeService
 from apps.api.services.spec_source_context import build_source_context
 
 logger = logging.getLogger(__name__)
-
-_SYSTEM_PROMPTS = {
-    "functional_spec": (
-        "You are a technical writer. Generate a comprehensive functional specification "
-        "in Markdown format. Include: executive summary, feature catalog with descriptions, "
-        "user stories, data models, user flows, API endpoints, business rules, and "
-        "acceptance criteria. Base everything on the provided source material."
-    ),
-    "implementation_spec": (
-        "You are a software architect. Generate an implementation specification "
-        "in Markdown format. Include: architecture overview, technology stack analysis, "
-        "code patterns and conventions, layer descriptions, data layer design, API "
-        "structure, dependency map, and development guidelines. Base everything on the "
-        "provided source material."
-    ),
-    "deployment_docs": (
-        "You are a DevOps engineer. Generate deployment documentation "
-        "in Markdown format. Include: prerequisites, setup guide, environment "
-        "configuration, build and deploy steps, CI/CD pipeline recommendations, "
-        "monitoring setup, scaling considerations, and troubleshooting guide. "
-        "Base everything on the provided source material."
-    ),
-}
 
 _DOC_TITLES = {
     "functional_spec": "Functional Specification",
@@ -81,8 +58,9 @@ class SystemDocGenerator:
     ) -> SystemDocument:
         """Generate a single document type."""
         version = await self._get_next_version(product_id, doc_type)
+        system_prompt = await get_system_doc_prompt(self.session, doc_type)
         content = await self._call_llm(
-            _SYSTEM_PROMPTS[doc_type],
+            system_prompt,
             f"Generate the {_DOC_TITLES[doc_type].lower()} based on this context:\n\n"
             f"{context}",
         )
@@ -191,25 +169,12 @@ class SystemDocGenerator:
         """Call LLM for document generation."""
         import openai
 
-        api_key = settings.openrouter_api_key or settings.openai_api_key
-        if not api_key:
-            raise ValueError(
-                "No LLM API key configured. Set OPENROUTER_API_KEY or OPENAI_API_KEY."
-            )
-        base_url = (
-            "https://openrouter.ai/api/v1"
-            if settings.openrouter_api_key
-            else None
+        config = await get_llm_config(self.session)
+        client = openai.AsyncOpenAI(
+            api_key=config.api_key, base_url=config.base_url,
         )
-        model = (
-            "anthropic/claude-sonnet-4"
-            if settings.openrouter_api_key
-            else "gpt-4o"
-        )
-
-        client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
         response = await client.chat.completions.create(
-            model=model,
+            model=config.model,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},

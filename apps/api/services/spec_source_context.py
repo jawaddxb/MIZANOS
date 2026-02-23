@@ -21,9 +21,18 @@ _SPEC_FORMAT = {
     },
     "features": [
         {
-            "name": "Feature name",
-            "description": "What this feature does and why it matters",
-            "acceptance_criteria": ["Criterion 1", "Criterion 2"],
+            "name": "Short feature name (3-6 words)",
+            "description": (
+                "Two short paragraphs separated by a newline: "
+                "(1) What the feature does and the user problem it solves. "
+                "(2) Expected behavior and key implementation considerations. "
+                "Plain text only, no markdown. MUST be unique and specific."
+            ),
+            "acceptance_criteria": [
+                "Specific, testable criterion for this feature",
+                "Another measurable criterion unique to this feature",
+            ],
+            "priority": "high | medium | low",
         }
     ],
     "techStack": ["Technology name"],
@@ -116,11 +125,32 @@ def build_source_context(
     return text_context, image_paths
 
 
+def _format_tech_stack(tech: dict) -> str:
+    """Format a TechStackInfo dict into a readable prompt block."""
+    lines: list[str] = [
+        "DETECTED TECH STACK (from actual project repository "
+        "— use these as the techStack, do NOT guess):"
+    ]
+    for label, key in (
+        ("Languages", "languages"),
+        ("Frameworks", "frameworks"),
+        ("Databases", "databases"),
+        ("Package Managers", "package_managers"),
+        ("Notable Dependencies", "notable_deps"),
+    ):
+        items = tech.get(key)
+        if isinstance(items, list) and items:
+            lines.append(f"  {label}: {', '.join(str(i) for i in items)}")
+    return "\n".join(lines)
+
+
 def build_spec_prompt(
     product_name: str,
     context: str,
     custom_instructions: str | None = None,
     has_images: bool = False,
+    detected_tech_stack: dict | None = None,
+    feature_rules_override: str | None = None,
 ) -> str:
     """Build the LLM prompt for spec generation."""
     spec_format = json.dumps(_SPEC_FORMAT)
@@ -136,11 +166,33 @@ def build_spec_prompt(
             "Analyze their content and incorporate relevant details "
             "into the specification.\n"
         )
+    tech_block = ""
+    if detected_tech_stack and isinstance(detected_tech_stack, dict):
+        tech_block = "\n\n" + _format_tech_stack(detected_tech_stack) + "\n"
+
+    feature_rules = feature_rules_override or (
+        "\n\nIMPORTANT rules for the 'features' array:\n"
+        "- Each feature 'name' must be concise (3-6 words). "
+        "Do NOT cram details into the name.\n"
+        "- EVERY feature MUST have a non-empty 'description' field. "
+        "Never omit or leave it blank. Write two short paragraphs "
+        "separated by a newline: (1) what the feature does and the "
+        "user problem it solves, (2) expected behavior and key "
+        "implementation considerations. Each description must be "
+        "unique, specific, and plain text (no markdown).\n"
+        "- Each feature 'acceptance_criteria' MUST contain 2-4 specific, "
+        "testable criteria unique to that feature. "
+        "Do NOT use generic criteria.\n"
+        "- Each feature MUST have a 'priority' field "
+        "(one of: 'high', 'medium', 'low').\n"
+    )
     return (
         f'Generate a detailed product specification for "{product_name}".\n\n'
         f"{context}"
         f"{instruction_block}"
-        f"{image_block}\n\n"
+        f"{image_block}"
+        f"{tech_block}"
+        f"{feature_rules}\n"
         "Respond ONLY with valid JSON (no markdown, no code fences) "
         f"in this exact format:\n{spec_format}"
     )

@@ -1,9 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { User } from "lucide-react";
 import { MizanLogo } from "@/components/atoms/brand/MizanLogo";
-import { Button } from "@/components/molecules/buttons/Button";
+import { BaseSwitch } from "@/components/atoms/inputs/BaseSwitch";
 import { PageHeader } from "@/components/molecules/layout/PageHeader";
 import { QuickStats } from "@/components/organisms/dashboard/QuickStats";
 import { ActionItems } from "@/components/organisms/dashboard/ActionItems";
@@ -48,14 +47,12 @@ export default function DashboardPage() {
         subtitle="Project health overview and key action points"
         icon={<MizanLogo size={22} className="text-primary" />}
       >
-        <Button
-          variant={myDashboard ? "default" : "outline"}
-          size="sm"
-          onClick={toggle}
-          className="text-xs"
-        >
-          <User className="h-3 w-3 mr-1" /> My Dashboard
-        </Button>
+        <div className="flex items-center gap-2 cursor-pointer select-none" onClick={toggle}>
+          <BaseSwitch checked={myDashboard} onCheckedChange={toggle} />
+          <span className="text-xs text-muted-foreground">
+            {myDashboard ? "My Projects" : "All Projects"}
+          </span>
+        </div>
       </PageHeader>
 
       <QuickStats

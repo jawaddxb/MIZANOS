@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/atoms/display/Badge";
 import { Button } from "@/components/molecules/buttons/Button";
@@ -15,7 +15,7 @@ import { useProducts } from "@/hooks/queries/useProducts";
 import { useProfiles } from "@/hooks/queries/useProfiles";
 import { useProductRoleFilters } from "@/hooks/utils/useProductRoleFilters";
 import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
-import { isMyDashboardEnabled } from "@/hooks/utils/useMyDashboard";
+import { isMyDashboardEnabled, buildMyProjectIds } from "@/hooks/utils/useMyDashboard";
 import { PRODUCT_STAGES } from "@/lib/constants";
 import { cn } from "@/lib/utils/cn";
 import {
@@ -34,7 +34,10 @@ export default function ProductsPage() {
   const [stageFilter, setStageFilter] = useState("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showArchived, setShowArchived] = useState(false);
-  const [myProjectsOnly, setMyProjectsOnly] = useState(isMyDashboardEnabled);
+  const [myProjectsOnly, setMyProjectsOnly] = useState(false);
+  useEffect(() => {
+    setMyProjectsOnly(isMyDashboardEnabled());
+  }, []);
 
   const { user } = useAuth();
   const { data: products = [], isLoading } = useProducts();
@@ -69,14 +72,8 @@ export default function ProductsPage() {
   const myProjectIds = useMemo(() => {
     const userId = user?.profile_id;
     if (!userId) return new Set<string>();
-    const ids = new Set<string>();
-    for (const task of allTasks) {
-      if (task.assignee_id === userId || task.created_by === userId) {
-        ids.add(task.product_id);
-      }
-    }
-    return ids;
-  }, [allTasks, user?.profile_id]);
+    return buildMyProjectIds(userId, allMembers, allTasks);
+  }, [allMembers, allTasks, user?.profile_id]);
 
   const archivedCount = products.filter((p) => p.archived_at).length;
 
@@ -96,10 +93,7 @@ export default function ProductsPage() {
       pillarFilter === "all" || product.pillar === pillarFilter;
     const matchesStage =
       stageFilter === "all" || product.stage === stageFilter;
-    const matchesMine =
-      !myProjectsOnly ||
-      product.created_by === user?.profile_id ||
-      myProjectIds.has(product.id);
+    const matchesMine = !myProjectsOnly || myProjectIds.has(product.id);
     return matchesSearch && matchesStatus && matchesPillar && matchesStage && matchesProduct(product.id) && matchesMine;
   });
 

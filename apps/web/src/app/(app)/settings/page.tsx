@@ -29,6 +29,7 @@ const ComponentLibraryTab = dynamic(() => import("@/components/organisms/setting
 const WorkflowRulesTab = dynamic(() => import("@/components/organisms/settings/WorkflowRulesTab").then((m) => ({ default: m.WorkflowRulesTab })), { loading: () => <TabSkeleton /> });
 const GitHubPatsTab = dynamic(() => import("@/components/organisms/settings/GitHubPatsTab").then((m) => ({ default: m.GitHubPatsTab })), { loading: () => <TabSkeleton /> });
 const OrgSettingsTab = dynamic(() => import("@/components/organisms/settings/OrgSettingsTab").then((m) => ({ default: m.OrgSettingsTab })), { loading: () => <TabSkeleton /> });
+const AIConfigTab = dynamic(() => import("@/components/organisms/settings/AIConfigTab").then((m) => ({ default: m.AIConfigTab })), { loading: () => <TabSkeleton /> });
 
 const InviteUserDialog = dynamic(() => import("@/components/organisms/settings/InviteUserDialog").then((m) => ({ default: m.InviteUserDialog })));
 const UserPermissionsDialog = dynamic(() => import("@/components/organisms/settings/UserPermissionsDialog").then((m) => ({ default: m.UserPermissionsDialog })));
@@ -57,6 +58,7 @@ const ALL_TABS = [
   { id: "authority-matrix", label: "Authority Matrix", adminOnly: true as const },
   { id: "workflow", label: "Workflow", adminOnly: true as const },
   { id: "org-settings", label: "Organization", superadminOnly: true as const },
+  { id: "ai-config", label: "AI Config", superadminOnly: true as const },
 ] as const;
 
 type TabId = (typeof ALL_TABS)[number]["id"];
@@ -71,6 +73,7 @@ const TAB_COMPONENTS: Partial<Record<TabId, React.ComponentType>> = {
   library: ComponentLibraryTab,
   workflow: WorkflowRulesTab,
   "org-settings": OrgSettingsTab,
+  "ai-config": AIConfigTab,
 };
 
 export default function SettingsPage() {
@@ -262,7 +265,6 @@ function StandardsTabWrapper() {
     </>
   );
 }
-
 function HolidaysTabWrapper() {
   const { user } = useAuth();
   const { data: profile } = useProfile(user?.id ?? "");
@@ -282,7 +284,6 @@ function HolidaysTabWrapper() {
     />
   );
 }
-
 function GitHubPatsTabWrapper() {
   const [addOpen, setAddOpen] = useState(false);
 
@@ -293,7 +294,6 @@ function GitHubPatsTabWrapper() {
     </>
   );
 }
-
 function GenericSettingsTab({ tabId }: { tabId: TabId }) {
   const Comp = TAB_COMPONENTS[tabId];
   return Comp ? <Comp /> : null;

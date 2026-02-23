@@ -16,7 +16,10 @@ from apps.api.schemas.specifications import (
     SpecificationCreate,
 )
 from apps.api.services.base_service import BaseService
-from apps.api.services.task_description_builder import build_task_description
+from apps.api.services.task_description_builder import (
+    build_task_description,
+    fill_missing_descriptions,
+)
 from packages.common.utils.error_handlers import bad_request, not_found
 
 logger = logging.getLogger(__name__)
@@ -169,7 +172,10 @@ class SpecificationService(BaseService[Specification]):
         if feature.task_id is not None:
             raise bad_request("This feature already has a linked task")
         spec_content = await self._get_spec_content(feature.specification_id)
-        description = build_task_description(feature, spec_content)
+        await fill_missing_descriptions(
+            self.repo.session, [feature], spec_content,
+        )
+        description = build_task_description(feature)
         task = Task(
             product_id=feature.product_id,
             title=feature.name,
@@ -250,9 +256,12 @@ class SpecificationService(BaseService[Specification]):
             )
 
         spec_content = latest_spec.content
+        await fill_missing_descriptions(
+            self.repo.session, pending_features, spec_content,
+        )
         tasks: list[Task] = []
         for feature in pending_features:
-            description = build_task_description(feature, spec_content)
+            description = build_task_description(feature)
             task = Task(
                 product_id=product_id,
                 title=feature.name,

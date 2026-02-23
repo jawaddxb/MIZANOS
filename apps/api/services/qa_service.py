@@ -8,11 +8,11 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.api.config import settings
 from apps.api.models.qa import QACheck
 from apps.api.models.specification import Specification
 from apps.api.schemas.qa import QACheckCreate
 from apps.api.services.base_service import BaseService
+from apps.api.services.llm_config import get_llm_config
 
 logger = logging.getLogger(__name__)
 
@@ -60,19 +60,12 @@ class QAService(BaseService[QACheck]):
         try:
             import openai
 
-            api_key = settings.openrouter_api_key or settings.openai_api_key
-            if not api_key:
-                raise HTTPException(
-                    status_code=400,
-                    detail="No AI API key configured. Set OPENROUTER_API_KEY or OPENAI_API_KEY.",
-                )
-
-            base_url = "https://openrouter.ai/api/v1" if settings.openrouter_api_key else None
-            model = "anthropic/claude-sonnet-4" if settings.openrouter_api_key else "gpt-4o"
-
-            client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
+            config = await get_llm_config(self.repo.session)
+            client = openai.AsyncOpenAI(
+                api_key=config.api_key, base_url=config.base_url,
+            )
             response = await client.chat.completions.create(
-                model=model,
+                model=config.model,
                 messages=[{"role": "user", "content": prompt}],
             )
 
