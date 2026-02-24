@@ -159,25 +159,25 @@ export function AIConfigSection({
         />
       )}
 
-      <div className={cn(!editingUnlocked && "pointer-events-none opacity-50")}>
-        <div className="flex gap-1 rounded-lg bg-muted p-1">
-          {SUB_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                activeTab === tab.id
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+      <div className="flex gap-1 rounded-lg bg-muted p-1">
+        {SUB_TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
+            className={cn(
+              "flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+              activeTab === tab.id
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
+      <div className={cn(!editingUnlocked && "pointer-events-none opacity-50")}>
         {activeTab === "parameters" && (
           <ModelConfigEditor
             config={modelConfig}
