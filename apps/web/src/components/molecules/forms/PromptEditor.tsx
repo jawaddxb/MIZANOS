@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Check, X } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Check, X, Copy } from "lucide-react";
+import { toast } from "sonner";
 import { BaseButton } from "@/components/atoms/buttons/BaseButton";
 import { BaseLabel } from "@/components/atoms/inputs/BaseLabel";
 import { BaseTextarea } from "@/components/atoms/inputs/BaseTextarea";
@@ -26,12 +27,27 @@ export function PromptEditor({
   isPending,
 }: PromptEditorProps) {
   const updateSetting = useUpdateOrgSetting();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isCustomized = value !== "" && value !== defaultValue;
   const displayValue = isCustomized ? value : defaultValue;
   const [local, setLocal] = useState(displayValue);
   const [confirmSave, setConfirmSave] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const dirty = local !== displayValue;
+
+  const autoResize = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, []);
+
+  useEffect(() => { autoResize(); }, [local, autoResize]);
+
+  const copyToClipboard = useCallback(() => {
+    navigator.clipboard.writeText(local);
+    toast.success("Copied to clipboard");
+  }, [local]);
 
   const save = () => {
     updateSetting.mutate({
@@ -69,20 +85,32 @@ export function PromptEditor({
             Customized
           </span>
         </div>
-        {isCustomized && (
+        <div className="flex items-center gap-1">
           <BaseButton
             variant="ghost"
-            size="sm"
-            onClick={() => setConfirmReset(true)}
-            disabled={isPending}
+            size="icon"
+            className="h-7 w-7"
+            onClick={copyToClipboard}
+            title="Copy to clipboard"
           >
-            Reset to Default
+            <Copy className="h-3.5 w-3.5" />
           </BaseButton>
-        )}
+          {isCustomized && (
+            <BaseButton
+              variant="ghost"
+              size="sm"
+              onClick={() => setConfirmReset(true)}
+              disabled={isPending}
+            >
+              Reset to Default
+            </BaseButton>
+          )}
+        </div>
       </div>
       <BaseTextarea
+        ref={textareaRef}
         id={`prompt-${promptKey}`}
-        rows={4}
+        className="resize-none overflow-hidden"
         value={local}
         onChange={(e) => setLocal(e.target.value)}
         disabled={isPending}
