@@ -47,9 +47,9 @@ export default function DashboardPage() {
         subtitle="Project health overview and key action points"
         icon={<MizanLogo size={22} className="text-primary" />}
       >
-        <div className="flex items-center gap-2 cursor-pointer select-none" onClick={toggle}>
+        <div className="flex items-center gap-2 select-none">
           <BaseSwitch checked={myDashboard} onCheckedChange={toggle} />
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-muted-foreground cursor-pointer" onClick={toggle}>
             {myDashboard ? "My Projects" : "All Projects"}
           </span>
         </div>
