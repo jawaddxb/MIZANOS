@@ -63,6 +63,16 @@ async def update_pat(
     return await service.update_pat(pat_id, body)
 
 
+@router.post("/{pat_id}/check", response_model=GitHubPatVerifyResponse)
+async def check_pat_status(
+    pat_id: UUID,
+    user: CurrentUser,
+    service: GitHubPatService = Depends(get_service),
+):
+    """Check if a stored PAT is still valid and persist the result."""
+    return await service.check_and_update_status(pat_id)
+
+
 @router.delete("/{pat_id}", status_code=204)
 async def delete_pat(
     pat_id: UUID,

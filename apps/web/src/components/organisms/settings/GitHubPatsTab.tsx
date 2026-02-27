@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/atoms/display/Card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/atoms/display/Avatar";
 import { Badge } from "@/components/atoms/display/Badge";
@@ -14,10 +15,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/atoms/layout/Dialog";
-import { Github, Plus, Trash2, Loader2, ExternalLink, Info, ChevronDown } from "lucide-react";
+import { Github, Plus, Trash2, Loader2, ExternalLink, Info, ChevronDown, RefreshCw, CircleCheck, CircleX } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/atoms/layout/Collapsible";
 import { useGitHubPats } from "@/hooks/queries/useGitHubPats";
 import { useUpdatePat, useDeletePat } from "@/hooks/mutations/useGitHubPatMutations";
+import { GitHubPatsRepository } from "@/lib/api/repositories/github-pats.repository";
+import { toast } from "sonner";
 import type { GitHubPat } from "@/lib/types";
 
 interface GitHubPatsTabProps {
@@ -37,10 +40,14 @@ function PatCard({
   pat,
   onToggle,
   onDelete,
+  onCheck,
+  checking,
 }: {
   pat: GitHubPat;
   onToggle: (id: string, isActive: boolean) => void;
   onDelete: (id: string) => void;
+  onCheck: (id: string) => void;
+  checking: boolean;
 }) {
   return (
     <div className="flex items-center justify-between rounded-lg border p-4">
@@ -54,11 +61,15 @@ function PatCard({
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <p className="text-sm font-medium truncate">{pat.label}</p>
-            {pat.scopes && (
-              <Badge variant="outline" className="text-xs shrink-0">
-                {pat.scopes.split(",").length} scopes
+            {pat.token_status === "valid" ? (
+              <Badge variant="outline" className="text-xs shrink-0 border-green-300 text-green-700 bg-green-50">
+                <CircleCheck className="h-3 w-3 mr-1" /> Valid
               </Badge>
-            )}
+            ) : pat.token_status === "expired" ? (
+              <Badge variant="outline" className="text-xs shrink-0 border-red-300 text-red-700 bg-red-50">
+                <CircleX className="h-3 w-3 mr-1" /> Expired
+              </Badge>
+            ) : null}
           </div>
           <p className="text-xs text-muted-foreground">
             @{pat.github_username} &middot; Last used: {formatDate(pat.last_used_at)}
@@ -66,16 +77,11 @@ function PatCard({
         </div>
       </div>
       <div className="flex items-center gap-3 shrink-0">
-        <BaseSwitch
-          checked={pat.is_active}
-          onCheckedChange={(checked) => onToggle(pat.id, checked)}
-        />
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-destructive hover:text-destructive"
-          onClick={() => onDelete(pat.id)}
-        >
+        <Button variant="ghost" size="icon" onClick={() => onCheck(pat.id)} disabled={checking} title="Re-check PAT status">
+          {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+        </Button>
+        <BaseSwitch checked={pat.is_active} onCheckedChange={(checked) => onToggle(pat.id, checked)} />
+        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => onDelete(pat.id)}>
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
@@ -85,9 +91,28 @@ function PatCard({
 
 export function GitHubPatsTab({ onAddPat }: GitHubPatsTabProps) {
   const { data: pats = [], isLoading } = useGitHubPats();
+  const queryClient = useQueryClient();
   const updatePat = useUpdatePat();
   const deletePat = useDeletePat();
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [checkingId, setCheckingId] = useState<string | null>(null);
+
+  const handleCheckStatus = useCallback(async (id: string) => {
+    setCheckingId(id);
+    try {
+      const result = await new GitHubPatsRepository().checkStatus(id);
+      if (result.valid) {
+        toast.success("PAT is valid and active");
+      } else {
+        toast.error("PAT is expired or revoked on GitHub");
+      }
+      await queryClient.invalidateQueries({ queryKey: ["github-pats"] });
+    } catch {
+      toast.error("Failed to check PAT status");
+    } finally {
+      setCheckingId(null);
+    }
+  }, [queryClient]);
 
   const handleToggle = useCallback(
     (id: string, isActive: boolean) => {
@@ -138,7 +163,7 @@ export function GitHubPatsTab({ onAddPat }: GitHubPatsTabProps) {
                   </a>
                   {" "}and click <strong>Generate new token</strong> (Fine-grained)
                 </li>
-                <li>Give it a name, set an expiration, and select the repositories you need</li>
+                <li>Give it a name, set expiration to <strong>no expiration</strong> (or the maximum allowed), and select <strong>All repositories</strong></li>
                 <li>Under <strong>Permissions &rarr; Repository permissions</strong>, set <strong>Contents</strong> to <strong>Read-only</strong></li>
                 <li>Leave all other permissions as <strong>No access</strong></li>
                 <li>Click <strong>Generate token</strong> and paste it here</li>
@@ -180,6 +205,8 @@ export function GitHubPatsTab({ onAddPat }: GitHubPatsTabProps) {
                   pat={pat}
                   onToggle={handleToggle}
                   onDelete={(id) => setDeleteTarget(id)}
+                  onCheck={handleCheckStatus}
+                  checking={checkingId === pat.id}
                 />
               ))}
             </div>
@@ -193,6 +220,17 @@ export function GitHubPatsTab({ onAddPat }: GitHubPatsTabProps) {
             <DialogTitle>Delete PAT</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete this token? This action cannot be undone.
+              {(() => {
+                const target = pats.find((p) => p.id === deleteTarget);
+                if (target && target.linked_products_count > 0) {
+                  return (
+                    <span className="block mt-2 text-destructive font-medium">
+                      This PAT is linked to {target.linked_products_count} project{target.linked_products_count > 1 ? "s" : ""}. Deleting it will flag those projects as having a linked PAT issue.
+                    </span>
+                  );
+                }
+                return null;
+              })()}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

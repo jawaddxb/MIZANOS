@@ -41,6 +41,13 @@ export class GitHubPatsRepository {
     return response.data;
   }
 
+  async checkStatus(id: string): Promise<GitHubPatVerifyResult> {
+    const response = await this.client.post<GitHubPatVerifyResult>(
+      `${this.basePath}/${id}/check`,
+    );
+    return response.data;
+  }
+
   async delete(id: string): Promise<void> {
     await this.client.delete(`${this.basePath}/${id}`);
   }

@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { Loader2, Pencil, Eye, Settings, Github, Archive } from "lucide-react";
+import { Loader2, Pencil, Eye, Settings, Archive } from "lucide-react";
 
 import { EditableTitle } from "@/components/atoms/inputs/EditableTitle";
 import { ProductTabs } from "@/components/organisms/product/ProductTabs";
@@ -27,6 +27,7 @@ import { SourcesTab } from "@/components/organisms/product/SourcesTab";
 import { SystemDocsTab } from "@/components/organisms/product/SystemDocsTab";
 import { ProductSettingsDialog } from "@/components/organisms/product/ProductSettingsDialog";
 import { LinkGitHubDialog } from "@/components/organisms/product/LinkGitHubDialog";
+import { GitHubLinkBanner } from "@/components/molecules/github/GitHubLinkBanner";
 import { FloatingAIButton } from "@/components/organisms/ai/FloatingAIButton";
 import { Dialog, DialogContent } from "@/components/atoms/layout/Dialog";
 import { Button } from "@/components/molecules/buttons/Button";
@@ -113,17 +114,9 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         ) : (
           <h1 className="text-2xl font-semibold">{productData?.name ?? "Project"}</h1>
         )}
-        <div className="flex items-center gap-2">
-          {!isArchived && (
-            <Button variant="outline" size="sm" onClick={() => setLinkGitHubOpen(true)}>
-              <Github className="h-4 w-4 mr-1" />
-              {productData?.repository_url ? "Update Repo" : "Link GitHub"}
-            </Button>
-          )}
-          <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
-            <Settings className="h-4 w-4 mr-1" /> Settings
-          </Button>
-        </div>
+        <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
+          <Settings className="h-4 w-4 mr-1" /> Settings
+        </Button>
       </div>
       {isArchived && (
         <div className="flex items-center justify-between rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 mb-4">
@@ -138,6 +131,15 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
             Restore
           </Button>
         </div>
+      )}
+      {!isArchived && (
+        <GitHubLinkBanner
+          repositoryUrl={productData?.repository_url ?? null}
+          repoStatus={productData?.github_repo_status ?? null}
+          repoError={productData?.github_repo_error ?? null}
+          trackedBranch={productData?.tracked_branch ?? null}
+          onLinkClick={() => setLinkGitHubOpen(true)}
+        />
       )}
       <ProductTabs
         productId={id}
@@ -175,6 +177,8 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         onOpenChange={setLinkGitHubOpen}
         productId={id}
         currentUrl={productData?.repository_url}
+        currentPatId={productData?.github_pat_id}
+        currentBranch={productData?.tracked_branch}
       />
       {productData && (
         <ProductSettingsDialog

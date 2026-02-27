@@ -17,6 +17,10 @@ class ProductBase(BaseSchema):
     progress: float | None = 0
     health_score: float | None = None
     repository_url: str | None = None
+    github_pat_id: UUID | None = None
+    github_repo_status: str | None = None
+    github_repo_error: str | None = None
+    tracked_branch: str | None = None
     source_type: str | None = None
 
 
@@ -37,6 +41,10 @@ class ProductUpdate(BaseSchema):
     progress: float | None = None
     health_score: float | None = None
     repository_url: str | None = None
+    github_pat_id: UUID | None = None
+    github_repo_status: str | None = None
+    github_repo_error: str | None = None
+    tracked_branch: str | None = None
     source_type: str | None = None
 
 
@@ -44,6 +52,7 @@ class ProductResponse(ProductBase):
     """Product response."""
 
     id: UUID
+    github_pat_id: UUID | None = None
     lovable_url: str | None = None
     logo_url: str | None = None
     created_by: UUID | None = None
