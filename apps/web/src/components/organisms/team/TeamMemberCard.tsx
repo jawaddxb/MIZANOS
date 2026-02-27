@@ -32,6 +32,7 @@ function canManageUser(actorRole: string | undefined, targetRole: string | null)
   if (actorRole === "superadmin") return true;
   if (actorRole === "business_owner" && targetRole !== "superadmin") return true;
   if (actorRole === "admin" && targetRole !== "admin" && targetRole !== "superadmin" && targetRole !== "business_owner") return true;
+  if (actorRole === "project_manager" && targetRole !== "admin" && targetRole !== "superadmin" && targetRole !== "business_owner") return true;
   return false;
 }
 
