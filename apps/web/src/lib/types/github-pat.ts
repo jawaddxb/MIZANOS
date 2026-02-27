@@ -8,6 +8,8 @@ export interface GitHubPat {
   scopes: string | null;
   last_used_at: string | null;
   is_active: boolean;
+  token_status: "valid" | "expired" | "unknown";
+  linked_products_count: number;
   created_at: string;
   updated_at: string;
 }

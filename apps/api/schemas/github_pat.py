@@ -50,5 +50,7 @@ class GitHubPatResponse(BaseSchema):
     scopes: str | None = None
     last_used_at: datetime | None = None
     is_active: bool
+    token_status: str = "valid"
+    linked_products_count: int = 0
     created_at: datetime
     updated_at: datetime

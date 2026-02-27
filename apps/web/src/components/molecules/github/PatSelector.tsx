@@ -162,18 +162,8 @@ export function PatSelector({ selectedPatId, rawTokenActive, onPatSelect, onUseR
             <div className="px-2 py-3 text-center text-xs text-muted-foreground space-y-1">
               <p>No PATs found</p>
               <p>
-                Create one at{" "}
-                <a
-                  href="https://github.com/settings/personal-access-tokens"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline inline-flex items-center gap-0.5 text-primary"
-                >
-                  GitHub
-                  <ExternalLink className="h-2.5 w-2.5" />
-                </a>
-                {" "}with read-only Contents access, then manage tokens in{" "}
-                <a href="/settings" className="underline text-primary">Settings &gt; GitHub PATs</a>
+                Add a token below, or learn more in{" "}
+                <a href="/settings?tab=github-pats" className="underline text-primary">Settings &gt; GitHub PATs</a>
               </p>
             </div>
           ) : (

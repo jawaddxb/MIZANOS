@@ -55,6 +55,33 @@ class RepoInfoResponse(BaseSchema):
     open_issues: int = 0
 
 
+class RepoBranchesRequest(BaseSchema):
+    """Request to list repository branches."""
+
+    repository_url: str
+    pat_id: str | None = None
+
+
+class RepoBranchResponse(BaseSchema):
+    """A single branch."""
+
+    name: str
+    is_default: bool = False
+
+
+class RepoAccessCheckRequest(BaseSchema):
+    """Request to check repo access for a product."""
+
+    product_id: UUID
+
+
+class RepoAccessCheckResponse(BaseSchema):
+    """Repo access check result."""
+
+    status: str
+    error: str | None = None
+
+
 class ScanRequest(BaseSchema):
     """Request to trigger a repo scan."""
 

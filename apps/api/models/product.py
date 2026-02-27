@@ -22,6 +22,12 @@ class Product(Base, UUIDMixin, TimestampMixin):
     progress: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     health_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     repository_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    github_pat_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("github_pats.id"), nullable=True
+    )
+    github_repo_status: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    github_repo_error: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    tracked_branch: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     lovable_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     logo_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     source_type: Mapped[Optional[str]] = mapped_column(String, nullable=True)

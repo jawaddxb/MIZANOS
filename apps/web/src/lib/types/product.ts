@@ -11,6 +11,10 @@ export interface Product {
   health_score: number | null;
   logo_url: string | null;
   repository_url: string | null;
+  github_pat_id: string | null;
+  github_repo_status: string | null;
+  github_repo_error: string | null;
+  tracked_branch: string | null;
   lovable_url: string | null;
   source_type: ProjectSourceType | null;
   created_by: string | null;

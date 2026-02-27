@@ -5,10 +5,11 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 import httpx
-from sqlalchemy import select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.models.github_pat import GitHubPat
+from apps.api.models.product import Product
 from apps.api.schemas.github_pat import GitHubPatCreate, GitHubPatUpdate
 from apps.api.services.base_service import BaseService
 from packages.common.utils.encryption import get_fernet
@@ -90,20 +91,43 @@ class GitHubPatService(BaseService[GitHubPat]):
 
     async def list_pats(
         self, *, created_by: UUID | None = None
-    ) -> list[GitHubPat]:
-        """List active PATs, optionally filtered by creator."""
-        stmt = select(GitHubPat).where(GitHubPat.is_active == True)  # noqa: E712
+    ) -> list[dict]:
+        """List active PATs with linked product counts."""
+        count_sub = (
+            select(func.count())
+            .where(Product.github_pat_id == GitHubPat.id)
+            .correlate(GitHubPat)
+            .scalar_subquery()
+        )
+        stmt = select(GitHubPat, count_sub.label("linked_products_count")).where(
+            GitHubPat.is_active == True  # noqa: E712
+        )
         if created_by:
             stmt = stmt.where(GitHubPat.created_by == created_by)
         stmt = stmt.order_by(GitHubPat.created_at.desc())
         result = await self.repo.session.execute(stmt)
-        return list(result.scalars().all())
+        rows = result.all()
+        pats = []
+        for pat, count in rows:
+            pat.linked_products_count = count
+            pats.append(pat)
+        return pats
 
     async def decrypt_token(self, pat_id: UUID) -> str:
         """Decrypt and return the raw token (server-side only)."""
         pat = await self.get_or_404(pat_id)
         f = get_fernet()
         return f.decrypt(pat.token_encrypted.encode()).decode()
+
+    async def check_and_update_status(self, pat_id: UUID) -> dict:
+        """Decrypt token, verify against GitHub, and persist the status."""
+        pat = await self.get_or_404(pat_id)
+        f = get_fernet()
+        raw_token = f.decrypt(pat.token_encrypted.encode()).decode()
+        result = await self.verify_token(raw_token)
+        pat.token_status = "valid" if result["valid"] else "expired"
+        await self.repo.session.flush()
+        return result
 
     async def update_last_used(self, pat_id: UUID) -> None:
         """Update the last_used_at timestamp."""
@@ -121,5 +145,14 @@ class GitHubPatService(BaseService[GitHubPat]):
         return await self.update(pat_id, updates)
 
     async def delete_pat(self, pat_id: UUID) -> None:
-        """Delete a PAT."""
+        """Flag linked products, then delete the PAT."""
+        await self.repo.session.execute(
+            update(Product)
+            .where(Product.github_pat_id == pat_id)
+            .values(
+                github_pat_id=None,
+                github_repo_status="error",
+                github_repo_error="Linked PAT was deleted",
+            )
+        )
         await self.delete(pat_id)

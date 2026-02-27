@@ -8,8 +8,12 @@ from apps.api.dependencies import CurrentUser, DbSession
 from apps.api.schemas.github import (
     GitHubConnectionResponse,
     GitHubOAuthCallback,
+    RepoAccessCheckRequest,
+    RepoAccessCheckResponse,
     RepoAnalysisRequest,
     RepoAnalysisResponse,
+    RepoBranchesRequest,
+    RepoBranchResponse,
     RepoInfoRequest,
     RepoInfoResponse,
     RepoScanHistoryResponse,
@@ -73,6 +77,16 @@ async def get_analysis(product_id: UUID, user: CurrentUser = None, service: GitH
 @router.post("/repo-info", response_model=RepoInfoResponse)
 async def get_repo_info(body: RepoInfoRequest, user: CurrentUser = None, service: GitHubService = Depends(get_service)):
     return await service.get_repo_info(body.repository_url, body.github_token, body.pat_id)
+
+
+@router.post("/check-repo-access", response_model=RepoAccessCheckResponse)
+async def check_repo_access(body: RepoAccessCheckRequest, user: CurrentUser = None, service: GitHubService = Depends(get_service)):
+    return await service.check_repo_access(body.product_id)
+
+
+@router.post("/branches", response_model=list[RepoBranchResponse])
+async def list_branches(body: RepoBranchesRequest, user: CurrentUser = None, service: GitHubService = Depends(get_service)):
+    return await service.list_branches(body.repository_url, body.pat_id)
 
 
 @router.post("/scan")

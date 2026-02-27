@@ -97,6 +97,25 @@ export class GitHubRepository {
     return response.data;
   }
 
+  async checkRepoAccess(productId: string): Promise<{ status: string; error: string | null }> {
+    const response = await this.client.post<{ status: string; error: string | null }>(
+      `${this.basePath}/check-repo-access`,
+      { product_id: productId },
+    );
+    return response.data;
+  }
+
+  async listBranches(
+    repositoryUrl: string,
+    patId?: string,
+  ): Promise<{ name: string; is_default: boolean }[]> {
+    const response = await this.client.post<{ name: string; is_default: boolean }[]>(
+      `${this.basePath}/branches`,
+      { repository_url: repositoryUrl, pat_id: patId },
+    );
+    return response.data;
+  }
+
   async triggerScan(productId: string): Promise<{ status: string; filesChanged?: number }> {
     const response = await this.client.post<{ status: string; filesChanged?: number }>(
       `${this.basePath}/scan`,

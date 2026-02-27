@@ -33,3 +33,6 @@ class GitHubPat(Base, UUIDMixin, TimestampMixin):
         DateTime(timezone=True), nullable=True
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    token_status: Mapped[str] = mapped_column(
+        String, default="valid", server_default="valid", nullable=False
+    )

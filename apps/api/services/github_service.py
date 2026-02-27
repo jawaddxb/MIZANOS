@@ -36,31 +36,17 @@ class GitHubService:
         if not state or state not in _oauth_states:
             raise ValueError("Invalid or missing OAuth state parameter")
         _oauth_states.discard(state)
-
         async with httpx.AsyncClient() as client:
             resp = await client.post(
                 "https://github.com/login/oauth/access_token",
-                json={
-                    "client_id": settings.github_client_id,
-                    "client_secret": settings.github_client_secret,
-                    "code": code,
-                },
+                json={"client_id": settings.github_client_id, "client_secret": settings.github_client_secret, "code": code},
                 headers={"Accept": "application/json"},
             )
-            data = resp.json()
-            access_token = data.get("access_token", "")
-
-            user_resp = await client.get(
-                "https://api.github.com/user",
-                headers={"Authorization": f"Bearer {access_token}"},
-            )
-            user_data = user_resp.json()
-
+            access_token = resp.json().get("access_token", "")
+            user_data = (await client.get("https://api.github.com/user", headers={"Authorization": f"Bearer {access_token}"})).json()
         connection = UserGithubConnection(
-            user_id=user_id,
-            github_user_id=user_data.get("id", 0),
-            github_username=user_data.get("login", ""),
-            github_avatar_url=user_data.get("avatar_url"),
+            user_id=user_id, github_user_id=user_data.get("id", 0),
+            github_username=user_data.get("login", ""), github_avatar_url=user_data.get("avatar_url"),
             access_token=access_token,
         )
         self.session.add(connection)
@@ -68,13 +54,11 @@ class GitHubService:
         return {"message": "Connected", "username": connection.github_username}
 
     async def get_connections(self, user_id: str) -> list[UserGithubConnection]:
-        stmt = select(UserGithubConnection).where(UserGithubConnection.user_id == user_id)
-        result = await self.session.execute(stmt)
+        result = await self.session.execute(select(UserGithubConnection).where(UserGithubConnection.user_id == user_id))
         return list(result.scalars().all())
 
     async def disconnect(self, user_id: str) -> None:
-        stmt = select(UserGithubConnection).where(UserGithubConnection.user_id == user_id)
-        result = await self.session.execute(stmt)
+        result = await self.session.execute(select(UserGithubConnection).where(UserGithubConnection.user_id == user_id))
         conn = result.scalar_one_or_none()
         if conn:
             await self.session.delete(conn)
@@ -86,57 +70,40 @@ class GitHubService:
             await self.session.flush()
 
     async def list_repos(self, user_id: str) -> list[dict]:
-        """List GitHub repos for the connected user."""
         conn = await self._get_connection(user_id)
         if not conn:
             return []
-
         async with httpx.AsyncClient() as client:
-            resp = await client.get(
-                "https://api.github.com/user/repos?sort=updated&per_page=50",
-                headers={"Authorization": f"Bearer {conn.access_token}"},
-            )
-            return resp.json()
+            return (await client.get("https://api.github.com/user/repos?sort=updated&per_page=50", headers={"Authorization": f"Bearer {conn.access_token}"})).json()
 
     async def analyze_repo(self, product_id: UUID, repository_url: str) -> RepositoryAnalysis:
         """Analyze a GitHub repository using the GitHub API."""
         owner_repo = self._parse_owner_repo(repository_url)
         tech_stack: dict = {}
-        file_count: int | None = None
         overall_score: float = 0
 
         if owner_repo:
             owner, repo = owner_repo
-            headers = {"Accept": "application/vnd.github+json"}
+            headers = self._github_headers()
+            base = f"https://api.github.com/repos/{owner}/{repo}"
             async with httpx.AsyncClient() as client:
-                # Fetch languages
-                lang_resp = await client.get(
-                    f"https://api.github.com/repos/{owner}/{repo}/languages",
-                    headers=headers,
-                    timeout=15,
-                )
+                lang_resp = await client.get(f"{base}/languages", headers=headers, timeout=15)
                 if lang_resp.status_code == 200:
                     tech_stack["languages"] = lang_resp.json()
 
-                # Fetch repo metadata
-                repo_resp = await client.get(
-                    f"https://api.github.com/repos/{owner}/{repo}",
-                    headers=headers,
-                    timeout=15,
-                )
+                repo_resp = await client.get(base, headers=headers, timeout=15)
                 if repo_resp.status_code == 200:
-                    repo_data = repo_resp.json()
-                    tech_stack["default_branch"] = repo_data.get("default_branch", "main")
-                    tech_stack["open_issues"] = repo_data.get("open_issues_count", 0)
-                    tech_stack["stars"] = repo_data.get("stargazers_count", 0)
-                    tech_stack["forks"] = repo_data.get("forks_count", 0)
-                    tech_stack["description"] = repo_data.get("description")
+                    rd = repo_resp.json()
+                    tech_stack.update({
+                        "default_branch": rd.get("default_branch", "main"),
+                        "open_issues": rd.get("open_issues_count", 0),
+                        "stars": rd.get("stargazers_count", 0),
+                        "forks": rd.get("forks_count", 0),
+                        "description": rd.get("description"),
+                    })
 
-                # Fetch contributor count
                 contrib_resp = await client.get(
-                    f"https://api.github.com/repos/{owner}/{repo}/contributors?per_page=1&anon=true",
-                    headers=headers,
-                    timeout=15,
+                    f"{base}/contributors?per_page=1&anon=true", headers=headers, timeout=15,
                 )
                 if contrib_resp.status_code == 200:
                     link_header = contrib_resp.headers.get("link", "")
@@ -147,23 +114,16 @@ class GitHubService:
                     else:
                         tech_stack["contributors"] = len(contrib_resp.json())
 
-            # Basic health score heuristic
-            has_description = bool(tech_stack.get("description"))
-            has_multiple_contributors = (tech_stack.get("contributors", 0) or 0) > 1
-            low_issues = (tech_stack.get("open_issues", 0) or 0) < 50
             overall_score = sum([
-                30 if has_description else 0,
-                30 if has_multiple_contributors else 10,
-                20 if low_issues else 5,
-                20,  # base score for having a repo
+                30 if tech_stack.get("description") else 0,
+                30 if (tech_stack.get("contributors", 0) or 0) > 1 else 10,
+                20 if (tech_stack.get("open_issues", 0) or 0) < 50 else 5,
+                20,
             ])
 
         analysis = RepositoryAnalysis(
-            product_id=product_id,
-            repository_url=repository_url,
-            tech_stack=tech_stack or None,
-            overall_score=overall_score,
-            file_count=file_count,
+            product_id=product_id, repository_url=repository_url,
+            tech_stack=tech_stack or None, overall_score=overall_score, file_count=None,
         )
         self.session.add(analysis)
         await self.session.flush()
@@ -181,17 +141,29 @@ class GitHubService:
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_latest_analysis(
-        self, product_id: UUID
-    ) -> RepositoryAnalysis | None:
-        stmt = (
-            select(RepositoryAnalysis)
-            .where(RepositoryAnalysis.product_id == product_id)
-            .order_by(RepositoryAnalysis.created_at.desc())
-            .limit(1)
-        )
-        result = await self.session.execute(stmt)
-        return result.scalar_one_or_none()
+    async def get_latest_analysis(self, product_id: UUID) -> RepositoryAnalysis | None:
+        stmt = select(RepositoryAnalysis).where(
+            RepositoryAnalysis.product_id == product_id
+        ).order_by(RepositoryAnalysis.created_at.desc()).limit(1)
+        return (await self.session.execute(stmt)).scalar_one_or_none()
+
+    async def _resolve_token(
+        self, github_token: str | None = None, pat_id: str | None = None
+    ) -> str | None:
+        """Resolve a GitHub token from explicit value or stored PAT."""
+        if github_token:
+            return github_token
+        if pat_id:
+            from apps.api.services.github_pat_service import GitHubPatService
+            return await GitHubPatService(self.session).decrypt_token(pat_id)
+        return None
+
+    def _github_headers(self, token: str | None = None) -> dict[str, str]:
+        """Build GitHub API request headers."""
+        headers: dict[str, str] = {"Accept": "application/vnd.github+json"}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        return headers
 
     async def get_repo_info(
         self,
@@ -199,20 +171,12 @@ class GitHubService:
         github_token: str | None = None,
         pat_id: str | None = None,
     ) -> dict:
-        # Resolve token: explicit token takes priority, then stored PAT
-        token = github_token
-        if not token and pat_id:
-            from apps.api.services.github_pat_service import GitHubPatService
-            pat_service = GitHubPatService(self.session)
-            token = await pat_service.decrypt_token(pat_id)
-
+        token = await self._resolve_token(github_token, pat_id)
         owner_repo = self._parse_owner_repo(repository_url)
         if not owner_repo:
             return {}
         owner, repo = owner_repo
-        headers = {"Accept": "application/vnd.github+json"}
-        if token:
-            headers["Authorization"] = f"Bearer {token}"
+        headers = self._github_headers(token)
         async with httpx.AsyncClient() as client:
             resp = await client.get(
                 f"https://api.github.com/repos/{owner}/{repo}",
@@ -223,11 +187,9 @@ class GitHubService:
                 return {}
             data = resp.json()
 
-        # Update last_used_at on successful PAT usage
-        if pat_id and resp.status_code == 200:
+        if pat_id:
             from apps.api.services.github_pat_service import GitHubPatService
-            pat_service = GitHubPatService(self.session)
-            await pat_service.update_last_used(pat_id)
+            await GitHubPatService(self.session).update_last_used(pat_id)
 
         return {
             "name": data.get("name"),
@@ -240,6 +202,76 @@ class GitHubService:
             "open_issues": data.get("open_issues_count", 0),
         }
 
+    async def list_branches(
+        self,
+        repository_url: str,
+        pat_id: str | None = None,
+    ) -> list[dict]:
+        """List branches for a GitHub repository."""
+        token = await self._resolve_token(pat_id=pat_id)
+        owner_repo = self._parse_owner_repo(repository_url)
+        if not owner_repo:
+            return []
+        owner, repo = owner_repo
+        headers = self._github_headers(token)
+
+        branches: list[dict] = []
+        page = 1
+        async with httpx.AsyncClient() as client:
+            repo_resp = await client.get(
+                f"https://api.github.com/repos/{owner}/{repo}",
+                headers=headers, timeout=15,
+            )
+            default_branch = repo_resp.json().get("default_branch", "") if repo_resp.status_code == 200 else ""
+
+            while True:
+                resp = await client.get(
+                    f"https://api.github.com/repos/{owner}/{repo}/branches",
+                    headers=headers, params={"per_page": 100, "page": page}, timeout=15,
+                )
+                if resp.status_code != 200:
+                    break
+                data = resp.json()
+                if not data:
+                    break
+                branches.extend({"name": b["name"], "is_default": b["name"] == default_branch} for b in data)
+                if len(data) < 100:
+                    break
+                page += 1
+
+        branches.sort(key=lambda b: (not b["is_default"], b["name"]))
+        return branches
+
+    async def check_repo_access(self, product_id: UUID) -> dict:
+        """Verify repo is still accessible with stored PAT, update product status."""
+        from apps.api.models.product import Product
+
+        product = await self.session.get(Product, product_id)
+        if not product or not product.repository_url:
+            return {"status": "skipped", "error": None}
+
+        token = await self._resolve_token(pat_id=str(product.github_pat_id) if product.github_pat_id else None)
+        owner_repo = self._parse_owner_repo(product.repository_url)
+        if not owner_repo:
+            return {"status": "skipped", "error": None}
+
+        owner, repo = owner_repo
+        headers = self._github_headers(token)
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(f"https://api.github.com/repos/{owner}/{repo}", headers=headers, timeout=15)
+
+        if resp.status_code == 200:
+            product.github_repo_status = "ok"
+            product.github_repo_error = None
+        elif resp.status_code in (401, 403):
+            product.github_repo_status = "error"
+            product.github_repo_error = "Linked PAT no longer has access to this repository"
+        else:
+            product.github_repo_status = "error"
+            product.github_repo_error = "Repository not found or PAT revoked"
+        await self.session.flush()
+        return {"status": product.github_repo_status, "error": product.github_repo_error}
+
     async def trigger_scan(self, product_id: UUID) -> dict:
         from apps.api.models.product import Product
 
@@ -247,12 +279,9 @@ class GitHubService:
         if not product or not product.repository_url:
             return {"status": "no_repository", "files_changed": None}
         scan = RepoScanHistory(
-            product_id=product_id,
-            repository_url=product.repository_url,
-            branch="main",
-            latest_commit_sha="pending",
-            scan_status="completed",
-            files_changed=0,
+            product_id=product_id, repository_url=product.repository_url,
+            branch=product.tracked_branch or "main", latest_commit_sha="pending",
+            scan_status="completed", files_changed=0,
         )
         self.session.add(scan)
         await self.session.flush()
@@ -260,12 +289,9 @@ class GitHubService:
 
     @staticmethod
     def _parse_owner_repo(url: str) -> tuple[str, str] | None:
-        """Extract owner/repo from a GitHub URL."""
         import re
-        match = re.match(r"https?://github\.com/([^/]+)/([^/]+?)(?:\.git)?/?$", url)
-        if match:
-            return match.group(1), match.group(2)
-        return None
+        m = re.match(r"https?://github\.com/([^/]+)/([^/]+?)(?:\.git)?/?$", url)
+        return (m.group(1), m.group(2)) if m else None
 
     async def _get_connection(self, user_id: str) -> UserGithubConnection | None:
         stmt = select(UserGithubConnection).where(UserGithubConnection.user_id == user_id)
