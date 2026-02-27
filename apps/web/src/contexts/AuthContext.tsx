@@ -42,7 +42,9 @@ interface AuthProviderProps {
   apiBaseUrl?: string;
 }
 
-function AuthProvider({ children, apiBaseUrl = "/api" }: AuthProviderProps) {
+const DEFAULT_API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4006";
+
+function AuthProvider({ children, apiBaseUrl = DEFAULT_API_URL }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
