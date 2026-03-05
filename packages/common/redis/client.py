@@ -8,12 +8,19 @@ _pool: ArqRedis | None = None
 
 
 def parse_redis_settings() -> RedisSettings:
-    """Parse redis_url into Arq RedisSettings."""
-    url = settings.redis_url  # e.g. "redis://localhost:6380"
-    parts = url.replace("redis://", "").split(":")
-    host = parts[0] if parts else "localhost"
-    port = int(parts[1]) if len(parts) > 1 else 6379
-    return RedisSettings(host=host, port=port)
+    """Parse redis_url into Arq RedisSettings.
+
+    Supports: redis://host:port, redis://:password@host:port, redis://user:password@host:port
+    """
+    from urllib.parse import urlparse
+
+    parsed = urlparse(settings.redis_url)
+    return RedisSettings(
+        host=parsed.hostname or "localhost",
+        port=parsed.port or 6379,
+        password=parsed.password,
+        username=parsed.username or None,
+    )
 
 
 async def get_arq_redis() -> ArqRedis:
