@@ -92,6 +92,7 @@ function EvidenceRow({ evidence }: { evidence: TaskEvidence }) {
 
 function TaskEvidenceTable({ productId }: TaskEvidenceTableProps) {
   const { data: scanResult, isLoading } = useScanResult(productId);
+  const [expanded, setExpanded] = useState(false);
 
   if (isLoading) {
     return (
@@ -118,7 +119,6 @@ function TaskEvidenceTable({ productId }: TaskEvidenceTableProps) {
 
   const verified = evidence.filter((e) => e.verified);
   const unverified = evidence.filter((e) => !e.verified);
-  const [expanded, setExpanded] = useState(false);
 
   return (
     <Collapsible open={expanded} onOpenChange={setExpanded}>
