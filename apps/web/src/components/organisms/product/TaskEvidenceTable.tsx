@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   XCircle,
   ChevronRight,
+  ChevronDown,
   FileCode,
   ClipboardList,
 } from "lucide-react";
@@ -117,27 +118,37 @@ function TaskEvidenceTable({ productId }: TaskEvidenceTableProps) {
 
   const verified = evidence.filter((e) => e.verified);
   const unverified = evidence.filter((e) => !e.verified);
+  const [expanded, setExpanded] = useState(false);
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          <ClipboardList className="h-4 w-4" />
-          Task Verification
-          <Badge variant="secondary" className="ml-auto text-xs">
-            {verified.length}/{evidence.length} verified
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-0.5">
-        {verified.map((e) => (
-          <EvidenceRow key={e.task_id} evidence={e} />
-        ))}
-        {unverified.map((e) => (
-          <EvidenceRow key={e.task_id} evidence={e} />
-        ))}
-      </CardContent>
-    </Card>
+    <Collapsible open={expanded} onOpenChange={setExpanded}>
+      <Card>
+        <CollapsibleTrigger asChild>
+          <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
+            <CardTitle className="text-base flex items-center gap-2">
+              <ClipboardList className="h-4 w-4" />
+              Task Verification
+              <Badge variant="secondary" className="ml-auto text-xs">
+                {verified.length}/{evidence.length} verified
+              </Badge>
+              <ChevronDown
+                className={`h-4 w-4 text-muted-foreground transition-transform ${expanded ? "" : "-rotate-90"}`}
+              />
+            </CardTitle>
+          </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent className="space-y-0.5">
+            {verified.map((e) => (
+              <EvidenceRow key={e.task_id} evidence={e} />
+            ))}
+            {unverified.map((e) => (
+              <EvidenceRow key={e.task_id} evidence={e} />
+            ))}
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 }
 
