@@ -73,7 +73,7 @@ function ScanProgressCard({ productId }: ScanProgressCardProps) {
   const cancelScan = useCancelScan(productId);
   const [jobId, setJobId] = useState<string | null>(null);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
-  const prevStatusRef = useRef<string | undefined>();
+  const prevStatusRef = useRef<string | undefined>(undefined);
 
   // Pick up active job from summary (e.g. page reload while scan runs)
   const activeJobId = jobId ?? data?.active_job_id ?? null;
