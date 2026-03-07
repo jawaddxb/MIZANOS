@@ -108,10 +108,12 @@ export function TaskDetailDrawer({
 
   const assigneeOptions = [
     { value: "__none__", label: "Unassigned" },
-    ...members.map((m) => ({
-      value: m.profile_id,
-      label: `${m.profile?.full_name ?? m.profile?.email ?? "Unnamed"}${m.role ? ` — ${m.role}` : ""}`,
-    })),
+    ...[...members]
+      .sort((a, b) => (a.profile?.full_name ?? "").localeCompare(b.profile?.full_name ?? ""))
+      .map((m) => ({
+        value: m.profile_id,
+        label: `${m.profile?.full_name ?? m.profile?.email ?? "Unnamed"}${m.role ? ` — ${m.role}` : ""}`,
+      })),
   ];
 
   const {

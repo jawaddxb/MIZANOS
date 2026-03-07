@@ -42,8 +42,10 @@ function MarketingTasksSection({ productId }: MarketingTasksSectionProps) {
   }, [members]);
 
   const assigneeOptions = useMemo(() => {
-    const marketing = members.filter((m) => m.role === "marketing");
-    const others = members.filter((m) => m.role !== "marketing");
+    const sortByName = (a: typeof members[0], b: typeof members[0]) =>
+      (a.profile?.full_name ?? "").localeCompare(b.profile?.full_name ?? "");
+    const marketing = members.filter((m) => m.role === "marketing").sort(sortByName);
+    const others = members.filter((m) => m.role !== "marketing").sort(sortByName);
     return [
       ...marketing.map((m) => ({
         value: m.profile_id,

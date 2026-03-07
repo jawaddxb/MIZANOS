@@ -140,8 +140,9 @@ export function AddTeamMemberDialog({ open, onOpenChange }: AddTeamMemberDialogP
 
           <SearchableSelect
             label="Reports To (optional)"
-            options={profiles
+            options={[...profiles]
               .filter((p) => p.status === "active" || (showPending && p.status === "pending"))
+              .sort((a, b) => (a.full_name ?? a.email ?? "").localeCompare(b.full_name ?? b.email ?? ""))
               .map((p) => ({
                 value: p.id,
                 label: `${p.full_name ?? p.email ?? p.id} — ${p.role ?? "no role"}${p.status === "pending" ? " (pending activation)" : ""}`,

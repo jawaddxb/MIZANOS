@@ -90,11 +90,13 @@ export function TasksFilterBar({
       .sort((a, b) => {
         if (a.value === currentUserId) return -1;
         if (b.value === currentUserId) return 1;
-        return 0;
+        return a.label.localeCompare(b.label);
       });
   }, [profiles, user?.profile_id]);
   const pmOptions = useMemo(
-    () => pmProfiles.map((p) => ({ value: p.id, label: p.full_name ?? p.email ?? "Unknown" })),
+    () => [...pmProfiles]
+      .sort((a, b) => (a.full_name ?? "").localeCompare(b.full_name ?? ""))
+      .map((p) => ({ value: p.id, label: p.full_name ?? p.email ?? "Unknown" })),
     [pmProfiles],
   );
 
