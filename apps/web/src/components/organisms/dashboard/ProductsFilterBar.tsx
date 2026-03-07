@@ -61,9 +61,14 @@ function buildRoleOptions(
   label: string,
   profiles: ProfileSummary[],
 ): SearchableSelectOption[] {
+  const sorted = [...profiles].sort((a, b) => {
+    const nameA = (a.full_name ?? a.email ?? "").toLowerCase();
+    const nameB = (b.full_name ?? b.email ?? "").toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
   return [
     { value: "all", label: `All ${label}s` },
-    ...profiles.map((p) => ({
+    ...sorted.map((p) => ({
       value: p.id,
       label: p.full_name ?? p.email ?? "Unknown",
     })),

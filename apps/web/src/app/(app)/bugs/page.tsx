@@ -53,10 +53,12 @@ export default function BugsPage() {
   const createBug = useCreateBug(addProductId);
   const { data: selectedProductMembers = [] } = useProductMembers(addProductId || "__skip__");
   const selectedAssigneeOptions = useMemo(() =>
-    selectedProductMembers.map((m) => ({
-      value: m.profile_id,
-      label: `${m.profile?.full_name ?? m.profile?.email ?? "Unnamed"}${m.role ? ` — ${m.role}` : ""}`,
-    })),
+    [...selectedProductMembers]
+      .sort((a, b) => (a.profile?.full_name ?? "").localeCompare(b.profile?.full_name ?? ""))
+      .map((m) => ({
+        value: m.profile_id,
+        label: `${m.profile?.full_name ?? m.profile?.email ?? "Unnamed"}${m.role ? ` — ${m.role}` : ""}`,
+      })),
   [selectedProductMembers]);
 
   const productMap = useMemo(() => {
