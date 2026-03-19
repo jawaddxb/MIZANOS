@@ -30,11 +30,12 @@ class Settings(BaseSettings):
     github_webhook_secret: str = ""
     firecrawl_api_key: str = ""
 
-    # Storage (S3 — legacy, unused)
+    # Storage (S3-compatible — Railway Bucket / MinIO / AWS)
     s3_bucket: str = ""
-    s3_region: str = "us-east-1"
+    s3_region: str = "auto"
     s3_access_key: str = ""
     s3_secret_key: str = ""
+    s3_endpoint: str = ""
 
     # Storage (GCS)
     gcs_bucket_name: str = ""
