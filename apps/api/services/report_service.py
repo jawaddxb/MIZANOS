@@ -7,9 +7,8 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.api.models.audit import RepoScanHistory
+from apps.api.models.audit import RepoScanHistory, RepositoryAnalysis
 from apps.api.models.product import Product, ProductMember
-from apps.api.models.specification import SpecificationFeature
 from apps.api.models.task import Task
 from packages.common.utils.error_handlers import not_found
 
@@ -62,10 +61,10 @@ class ReportService:
         base = briefs[0] if briefs else {}
 
         task_metrics = await self._build_task_metrics(product_id, task_counts)
-        feature_metrics = await self._build_feature_metrics(product_id)
+        scan_metrics = await self._build_scan_metrics(product_id)
         github_metrics = await self._build_github_metrics(product_id)
 
-        return {**base, "task_metrics": task_metrics, "feature_metrics": feature_metrics,
+        return {**base, "task_metrics": task_metrics, "feature_metrics": scan_metrics,
                 "github_metrics": github_metrics, "ai_analysis": None}
 
     # ------------------------------------------------------------------
@@ -88,22 +87,22 @@ class ReportService:
     async def _fetch_members_map(self, product_ids: list[UUID]) -> dict:
         """Return {product_id: {pm_name, dev_name}}."""
         stmt = (
-            select(ProductMember.product_id, ProductMember.role, ProductMember.profile)
+            select(ProductMember)
             .where(
                 ProductMember.product_id.in_(product_ids),
                 ProductMember.role.in_(["project_manager", "ai_engineer"]),
             )
         )
         result = await self.session.execute(stmt)
-        rows = result.all()
+        rows = result.scalars().all()
 
         members: dict[UUID, dict[str, str | None]] = {}
-        for pid, role, profile in rows:
-            entry = members.setdefault(pid, {"pm_name": None, "dev_name": None})
-            name = profile.full_name if profile else None
-            if role == "project_manager":
+        for member in rows:
+            entry = members.setdefault(member.product_id, {"pm_name": None, "dev_name": None})
+            name = member.profile.full_name if member.profile else None
+            if member.role == "project_manager":
                 entry["pm_name"] = name
-            elif role == "ai_engineer":
+            elif member.role == "ai_engineer":
                 entry["dev_name"] = name
         return members
 
@@ -192,17 +191,35 @@ class ReportService:
             "completion_pct": _pct(completed, total), "overdue_count": overdue,
         }
 
-    async def _build_feature_metrics(self, product_id: UUID) -> dict:
+    async def _build_scan_metrics(self, product_id: UUID) -> dict:
+        """Pull code progress scan data from the latest RepositoryAnalysis."""
         stmt = (
-            select(SpecificationFeature.status, func.count(SpecificationFeature.id))
-            .where(SpecificationFeature.product_id == product_id)
-            .group_by(SpecificationFeature.status)
+            select(RepositoryAnalysis.gap_analysis)
+            .where(
+                RepositoryAnalysis.product_id == product_id,
+                RepositoryAnalysis.gap_analysis.isnot(None),
+            )
+            .order_by(RepositoryAnalysis.created_at.desc())
+            .limit(1)
         )
         result = await self.session.execute(stmt)
-        by_status = {s or "unknown": c for s, c in result.all()}
-        total = sum(by_status.values())
-        completed = by_status.get("completed", 0)
-        return {"total": total, "by_status": by_status, "completion_pct": _pct(completed, total)}
+        gap = result.scalar_one_or_none()
+
+        if not gap or not isinstance(gap, dict):
+            return {"total": 0, "by_status": {}, "completion_pct": 0.0}
+
+        # gap_analysis stores scan_summary directly (not nested)
+        verified = gap.get("verified", 0)
+        partial = gap.get("partial", 0)
+        no_evidence = gap.get("no_evidence", 0)
+        total = gap.get("total_tasks", 0)
+        pct = gap.get("progress_pct", 0.0)
+
+        return {
+            "total": total,
+            "by_status": {"verified": verified, "partial": partial, "no_evidence": no_evidence},
+            "completion_pct": pct,
+        }
 
     async def _build_github_metrics(self, product_id: UUID) -> dict | None:
         stmt = (

@@ -68,7 +68,7 @@ export function ProjectReportDetail({ productId }: Props) {
         <div className="animate-fade-in" style={{ animationDelay: "100ms" }}>
           <Card>
             <CardContent className="pt-6 space-y-4">
-              <h3 className="text-sm font-semibold">Features</h3>
+              <h3 className="text-sm font-semibold">Code Progress</h3>
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden">
                   <div
