@@ -44,6 +44,7 @@ export interface ProjectReportBrief {
   task_completion_pct: number;
   has_repository: boolean;
   total_commits: number;
+  recent_commits: number;
   last_scan_at: string | null;
 }
 
@@ -53,6 +54,7 @@ export interface ReportsSummary {
   total_tasks: number;
   tasks_completed: number;
   tasks_in_progress: number;
+  total_commits: number;
   projects: ProjectReportBrief[];
 }
 

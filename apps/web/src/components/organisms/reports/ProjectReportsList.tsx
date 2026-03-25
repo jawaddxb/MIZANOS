@@ -83,6 +83,7 @@ export function ProjectReportsList() {
                 <Th align="right">Tasks Done</Th>
                 <Th align="right">In Progress</Th>
                 <Th align="right">Commits</Th>
+                <Th align="right">Recent</Th>
                 <Th>Created</Th>
               </tr>
             </thead>
@@ -92,7 +93,7 @@ export function ProjectReportsList() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <td colSpan={9} className="text-center py-8 text-muted-foreground">
                     No projects found
                   </td>
                 </tr>
@@ -155,6 +156,13 @@ function ProjectRow({ project: p, index }: { project: ProjectReportBrief; index:
           {p.total_commits > 0 && <GitCommit className="h-3 w-3 text-muted-foreground" />}
           {p.total_commits}
         </span>
+      </td>
+      <td className="px-4 py-2.5 text-right font-mono tabular-nums">
+        {p.recent_commits > 0 ? (
+          <span className="text-status-healthy">{p.recent_commits}</span>
+        ) : (
+          <span className="text-muted-foreground">0</span>
+        )}
       </td>
       <td className="px-4 py-2.5 text-muted-foreground whitespace-nowrap">
         {format(new Date(p.created_at), "dd MMM yyyy")}

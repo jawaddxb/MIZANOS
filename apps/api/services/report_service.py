@@ -1,7 +1,7 @@
 """Service for aggregating project report data."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -34,12 +34,16 @@ class ReportService:
         members_map = await self._fetch_members_map(product_ids)
         task_counts = await self._fetch_task_counts(product_ids)
         commit_counts = await self._fetch_commit_counts(product_ids)
+        recent_commit_counts = await self._fetch_recent_commit_counts(product_ids)
 
-        briefs = self._build_briefs(products, members_map, task_counts, commit_counts)
+        briefs = self._build_briefs(
+            products, members_map, task_counts, commit_counts, recent_commit_counts,
+        )
 
         total_tasks = sum(b["total_tasks"] for b in briefs)
         tasks_completed = sum(b["completed_tasks"] for b in briefs)
         tasks_in_progress = sum(b["in_progress_tasks"] for b in briefs)
+        total_commits = sum(b["total_commits"] for b in briefs)
 
         return {
             "total_projects": len(briefs),
@@ -47,6 +51,7 @@ class ReportService:
             "total_tasks": total_tasks,
             "tasks_completed": tasks_completed,
             "tasks_in_progress": tasks_in_progress,
+            "total_commits": total_commits,
             "projects": briefs,
         }
 
@@ -57,7 +62,10 @@ class ReportService:
         task_counts = await self._fetch_task_counts([product_id])
         commit_counts = await self._fetch_commit_counts([product_id])
 
-        briefs = self._build_briefs([product], members_map, task_counts, commit_counts)
+        recent_commit_counts = await self._fetch_recent_commit_counts([product_id])
+        briefs = self._build_briefs(
+            [product], members_map, task_counts, commit_counts, recent_commit_counts,
+        )
         base = briefs[0] if briefs else {}
 
         task_metrics = await self._build_task_metrics(product_id, task_counts)
@@ -136,11 +144,30 @@ class ReportService:
             for pid, total, last in result.all()
         }
 
+    async def _fetch_recent_commit_counts(self, product_ids: list[UUID]) -> dict:
+        """Return {product_id: count} for commits in the last 7 days."""
+        cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+        stmt = (
+            select(
+                RepoScanHistory.product_id,
+                func.count(RepoScanHistory.id),
+            )
+            .where(
+                RepoScanHistory.product_id.in_(product_ids),
+                RepoScanHistory.created_at >= cutoff,
+            )
+            .group_by(RepoScanHistory.product_id)
+        )
+        result = await self.session.execute(stmt)
+        return {pid: count for pid, count in result.all()}
+
     # ------------------------------------------------------------------
     # Private: builders
     # ------------------------------------------------------------------
 
-    def _build_briefs(self, products, members_map, task_counts, commit_counts) -> list[dict]:
+    def _build_briefs(
+        self, products, members_map, task_counts, commit_counts, recent_commit_counts,
+    ) -> list[dict]:
         briefs = []
         for p in products:
             tc = task_counts.get(p.id, {})
@@ -159,6 +186,7 @@ class ReportService:
                 "task_completion_pct": _pct(completed, total),
                 "has_repository": bool(p.repository_url),
                 "total_commits": cc.get("total", 0),
+                "recent_commits": recent_commit_counts.get(p.id, 0),
                 "last_scan_at": cc.get("last_scan_at"),
             })
         return briefs
@@ -256,7 +284,7 @@ class ReportService:
         return {
             "total_projects": 0, "overall_task_completion_pct": 0.0,
             "total_tasks": 0, "tasks_completed": 0, "tasks_in_progress": 0,
-            "projects": [],
+            "total_commits": 0, "projects": [],
         }
 
 
