@@ -80,8 +80,8 @@ export function AddTaskDialog({
 }: AddTaskDialogProps) {
   const { data: members = [] } = useProductMembers(productId);
   const { user } = useAuth();
-  const { isAdmin, isProjectManager } = useRoleVisibility();
-  const canAssignOthers = isAdmin || isProjectManager;
+  const { isAdmin, isProjectManager, isEngineer } = useRoleVisibility();
+  const canAssignOthers = isAdmin || isProjectManager || isEngineer;
 
   const assigneeOptions = [
     { value: "__none__", label: "Unassigned" },

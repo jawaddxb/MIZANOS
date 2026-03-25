@@ -372,8 +372,10 @@ class TaskService(BaseService[Task]):
         )
 
     def _can_manage_tasks(self, user: AuthenticatedUser) -> bool:
-        """Superadmins and project managers can freely assign/reassign tasks."""
-        return user.has_any_role(AppRole.SUPERADMIN, AppRole.PROJECT_MANAGER)
+        """Superadmins, project managers, and engineers can manage tasks."""
+        return user.has_any_role(
+            AppRole.SUPERADMIN, AppRole.PROJECT_MANAGER, AppRole.ENGINEER,
+        )
 
     async def _is_product_pm(self, product_id: UUID, profile_id: UUID) -> bool:
         """Check if user is a project manager on this specific product."""

@@ -100,8 +100,8 @@ export function TaskDetailDrawer({
   const isMarketing = taskType === "marketing_task";
   const statusOptions = isBug ? BUG_STATUS_OPTIONS : isMarketing ? MARKETING_TASK_STATUS_OPTIONS : TASK_STATUS_OPTIONS;
   const { user } = useAuth();
-  const { isAdmin, isProjectManager } = useRoleVisibility();
-  const canManageTasks = isAdmin || isProjectManager;
+  const { isAdmin, isProjectManager, isEngineer } = useRoleVisibility();
+  const canManageTasks = isAdmin || isProjectManager || isEngineer;
   const isCreator = !!task?.createdBy && task.createdBy === user?.profile_id;
   const canEditDetails = canManageTasks || isCreator;
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
