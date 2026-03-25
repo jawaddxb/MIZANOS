@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Clock,
   TrendingUp,
+  GitCommit,
 } from "lucide-react";
 import { useReportsSummary } from "@/hooks/queries/useReports";
 import { Loader2 } from "lucide-react";
@@ -51,7 +52,7 @@ export function ReportsOverview() {
   if (!data) return null;
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
       <StatCard
         icon={<FolderKanban className="h-4.5 w-4.5 text-primary" />}
         iconBg="bg-primary/10"
@@ -69,6 +70,12 @@ export function ReportsOverview() {
         iconBg="bg-pillar-business/10"
         label="In Progress"
         value={data.tasks_in_progress}
+      />
+      <StatCard
+        icon={<GitCommit className="h-4.5 w-4.5 text-purple-500" />}
+        iconBg="bg-purple-500/10"
+        label="Total Commits"
+        value={data.total_commits}
       />
       <StatCard
         icon={<TrendingUp className="h-4.5 w-4.5 text-pillar-development" />}

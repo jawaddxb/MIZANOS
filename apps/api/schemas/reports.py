@@ -62,6 +62,7 @@ class ProjectReportBrief(BaseSchema):
     task_completion_pct: float = 0.0
     has_repository: bool = False
     total_commits: int = 0
+    recent_commits: int = 0
     last_scan_at: datetime | None = None
 
 
@@ -73,6 +74,7 @@ class ReportsSummaryResponse(BaseSchema):
     total_tasks: int = 0
     tasks_completed: int = 0
     tasks_in_progress: int = 0
+    total_commits: int = 0
     projects: list[ProjectReportBrief] = []
 
 
