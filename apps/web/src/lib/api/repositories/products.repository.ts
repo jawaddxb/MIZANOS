@@ -4,6 +4,7 @@ import type {
   ProductEnvironment,
   ProductNotificationSetting,
   DeploymentChecklistItem,
+  ProjectLink,
   Stakeholder,
   TeamReadiness,
 } from "@/lib/types";
@@ -285,6 +286,25 @@ export class ProductsRepository extends BaseRepository<Product> {
       `${this.basePath}/${productId}/unarchive`,
     );
     return response.data;
+  }
+
+  async getLinks(productId: string): Promise<ProjectLink[]> {
+    const response = await this.client.get<ProjectLink[]>(`${this.basePath}/${productId}/links`);
+    return response.data;
+  }
+
+  async createLink(productId: string, data: { name: string; url: string }): Promise<ProjectLink> {
+    const response = await this.client.post<ProjectLink>(`${this.basePath}/${productId}/links`, data);
+    return response.data;
+  }
+
+  async updateLink(productId: string, linkId: string, data: { name?: string; url?: string }): Promise<ProjectLink> {
+    const response = await this.client.put<ProjectLink>(`${this.basePath}/${productId}/links/${linkId}`, data);
+    return response.data;
+  }
+
+  async deleteLink(productId: string, linkId: string): Promise<void> {
+    await this.client.delete(`${this.basePath}/${productId}/links/${linkId}`);
   }
 }
 

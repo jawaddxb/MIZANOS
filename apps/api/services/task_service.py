@@ -356,8 +356,10 @@ class TaskService(BaseService[Task]):
     async def _authorize_status_change(
         self, task: Task, user_id: UUID
     ) -> None:
-        """Only the assignee or product PM may change task status."""
+        """Only the assignee, product PM, or any global PM may change task status."""
         if task.assignee_id == user_id:
+            return
+        if await self._is_global_pm(user_id):
             return
         stmt = select(ProductMember).where(
             ProductMember.product_id == task.product_id,
@@ -368,7 +370,7 @@ class TaskService(BaseService[Task]):
         if result.scalar_one_or_none() is not None:
             return
         raise forbidden(
-            "Only the assignee or product PM can change task status"
+            "Only the assignee or a project manager can change task status"
         )
 
     def _can_manage_tasks(self, user: AuthenticatedUser) -> bool:
@@ -378,7 +380,9 @@ class TaskService(BaseService[Task]):
         )
 
     async def _is_product_pm(self, product_id: UUID, profile_id: UUID) -> bool:
-        """Check if user is a project manager on this specific product."""
+        """Check if user is a PM on this product or a global PM."""
+        if await self._is_global_pm(profile_id):
+            return True
         stmt = select(ProductMember.id).where(
             ProductMember.product_id == product_id,
             ProductMember.profile_id == profile_id,
@@ -386,6 +390,13 @@ class TaskService(BaseService[Task]):
         ).limit(1)
         result = await self.repo.session.execute(stmt)
         return result.scalar_one_or_none() is not None
+
+    async def _is_global_pm(self, profile_id: UUID) -> bool:
+        """Check if user has the project_manager role globally."""
+        stmt = select(Profile.role).where(Profile.id == profile_id).limit(1)
+        result = await self.repo.session.execute(stmt)
+        role = result.scalar_one_or_none()
+        return role == AppRole.PROJECT_MANAGER.value
 
     async def _validate_assignee(self, assignee_id: UUID) -> None:
         """Reject assigning to pending profiles when org setting is off."""

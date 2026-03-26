@@ -27,6 +27,7 @@ export type {
   ProductNotificationSetting,
   ProductEnvironment,
   ProductDocument,
+  ProjectLink,
   TeamReadiness,
 } from "./product";
 

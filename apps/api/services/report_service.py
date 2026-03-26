@@ -1,14 +1,17 @@
 """Service for aggregating project report data."""
 
+import asyncio
 import logging
+import re
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
+import httpx
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.models.audit import RepoScanHistory, RepositoryAnalysis
-from apps.api.models.product import Product, ProductEnvironment, ProductMember
+from apps.api.models.product import Product, ProductEnvironment, ProductLink, ProductMember
 from apps.api.models.task import Task
 from packages.common.utils.error_handlers import not_found
 
@@ -16,6 +19,10 @@ logger = logging.getLogger(__name__)
 
 COMPLETED_STATUSES = {"done", "completed", "verified", "live", "fixed"}
 IN_PROGRESS_STATUSES = {"in_progress", "in_review", "review"}
+
+# In-memory cache for GitHub commit data (refreshes every 5 minutes)
+_commit_cache: dict[str, tuple[dict, dict, float]] = {}
+CACHE_TTL_SECONDS = 300
 
 
 class ReportService:
@@ -33,8 +40,7 @@ class ReportService:
 
         members_map = await self._fetch_members_map(product_ids)
         task_counts = await self._fetch_task_counts(product_ids)
-        commit_counts = await self._fetch_commit_counts(product_ids)
-        recent_commit_counts = await self._fetch_recent_commit_counts(product_ids)
+        commit_counts, recent_commit_counts = await self._fetch_all_commit_data(product_ids)
         env_urls = await self._fetch_environment_urls(product_ids)
 
         briefs = self._build_briefs(
@@ -62,9 +68,7 @@ class ReportService:
         product = await self._fetch_product(product_id)
         members_map = await self._fetch_members_map([product_id])
         task_counts = await self._fetch_task_counts([product_id])
-        commit_counts = await self._fetch_commit_counts([product_id])
-
-        recent_commit_counts = await self._fetch_recent_commit_counts([product_id])
+        commit_counts, recent_commit_counts = await self._fetch_all_commit_data([product_id])
         env_urls = await self._fetch_environment_urls([product_id])
         briefs = self._build_briefs(
             [product], members_map, task_counts, commit_counts,
@@ -75,9 +79,11 @@ class ReportService:
         task_metrics = await self._build_task_metrics(product_id, task_counts)
         scan_metrics = await self._build_scan_metrics(product_id)
         github_metrics = await self._build_github_metrics(product_id)
+        task_details = await self._fetch_task_details_for_ai(product_id)
 
         return {**base, "task_metrics": task_metrics, "feature_metrics": scan_metrics,
-                "github_metrics": github_metrics, "ai_analysis": None}
+                "github_metrics": github_metrics, "task_details": task_details,
+                "ai_analysis": None}
 
     # ------------------------------------------------------------------
     # Private: data fetching
@@ -131,9 +137,15 @@ class ReportService:
             counts.setdefault(pid, {})[status or "unknown"] = count
         return counts
 
-    async def _fetch_commit_counts(self, product_ids: list[UUID]) -> dict:
-        """Return {product_id: {total, last_scan_at}}."""
-        stmt = (
+    async def _fetch_all_commit_data(self, product_ids: list[UUID]) -> tuple[dict, dict]:
+        """Fetch total + today's commit counts in one parallel batch (cached 5min)."""
+        import time
+        cache_key = "all"
+        if cache_key in _commit_cache:
+            cached_commits, cached_recent, cached_at = _commit_cache[cache_key]
+            if time.time() - cached_at < CACHE_TTL_SECONDS:
+                return cached_commits, cached_recent
+        scan_stmt = (
             select(
                 RepoScanHistory.product_id,
                 func.count(RepoScanHistory.id),
@@ -142,28 +154,149 @@ class ReportService:
             .where(RepoScanHistory.product_id.in_(product_ids))
             .group_by(RepoScanHistory.product_id)
         )
-        result = await self.session.execute(stmt)
-        return {
-            pid: {"total": total, "last_scan_at": last}
-            for pid, total, last in result.all()
+        scan_result = await self.session.execute(scan_stmt)
+        scan_map = {pid: {"db_total": total, "last_scan_at": last} for pid, total, last in scan_result.all()}
+
+        prod_stmt = (
+            select(Product.id, Product.repository_url, Product.tracked_branch, Product.github_pat_id)
+            .where(Product.id.in_(product_ids), Product.repository_url.isnot(None))
+        )
+        prod_result = await self.session.execute(prod_stmt)
+        products_with_repos = prod_result.all()
+
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+
+        # Build all tasks: total + recent for each product in one batch
+        async with httpx.AsyncClient() as client:
+            total_tasks = [
+                self._fetch_github_commit_count(repo_url, branch, pat_id, client=client)
+                for _, repo_url, branch, pat_id in products_with_repos
+            ]
+            recent_tasks = [
+                self._fetch_github_commit_count(repo_url, branch, pat_id, since=today_start, client=client)
+                for _, repo_url, branch, pat_id in products_with_repos
+            ]
+            all_results = await asyncio.gather(*total_tasks, *recent_tasks)
+
+        n = len(products_with_repos)
+        total_results = all_results[:n]
+        recent_results = all_results[n:]
+
+        commit_counts: dict[UUID, dict] = {}
+        for (pid, _, _, _), github_total in zip(products_with_repos, total_results):
+            db_info = scan_map.get(pid, {"db_total": 0, "last_scan_at": None})
+            total = github_total if github_total > 0 else db_info["db_total"]
+            commit_counts[pid] = {"total": total, "last_scan_at": db_info["last_scan_at"]}
+
+        for pid in product_ids:
+            if pid not in commit_counts and pid in scan_map:
+                commit_counts[pid] = {"total": scan_map[pid]["db_total"], "last_scan_at": scan_map[pid]["last_scan_at"]}
+
+        recent_counts = {pid: count for (pid, _, _, _), count in zip(products_with_repos, recent_results)}
+
+        import time
+        _commit_cache["all"] = (commit_counts, recent_counts, time.time())
+        return commit_counts, recent_counts
+
+    async def _fetch_github_commit_count(
+        self, repo_url: str, branch: str | None, pat_id: UUID | None,
+        since: datetime | None = None,
+        client: httpx.AsyncClient | None = None,
+    ) -> int:
+        """Fetch commit count from GitHub API for a repo/branch."""
+        from apps.api.config import settings
+
+        owner_repo = self._parse_owner_repo(repo_url)
+        if not owner_repo:
+            return 0
+
+        owner, repo = owner_repo
+        token = settings.github_api_token or None
+        if not token:
+            token = await self._resolve_pat_token(pat_id) if pat_id else None
+        if not token:
+            return 0
+        headers: dict[str, str] = {
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {token}",
         }
 
-    async def _fetch_recent_commit_counts(self, product_ids: list[UUID]) -> dict:
-        """Return {product_id: count} for commits in the last 7 days."""
-        cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+        params: dict[str, str] = {"per_page": "1", "sha": branch or "main"}
+        if since:
+            params["since"] = since.isoformat()
+
+        try:
+            should_close = client is None
+            c = client or httpx.AsyncClient()
+            try:
+                resp = await c.get(
+                    f"https://api.github.com/repos/{owner}/{repo}/commits",
+                    headers=headers, params=params, timeout=15,
+                )
+                if resp.status_code != 200:
+                    return 0
+                link = resp.headers.get("link", "")
+                if 'rel="last"' in link:
+                    match = re.search(r"page=(\d+)>; rel=\"last\"", link)
+                    return int(match.group(1)) if match else 1
+                return len(resp.json())
+            finally:
+                if should_close:
+                    await c.aclose()
+        except Exception:
+            logger.warning("Failed to fetch commits for %s/%s", owner, repo, exc_info=True)
+            return 0
+
+    async def _resolve_pat_token(self, pat_id: UUID) -> str | None:
+        """Decrypt a stored PAT token."""
+        try:
+            from apps.api.services.github_pat_service import GitHubPatService
+            return await GitHubPatService(self.session).decrypt_token(pat_id)
+        except Exception:
+            return None
+
+    @staticmethod
+    def _parse_owner_repo(url: str) -> tuple[str, str] | None:
+        m = re.match(r"https?://github\.com/([^/]+)/([^/]+?)(?:\.git)?/?$", url)
+        return (m.group(1), m.group(2)) if m else None
+
+    async def _fetch_task_details_for_ai(self, product_id: UUID) -> list[dict]:
+        """Fetch individual task details for AI analysis prompt."""
+        from apps.api.models.user import Profile
+
         stmt = (
             select(
-                RepoScanHistory.product_id,
-                func.count(RepoScanHistory.id),
+                Task.title, Task.status, Task.priority,
+                Task.due_date, Task.assignee_id, Task.pillar,
+                Profile.full_name.label("assignee_name"),
             )
+            .outerjoin(Profile, Task.assignee_id == Profile.id)
             .where(
-                RepoScanHistory.product_id.in_(product_ids),
-                RepoScanHistory.created_at >= cutoff,
+                Task.product_id == product_id,
+                Task.task_type == "task",
+                Task.is_draft == False,  # noqa: E712
             )
-            .group_by(RepoScanHistory.product_id)
+            .order_by(Task.priority.desc(), Task.status)
         )
         result = await self.session.execute(stmt)
-        return {pid: count for pid, count in result.all()}
+        now = datetime.now(timezone.utc)
+        tasks = []
+        for row in result.all():
+            is_overdue = (
+                row.due_date is not None
+                and row.due_date < now
+                and (row.status or "").lower() not in COMPLETED_STATUSES
+            )
+            tasks.append({
+                "title": row.title,
+                "status": row.status or "unknown",
+                "priority": row.priority or "none",
+                "assignee_name": row.assignee_name or "Unassigned",
+                "due_date": row.due_date.isoformat() if row.due_date else None,
+                "is_overdue": is_overdue,
+                "pillar": row.pillar,
+            })
+        return tasks
 
     async def _fetch_environment_urls(self, product_ids: list[UUID]) -> dict:
         """Return {product_id: {live_url, dashboard_url}}."""
@@ -309,6 +442,48 @@ class ReportService:
             "latest_commit_sha": sha, "last_scan_at": row[4],
             "contributors_count": None,
         }
+
+    async def get_tasks_for_report(self, product_ids: list[UUID]) -> dict[UUID, dict]:
+        """Return per-project task summary + non-done task list + links for reports."""
+        task_counts = await self._fetch_task_counts(product_ids)
+        links_map = await self._fetch_project_links(product_ids)
+        result: dict[UUID, dict] = {}
+
+        for pid in product_ids:
+            tc = task_counts.get(pid, {})
+            total = sum(tc.values())
+            done = sum(tc.get(s, 0) for s in COMPLETED_STATUSES)
+            in_progress = sum(tc.get(s, 0) for s in IN_PROGRESS_STATUSES)
+            backlog = total - done - in_progress
+
+            summary = f"Tasks: {total} total | {done} Done | {in_progress} In Progress | {backlog} Backlog"
+
+            all_tasks = await self._fetch_task_details_for_ai(pid)
+            non_done = [
+                t for t in all_tasks
+                if (t.get("status") or "").lower() not in COMPLETED_STATUSES
+            ]
+
+            result[pid] = {
+                "summary_line": summary,
+                "non_done_tasks": non_done,
+                "links": links_map.get(pid, []),
+            }
+
+        return result
+
+    async def _fetch_project_links(self, product_ids: list[UUID]) -> dict[UUID, list[dict]]:
+        """Return {product_id: [{name, url}, ...]} from product_links table."""
+        stmt = (
+            select(ProductLink)
+            .where(ProductLink.product_id.in_(product_ids))
+            .order_by(ProductLink.created_at)
+        )
+        result = await self.session.execute(stmt)
+        links_map: dict[UUID, list[dict]] = {}
+        for link in result.scalars().all():
+            links_map.setdefault(link.product_id, []).append({"name": link.name, "url": link.url})
+        return links_map
 
     @staticmethod
     def _empty_summary() -> dict:

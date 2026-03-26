@@ -13,6 +13,9 @@ from apps.api.schemas.products import (
     ProductCreate,
     ProductEnvironmentResponse,
     ProductEnvironmentUpsert,
+    ProductLinkCreate,
+    ProductLinkResponse,
+    ProductLinkUpdate,
     ProductListResponse,
     ProductResponse,
     ProductUpdate,
@@ -260,3 +263,41 @@ async def list_product_features(
 
 # NOTE: Specification source endpoints have been moved to
 # apps/api/routers/specification_sources.py for LOC compliance.
+
+
+# ------------------------------------------------------------------
+# Project Links
+# ------------------------------------------------------------------
+
+
+@router.get("/{product_id}/links", response_model=list[ProductLinkResponse])
+async def list_project_links(
+    product_id: UUID, user: CurrentUser,
+    service: ProductService = Depends(get_service),
+):
+    return await service.list_project_links(product_id)
+
+
+@router.post("/{product_id}/links", response_model=ProductLinkResponse)
+async def create_project_link(
+    product_id: UUID, body: ProductLinkCreate, user: CurrentUser,
+    service: ProductService = Depends(get_service),
+):
+    return await service.create_project_link(product_id, body.name, body.url)
+
+
+@router.put("/{product_id}/links/{link_id}", response_model=ProductLinkResponse)
+async def update_project_link(
+    product_id: UUID, link_id: UUID, body: ProductLinkUpdate, user: CurrentUser,
+    service: ProductService = Depends(get_service),
+):
+    return await service.update_project_link(link_id, body.model_dump(exclude_unset=True))
+
+
+@router.delete("/{product_id}/links/{link_id}")
+async def delete_project_link(
+    product_id: UUID, link_id: UUID, user: CurrentUser,
+    service: ProductService = Depends(get_service),
+):
+    await service.delete_project_link(link_id)
+    return {"ok": True}

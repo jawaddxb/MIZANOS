@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     github_client_id: str = ""
     github_client_secret: str = ""
     github_webhook_secret: str = ""
+    github_api_token: str = ""
     firecrawl_api_key: str = ""
 
     # Storage (S3-compatible — Railway Bucket / MinIO / AWS)

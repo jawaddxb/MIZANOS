@@ -8,7 +8,7 @@ export function useReportsSummary() {
   return useQuery({
     queryKey: ["reports-summary"],
     queryFn: (): Promise<ReportsSummary> => reportsRepository.getSummary(),
-    staleTime: 60_000,
+    staleTime: 300_000,
   });
 }
 

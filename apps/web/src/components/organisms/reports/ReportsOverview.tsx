@@ -43,8 +43,10 @@ export function ReportsOverview() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="flex flex-col items-center justify-center py-10 gap-3">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <p className="text-sm font-medium text-muted-foreground">Scanning repositories and fetching commit data...</p>
+        <p className="text-xs text-muted-foreground">This may take up to a minute on first load</p>
       </div>
     );
   }

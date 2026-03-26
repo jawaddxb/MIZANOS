@@ -317,3 +317,21 @@ class SpecificationSourceResponse(BaseSchema):
     branding: dict | None = None
     screenshots: dict | None = None
     created_at: datetime
+
+
+class ProductLinkCreate(BaseSchema):
+    name: str
+    url: str
+
+
+class ProductLinkUpdate(BaseSchema):
+    name: str | None = None
+    url: str | None = None
+
+
+class ProductLinkResponse(BaseSchema):
+    id: UUID
+    product_id: UUID
+    name: str
+    url: str
+    created_at: datetime

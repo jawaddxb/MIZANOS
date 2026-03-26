@@ -27,7 +27,7 @@ interface Props {
 
 export function GenerateReportDialog({ open, onOpenChange, projects }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [generating, setGenerating] = useState(false);
+  const [generatingFormat, setGeneratingFormat] = useState<Format | null>(null);
 
   const toggleProject = (id: string) => {
     setSelected((prev) => {
@@ -51,7 +51,7 @@ export function GenerateReportDialog({ open, onOpenChange, projects }: Props) {
       toast.error("Select at least one project");
       return;
     }
-    setGenerating(true);
+    setGeneratingFormat(format);
     try {
       const ids = Array.from(selected);
       const blob =
@@ -73,7 +73,7 @@ export function GenerateReportDialog({ open, onOpenChange, projects }: Props) {
     } catch {
       toast.error("Failed to generate report");
     } finally {
-      setGenerating(false);
+      setGeneratingFormat(null);
     }
   };
 
@@ -135,9 +135,9 @@ export function GenerateReportDialog({ open, onOpenChange, projects }: Props) {
           <BaseButton
             variant="outline"
             onClick={() => handleGenerate("docx")}
-            disabled={generating || selected.size === 0}
+            disabled={generatingFormat !== null || selected.size === 0}
           >
-            {generating ? (
+            {generatingFormat === "docx" ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : (
               <FileText className="h-4 w-4 mr-2" />
@@ -146,9 +146,9 @@ export function GenerateReportDialog({ open, onOpenChange, projects }: Props) {
           </BaseButton>
           <BaseButton
             onClick={() => handleGenerate("pdf")}
-            disabled={generating || selected.size === 0}
+            disabled={generatingFormat !== null || selected.size === 0}
           >
-            {generating ? (
+            {generatingFormat === "pdf" ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : (
               <FileDown className="h-4 w-4 mr-2" />

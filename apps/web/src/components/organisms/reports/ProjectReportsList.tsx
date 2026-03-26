@@ -46,11 +46,7 @@ export function ProjectReportsList() {
   }, [data?.projects, search]);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -158,18 +154,14 @@ function ProjectRow({ project: p, index }: { project: ProjectReportBrief; index:
         </span>
       </td>
       <td className="px-4 py-2.5 text-right">
-        {p.last_scan_at ? (
-          <div className="flex flex-col items-end gap-0.5">
-            <span className="font-mono tabular-nums text-status-healthy">
-              {p.recent_commits}
-            </span>
-            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-              {format(new Date(p.last_scan_at), "dd MMM, hh:mm a")}
-            </span>
-          </div>
-        ) : (
-          <span className="text-muted-foreground font-mono tabular-nums">0</span>
-        )}
+        <div className="flex flex-col items-end gap-0.5">
+          <span className="font-mono tabular-nums text-status-healthy">
+            {p.recent_commits}
+          </span>
+          <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+            {format(new Date(), "dd MMM yyyy")}
+          </span>
+        </div>
       </td>
       <td className="px-4 py-2.5 text-muted-foreground whitespace-nowrap">
         {format(new Date(p.created_at), "dd MMM yyyy")}
