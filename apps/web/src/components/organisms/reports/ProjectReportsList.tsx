@@ -149,8 +149,8 @@ function RecentCommitCell({ productId, recentCommits }: { productId: string; rec
       <PopoverContent className="w-96 p-0" align="end">
         <div className="p-3 border-b flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium">Recent Commits</p>
-            <p className="text-xs text-muted-foreground">{recentCommits > 0 ? `${recentCommits} today` : "Latest commits on this branch"}</p>
+            <p className="text-sm font-medium">{recentCommits > 0 ? "Today's Commits" : "Recent Commits"}</p>
+            <p className="text-xs text-muted-foreground">{recentCommits > 0 ? `${recentCommits} commits today` : "No commits today - showing latest"}</p>
           </div>
           <button onClick={() => setOpen(false)} className="p-1 rounded hover:bg-accent"><X className="h-3.5 w-3.5 text-muted-foreground" /></button>
         </div>

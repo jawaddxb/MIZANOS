@@ -261,7 +261,11 @@ class ReportService:
         return (m.group(1), m.group(2)) if m else None
 
     async def get_recent_commits(self, product_id: UUID) -> list[dict]:
-        """Fetch recent commit details from GitHub for a product."""
+        """Fetch recent commit details from GitHub for a product.
+
+        If there are commits today, return ONLY today's commits.
+        If no commits today, return the latest commits from previous days.
+        """
         from apps.api.config import settings
 
         stmt = select(Product.repository_url, Product.tracked_branch, Product.github_pat_id).where(Product.id == product_id)
@@ -282,30 +286,50 @@ class ReportService:
             return []
 
         headers = {"Accept": "application/vnd.github+json", "Authorization": f"Bearer {token}"}
-        params = {"per_page": "10", "sha": row.tracked_branch or "main"}
+        branch = row.tracked_branch or "main"
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
 
         try:
             async with httpx.AsyncClient() as client:
+                # First try: fetch today's commits only
                 resp = await client.get(
                     f"https://api.github.com/repos/{owner}/{repo}/commits",
-                    headers=headers, params=params, timeout=15,
+                    headers=headers,
+                    params={"per_page": "30", "sha": branch, "since": today_start.isoformat()},
+                    timeout=15,
                 )
-                if resp.status_code != 200:
-                    return []
-                commits = []
-                for c in resp.json()[:10]:
-                    commit_data = c.get("commit", {})
-                    author = commit_data.get("author", {})
-                    commits.append({
-                        "sha": (c.get("sha") or "")[:7],
-                        "message": (commit_data.get("message") or "").split("\n")[0],
-                        "author": author.get("name", ""),
-                        "date": author.get("date", ""),
-                        "url": c.get("html_url", ""),
-                    })
-                return commits
+                if resp.status_code == 200 and resp.json():
+                    return self._parse_commits(resp.json())
+
+                # No commits today: fetch latest commits from previous days
+                resp2 = await client.get(
+                    f"https://api.github.com/repos/{owner}/{repo}/commits",
+                    headers=headers,
+                    params={"per_page": "10", "sha": branch},
+                    timeout=15,
+                )
+                if resp2.status_code == 200:
+                    return self._parse_commits(resp2.json()[:10])
+                return []
         except Exception:
             logger.warning("Failed to fetch recent commits for product %s", product_id)
+            return []
+
+    @staticmethod
+    def _parse_commits(raw_commits: list) -> list[dict]:
+        """Parse GitHub API commit objects into simple dicts."""
+        commits = []
+        for c in raw_commits:
+            commit_data = c.get("commit", {})
+            author = commit_data.get("author", {})
+            commits.append({
+                "sha": (c.get("sha") or "")[:7],
+                "message": (commit_data.get("message") or "").split("\n")[0],
+                "author": author.get("name", ""),
+                "date": author.get("date", ""),
+                "url": c.get("html_url", ""),
+            })
+        return commits
             return []
 
     async def _fetch_task_details_for_ai(self, product_id: UUID) -> list[dict]:
