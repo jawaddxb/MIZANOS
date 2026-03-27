@@ -462,34 +462,90 @@ class ReportService:
         }
 
     async def _build_github_metrics(self, product_id: UUID) -> dict | None:
-        stmt = (
-            select(
-                func.count(RepoScanHistory.id),
-                func.sum(RepoScanHistory.files_changed),
-                func.sum(RepoScanHistory.lines_added),
-                func.sum(RepoScanHistory.lines_removed),
-                func.max(RepoScanHistory.created_at),
-            )
-            .where(RepoScanHistory.product_id == product_id)
-        )
-        row = (await self.session.execute(stmt)).one()
-        if not row[0]:
+        from apps.api.config import settings
+
+        stmt = select(Product.repository_url, Product.tracked_branch, Product.github_pat_id).where(Product.id == product_id)
+        result = await self.session.execute(stmt)
+        row = result.one_or_none()
+        if not row or not row.repository_url:
             return None
 
-        latest_stmt = (
-            select(RepoScanHistory.latest_commit_sha)
-            .where(RepoScanHistory.product_id == product_id)
-            .order_by(RepoScanHistory.created_at.desc())
-            .limit(1)
-        )
-        sha = (await self.session.execute(latest_stmt)).scalar_one_or_none()
+        owner_repo = self._parse_owner_repo(row.repository_url)
+        if not owner_repo:
+            return None
+        owner, repo = owner_repo
 
-        return {
-            "total_scans": row[0], "total_files_changed": row[1] or 0,
-            "total_lines_added": row[2] or 0, "total_lines_removed": row[3] or 0,
-            "latest_commit_sha": sha, "last_scan_at": row[4],
-            "contributors_count": None,
-        }
+        token = settings.github_api_token or None
+        if not token:
+            token = await self._resolve_pat_token(row.github_pat_id) if row.github_pat_id else None
+        if not token:
+            return None
+
+        branch = row.tracked_branch or "main"
+        headers = {"Accept": "application/vnd.github+json", "Authorization": f"Bearer {token}"}
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+
+        try:
+            async with httpx.AsyncClient() as client:
+                # Total commits
+                resp = await client.get(
+                    f"https://api.github.com/repos/{owner}/{repo}/commits",
+                    headers=headers, params={"per_page": "1", "sha": branch}, timeout=15,
+                )
+                total_commits = 0
+                latest_sha = None
+                last_commit_at = None
+                if resp.status_code == 200:
+                    link = resp.headers.get("link", "")
+                    if 'rel="last"' in link:
+                        match = re.search(r"page=(\d+)>; rel=\"last\"", link)
+                        total_commits = int(match.group(1)) if match else 1
+                    else:
+                        total_commits = len(resp.json())
+                    data = resp.json()
+                    if data:
+                        latest_sha = (data[0].get("sha") or "")[:7]
+                        last_commit_at = data[0].get("commit", {}).get("author", {}).get("date")
+
+                # Today's commits
+                resp2 = await client.get(
+                    f"https://api.github.com/repos/{owner}/{repo}/commits",
+                    headers=headers, params={"per_page": "1", "sha": branch, "since": today_start.isoformat()}, timeout=15,
+                )
+                today_commits = 0
+                if resp2.status_code == 200:
+                    link2 = resp2.headers.get("link", "")
+                    if 'rel="last"' in link2:
+                        match2 = re.search(r"page=(\d+)>; rel=\"last\"", link2)
+                        today_commits = int(match2.group(1)) if match2 else 1
+                    else:
+                        today_commits = len(resp2.json())
+
+                # Contributors count
+                resp3 = await client.get(
+                    f"https://api.github.com/repos/{owner}/{repo}/contributors?per_page=1&anon=true",
+                    headers=headers, timeout=15,
+                )
+                contributors = 0
+                if resp3.status_code == 200:
+                    link3 = resp3.headers.get("link", "")
+                    if 'rel="last"' in link3:
+                        match3 = re.search(r"page=(\d+)>; rel=\"last\"", link3)
+                        contributors = int(match3.group(1)) if match3 else 1
+                    else:
+                        contributors = len(resp3.json())
+
+            return {
+                "total_commits": total_commits,
+                "today_commits": today_commits,
+                "contributors_count": contributors,
+                "latest_commit_sha": latest_sha,
+                "last_commit_at": last_commit_at,
+                "branch": branch,
+            }
+        except Exception:
+            logger.warning("Failed to build github metrics for %s", product_id)
+            return None
 
     async def get_tasks_for_report(self, product_ids: list[UUID]) -> dict[UUID, dict]:
         """Return per-project task summary + non-done task list + links for reports."""

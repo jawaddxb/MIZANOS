@@ -20,6 +20,9 @@ def parse_redis_settings() -> RedisSettings:
         port=parsed.port or 6379,
         password=parsed.password,
         username=parsed.username or None,
+        conn_timeout=30,
+        conn_retries=5,
+        conn_retry_delay=2,
     )
 
 

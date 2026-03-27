@@ -25,15 +25,14 @@ class FeatureMetrics(BaseSchema):
 
 
 class GitHubMetrics(BaseSchema):
-    """GitHub / repo scan metrics for a single project."""
+    """GitHub metrics for a single project."""
 
-    total_scans: int = 0
-    total_files_changed: int = 0
-    total_lines_added: int = 0
-    total_lines_removed: int = 0
+    total_commits: int = 0
+    today_commits: int = 0
+    contributors_count: int = 0
     latest_commit_sha: str | None = None
-    last_scan_at: datetime | None = None
-    contributors_count: int | None = None
+    last_commit_at: str | None = None
+    branch: str | None = None
 
 
 class AIAnalysisResponse(BaseSchema):
