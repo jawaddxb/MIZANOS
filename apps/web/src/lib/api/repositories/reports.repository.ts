@@ -1,5 +1,6 @@
 import type { AxiosInstance } from "axios";
 import type {
+  RecentCommit,
   ReportsSummary,
   ProjectReportDetail,
   AIAnalysis,
@@ -14,9 +15,10 @@ export class ReportsRepository {
     this.client = client;
   }
 
-  async getSummary(): Promise<ReportsSummary> {
+  async getSummary(refresh = false): Promise<ReportsSummary> {
     const response = await this.client.get<ReportsSummary>(
       `${this.basePath}/summary`,
+      { timeout: 120_000, params: refresh ? { refresh: true } : undefined },
     );
     return response.data;
   }
@@ -28,9 +30,19 @@ export class ReportsRepository {
     return response.data;
   }
 
+  async getRecentCommits(productId: string): Promise<RecentCommit[]> {
+    const response = await this.client.get<RecentCommit[]>(
+      `${this.basePath}/projects/${productId}/recent-commits`,
+      { timeout: 30_000 },
+    );
+    return response.data;
+  }
+
   async triggerAnalysis(productId: string): Promise<AIAnalysis> {
     const response = await this.client.post<AIAnalysis>(
       `${this.basePath}/projects/${productId}/analyze`,
+      undefined,
+      { timeout: 120_000 },
     );
     return response.data;
   }
@@ -39,7 +51,7 @@ export class ReportsRepository {
     const response = await this.client.post(
       `${this.basePath}/generate-document`,
       { product_ids: productIds },
-      { responseType: "blob" },
+      { responseType: "blob", timeout: 180_000 },
     );
     return response.data;
   }
@@ -48,7 +60,7 @@ export class ReportsRepository {
     const response = await this.client.post(
       `${this.basePath}/generate-pdf`,
       { product_ids: productIds },
-      { responseType: "blob" },
+      { responseType: "blob", timeout: 180_000 },
     );
     return response.data;
   }

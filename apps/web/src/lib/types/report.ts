@@ -13,13 +13,12 @@ export interface FeatureMetrics {
 }
 
 export interface GitHubMetrics {
-  total_scans: number;
-  total_files_changed: number;
-  total_lines_added: number;
-  total_lines_removed: number;
+  total_commits: number;
+  today_commits: number;
+  contributors_count: number;
   latest_commit_sha: string | null;
-  last_scan_at: string | null;
-  contributors_count: number | null;
+  last_commit_at: string | null;
+  branch: string | null;
 }
 
 export interface AIAnalysis {
@@ -28,6 +27,14 @@ export interface AIAnalysis {
   recommendations: string[];
   dev_contribution_summary: string;
   generated_at: string;
+}
+
+export interface RecentCommit {
+  sha: string;
+  message: string;
+  author: string;
+  date: string;
+  url: string;
 }
 
 export interface ProjectReportBrief {

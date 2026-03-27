@@ -27,6 +27,7 @@ export type {
   ProductNotificationSetting,
   ProductEnvironment,
   ProductDocument,
+  ProjectLink,
   TeamReadiness,
 } from "./product";
 
@@ -154,6 +155,7 @@ export type { TaskComment } from "./task-comment";
 export type { Job, JobStatus, JobCreateResponse } from "./job";
 
 export type {
+  RecentCommit,
   ReportsSummary,
   ProjectReportBrief,
   ProjectReportDetail,

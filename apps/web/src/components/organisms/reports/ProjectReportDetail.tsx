@@ -99,11 +99,14 @@ export function ProjectReportDetail({ productId }: Props) {
                 <>
                   <h3 className="text-sm font-semibold pt-2 flex items-center gap-1.5">
                     <GitBranch className="h-3.5 w-3.5" /> GitHub
+                    {gm.branch && (
+                      <span className="text-[10px] font-normal text-muted-foreground">({gm.branch})</span>
+                    )}
                   </h3>
                   <div className="grid grid-cols-3 gap-2 text-center">
-                    <MiniStat label="Scans" value={gm.total_scans} />
-                    <MiniStat label="Added" value={`+${gm.total_lines_added}`} color="text-status-healthy" />
-                    <MiniStat label="Removed" value={`-${gm.total_lines_removed}`} color="text-status-critical" />
+                    <MiniStat label="Total Commits" value={gm.total_commits} />
+                    <MiniStat label="Today" value={gm.today_commits} color="text-status-healthy" />
+                    <MiniStat label="Contributors" value={gm.contributors_count} />
                   </div>
                 </>
               )}

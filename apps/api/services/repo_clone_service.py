@@ -54,6 +54,8 @@ class RepoCloneService:
 
     async def _resolve_clone_url(self, product: Product) -> str:
         """Build clone URL — authenticated if PAT exists, public otherwise."""
+        from apps.api.config import settings
+
         repo_url = product.repository_url.rstrip("/")
         if not repo_url.endswith(".git"):
             repo_url += ".git"
@@ -62,22 +64,15 @@ class RepoCloneService:
             pat_svc = GitHubPatService(self.session)
             try:
                 raw_token = await pat_svc.decrypt_token(product.github_pat_id)
+                verification = await pat_svc.verify_token(raw_token)
+                if verification["valid"]:
+                    return repo_url.replace("https://", f"https://x-access-token:{raw_token}@")
             except Exception:
-                raise bad_request(
-                    "Failed to decrypt GitHub PAT. The token may be corrupted — "
-                    "try unlinking and re-adding a new PAT."
-                )
-            # Verify PAT is still valid before cloning
-            verification = await pat_svc.verify_token(raw_token)
-            if not verification["valid"]:
-                product.github_repo_status = "error"
-                product.github_repo_error = "PAT expired or revoked"
-                await self.session.flush()
-                raise bad_request(
-                    "GitHub PAT is expired or revoked. "
-                    "Please update the PAT or add a new one."
-                )
-            return repo_url.replace("https://", f"https://x-access-token:{raw_token}@")
+                logger.warning("Failed to decrypt stored PAT, trying fallback token")
+
+        # Fallback to GITHUB_API_TOKEN from .env
+        if settings.github_api_token:
+            return repo_url.replace("https://", f"https://x-access-token:{settings.github_api_token}@")
 
         # No PAT — try public clone
         return repo_url

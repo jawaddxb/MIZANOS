@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.api.models.product import (
     Product,
     ProductEnvironment,
+    ProductLink,
     ProductManagementNote,
     ProductMember,
     ProductPartnerNote,
@@ -373,4 +374,42 @@ class ProductService(BaseService[Product]):
         if not source:
             raise not_found("SpecificationSource")
         await self.repo.session.delete(source)
+        await self.repo.session.flush()
+
+    # ------------------------------------------------------------------
+    # Project Links
+    # ------------------------------------------------------------------
+
+    async def list_project_links(self, product_id: UUID) -> list[ProductLink]:
+        stmt = select(ProductLink).where(ProductLink.product_id == product_id).order_by(ProductLink.created_at)
+        result = await self.repo.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def create_project_link(self, product_id: UUID, name: str, url: str) -> ProductLink:
+        link = ProductLink(product_id=product_id, name=name, url=url)
+        self.repo.session.add(link)
+        await self.repo.session.flush()
+        await self.repo.session.refresh(link)
+        return link
+
+    async def update_project_link(self, link_id: UUID, data: dict) -> ProductLink:
+        stmt = select(ProductLink).where(ProductLink.id == link_id)
+        result = await self.repo.session.execute(stmt)
+        link = result.scalar_one_or_none()
+        if not link:
+            raise not_found("ProductLink")
+        for key, val in data.items():
+            if val is not None:
+                setattr(link, key, val)
+        await self.repo.session.flush()
+        await self.repo.session.refresh(link)
+        return link
+
+    async def delete_project_link(self, link_id: UUID) -> None:
+        stmt = select(ProductLink).where(ProductLink.id == link_id)
+        result = await self.repo.session.execute(stmt)
+        link = result.scalar_one_or_none()
+        if not link:
+            raise not_found("ProductLink")
+        await self.repo.session.delete(link)
         await self.repo.session.flush()

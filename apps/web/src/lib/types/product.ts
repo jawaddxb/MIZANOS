@@ -89,3 +89,11 @@ export interface ProductDocument {
   created_at: string;
   updated_at: string;
 }
+
+export interface ProjectLink {
+  id: string;
+  product_id: string;
+  name: string;
+  url: string;
+  created_at: string;
+}

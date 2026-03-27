@@ -15,6 +15,7 @@ import { DocumentsList } from "@/components/organisms/product/DocumentsList";
 import { DocumentUpload } from "@/components/organisms/product/DocumentUpload";
 import { AuditHistoryList } from "@/components/organisms/product/AuditHistoryList";
 import { DeploymentChecklist } from "@/components/organisms/product/DeploymentChecklist";
+import { ProjectLinksSection } from "@/components/organisms/product/ProjectLinksSection";
 import { GoLiveChecklist } from "@/components/organisms/product/GoLiveChecklist";
 import { ProjectIntegrations } from "@/components/organisms/product/ProjectIntegrations";
 import { CommitHistory } from "@/components/organisms/product/CommitHistory";
@@ -156,6 +157,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         auditContent={<AuditHistoryList productId={id} />}
         deploymentContent={
           <div className="space-y-6">
+            <ProjectLinksSection productId={id} />
             <DeploymentChecklist productId={id} />
             <GoLiveChecklist productId={id} />
             <ProjectIntegrations productId={id} />

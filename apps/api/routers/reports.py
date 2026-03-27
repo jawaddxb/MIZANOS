@@ -15,7 +15,7 @@ from apps.api.schemas.reports import (
 from apps.api.services.report_ai_service import ReportAIService
 from apps.api.services.report_document_service import ReportDocumentService
 from apps.api.services.report_pdf_service import ReportPDFService
-from apps.api.services.report_service import ReportService
+from apps.api.services.report_service import ReportService, _commit_cache
 
 
 class GenerateDocumentRequest(BaseModel):
@@ -36,8 +36,11 @@ def _ai_service(db: DbSession) -> ReportAIService:
 async def get_reports_summary(
     user: CurrentUser,
     service: ReportService = Depends(_report_service),
+    refresh: bool = False,
 ):
     """Aggregated report across all projects."""
+    if refresh:
+        _commit_cache.clear()
     return await service.get_summary()
 
 
@@ -54,6 +57,16 @@ async def get_project_report(
     if cached:
         report["ai_analysis"] = cached
     return report
+
+
+@router.get("/projects/{product_id}/recent-commits")
+async def get_recent_commits(
+    product_id: UUID,
+    user: CurrentUser,
+    service: ReportService = Depends(_report_service),
+):
+    """Fetch recent commit details from GitHub."""
+    return await service.get_recent_commits(product_id)
 
 
 @router.post("/projects/{product_id}/analyze", response_model=AIAnalysisResponse)

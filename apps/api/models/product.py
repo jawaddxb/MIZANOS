@@ -92,6 +92,16 @@ class ProductEnvironment(Base, UUIDMixin, TimestampMixin):
     )
 
 
+class ProductLink(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "product_links"
+
+    product_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("products.id"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    url: Mapped[str] = mapped_column(String, nullable=False)
+
+
 class ProductDocument(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "product_documents"
 
