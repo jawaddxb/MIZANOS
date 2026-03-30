@@ -105,7 +105,7 @@ export function GlobalAddTaskDialog({ open, onOpenChange }: GlobalAddTaskDialogP
   const currentPriority = watch("priority");
   const currentAssignee = watch("assignee_id");
 
-  const { data: members = [] } = useProductMembers(selectedProductId || undefined);
+  const { data: members = [] } = useProductMembers(selectedProductId || "");
   const createTask = useCreateTask(selectedProductId);
 
   const assigneeOptions = useMemo(() => {
