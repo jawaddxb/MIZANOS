@@ -350,11 +350,9 @@ class ReportDocumentService:
         context = "\n".join(lines)
 
         prompt = (
-            "Write a concise executive summary (1 paragraph, 4-6 sentences) for a "
-            "daily project status briefing. Summarize the key highlights across these "
-            "projects. Be specific about project names, task completion, and pending items. "
-            "Mention projects with overdue or blocked tasks. "
-            "No markdown, no bullet points - just flowing prose.\n\n"
+            "Write a concise executive summary (1 paragraph, 3-4 sentences) for a "
+            "project status briefing. Mention project names, completion, and pending items. "
+            "No markdown, no bullets - flowing prose.\n\n"
             f"Projects:\n{context}"
         )
         return await self._call_llm(prompt)
@@ -368,7 +366,7 @@ class ReportDocumentService:
             model=config.model,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.5,
-            max_tokens=2048,
+            max_tokens=512,
         )
         return response.choices[0].message.content or ""
 

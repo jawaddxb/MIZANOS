@@ -57,7 +57,7 @@ class ReportAIService:
                 {"role": "user", "content": prompt},
             ],
             temperature=0.4,
-            max_tokens=1536,
+            max_tokens=768,
         )
         raw = response.choices[0].message.content or "{}"
         try:

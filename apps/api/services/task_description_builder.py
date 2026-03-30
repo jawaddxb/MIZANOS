@@ -74,7 +74,7 @@ async def fill_missing_descriptions(
             model=config.model,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
-            max_tokens=2048,
+            max_tokens=1024,
         )
         raw = response.choices[0].message.content or "{}"
         data = json.loads(raw)
