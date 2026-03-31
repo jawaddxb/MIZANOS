@@ -192,7 +192,7 @@ function TasksTab({ productId, openTaskId }: TasksTabProps) {
             <SelectContent>
               <SelectItem value="all">All assignees</SelectItem>
               <SelectItem value="__unassigned__">Unassigned</SelectItem>
-              {members.map((m) => (
+              {Array.from(new Map(members.map((m) => [m.profile_id, m])).values()).map((m) => (
                 <SelectItem key={m.profile_id} value={m.profile_id}>
                   {m.profile?.full_name ?? m.profile?.email ?? "Unknown"}
                 </SelectItem>
