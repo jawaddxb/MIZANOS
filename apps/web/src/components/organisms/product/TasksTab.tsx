@@ -62,18 +62,24 @@ function TasksTab({ productId, openTaskId }: TasksTabProps) {
     }
   }, [openTaskId, tasks, isLoading, assigneeMap]);
 
+  const STATUS_SORT_ORDER: Record<string, number> = {
+    in_progress: 0, review: 1, backlog: 2, done: 3, live: 4, cancelled: 5,
+  };
+
   const filteredTasks = useMemo(() => {
     if (!tasks) return [];
-    return tasks.filter((task) => {
-      if (myTasksOnly && user?.profile_id && task.assignee_id !== user.profile_id && task.created_by !== user.profile_id) return false;
-      if (statusFilter !== "all" && task.status !== statusFilter) return false;
-      if (priorityFilter !== "all" && task.priority !== priorityFilter) return false;
-      if (!myTasksOnly) {
-        if (assigneeFilter === "__unassigned__" && task.assignee_id) return false;
-        if (assigneeFilter !== "all" && assigneeFilter !== "__unassigned__" && task.assignee_id !== assigneeFilter) return false;
-      }
-      return true;
-    });
+    return tasks
+      .filter((task) => {
+        if (myTasksOnly && user?.profile_id && task.assignee_id !== user.profile_id && task.created_by !== user.profile_id) return false;
+        if (statusFilter !== "all" && task.status !== statusFilter) return false;
+        if (priorityFilter !== "all" && task.priority !== priorityFilter) return false;
+        if (!myTasksOnly) {
+          if (assigneeFilter === "__unassigned__" && task.assignee_id) return false;
+          if (assigneeFilter !== "all" && assigneeFilter !== "__unassigned__" && task.assignee_id !== assigneeFilter) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => (STATUS_SORT_ORDER[a.status ?? "backlog"] ?? 9) - (STATUS_SORT_ORDER[b.status ?? "backlog"] ?? 9));
   }, [tasks, statusFilter, priorityFilter, assigneeFilter, myTasksOnly, user?.profile_id]);
 
   const toggleSelect = useCallback((id: string) => {
