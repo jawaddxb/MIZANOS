@@ -235,9 +235,17 @@ export function TaskDetailDrawer({
             )}
 
             {canEditDetails && (
-              <div className="space-y-1">
-                <BaseLabel htmlFor="drawer-due">Due Date</BaseLabel>
-                <BaseInput id="drawer-due" type="date" min={new Date().toISOString().split("T")[0]} {...register("due_date")} />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <BaseLabel htmlFor="drawer-due">Due Date</BaseLabel>
+                  <BaseInput id="drawer-due" type="date" min={new Date().toISOString().split("T")[0]} {...register("due_date")} />
+                </div>
+                <div className="space-y-1">
+                  <BaseLabel>Created Date</BaseLabel>
+                  <p className="text-sm text-muted-foreground rounded-md border px-3 py-2">
+                    {task?.createdAt ? new Date(task.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "—"}
+                  </p>
+                </div>
               </div>
             )}
 
