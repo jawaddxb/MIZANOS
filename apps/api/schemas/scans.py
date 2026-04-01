@@ -58,10 +58,10 @@ class ScanHistoryItem(BaseSchema):
     id: UUID
     product_id: UUID
     repository_url: str
-    branch: str
-    latest_commit_sha: str
+    branch: str | None = None
+    latest_commit_sha: str | None = None
     scan_status: str
-    files_changed: int
+    files_changed: int = 0
     components_discovered: dict | None = None
     created_at: datetime
 
