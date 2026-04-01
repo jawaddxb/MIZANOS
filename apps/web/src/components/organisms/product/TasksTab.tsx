@@ -13,6 +13,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTasks } from "@/hooks/queries/useTasks";
 import { useProductMembers } from "@/hooks/queries/useProductMembers";
 import { useCreateTask, useUpdateTask } from "@/hooks/mutations/useTaskMutations";
+import { useQuery } from "@tanstack/react-query";
+import { tasksRepository } from "@/lib/api/repositories";
 import { TASK_STATUS_DISPLAY } from "@/lib/constants";
 import type { KanbanTask, TaskStatus, TaskPriority } from "@/lib/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/inputs/BaseSelect";
@@ -48,6 +50,14 @@ function TasksTab({ productId, openTaskId }: TasksTabProps) {
     }
     return map;
   }, [members]);
+
+  const taskIds = useMemo(() => tasks?.map((t) => t.id) ?? [], [tasks]);
+  const { data: checklistAssigneesMap = {} } = useQuery({
+    queryKey: ["checklist-assignees", productId, taskIds.length],
+    queryFn: () => tasksRepository.getChecklistAssignees(taskIds),
+    enabled: taskIds.length > 0,
+    staleTime: 30_000,
+  });
 
   const handledTaskIdRef = useRef<string | null>(null);
 
@@ -229,6 +239,7 @@ function TasksTab({ productId, openTaskId }: TasksTabProps) {
             task={task}
             selected={selectedIds.has(task.id)}
             assigneeName={task.assignee_id ? assigneeMap.get(task.assignee_id) : undefined}
+            checklistAssignees={checklistAssigneesMap[task.id]}
             onToggle={() => toggleSelect(task.id)}
             onClick={() => {
               setEditTask(toKanbanTask(task, assigneeMap));

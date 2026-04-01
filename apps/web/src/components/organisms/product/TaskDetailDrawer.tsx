@@ -19,6 +19,7 @@ import { BaseLabel } from "@/components/atoms/inputs/BaseLabel";
 import { SelectField } from "@/components/molecules/forms/SelectField";
 import { DeleteTaskDialog } from "@/components/molecules/feedback/DeleteTaskDialog";
 import { CommentThread } from "@/components/molecules/comments/CommentThread";
+import { TaskChecklist } from "@/components/molecules/tasks/TaskChecklist";
 import { useProductMembers } from "@/hooks/queries/useProductMembers";
 import { useUpdateTask, useDeleteTask } from "@/hooks/mutations/useTaskMutations";
 import { useRoleVisibility } from "@/hooks/utils/useRoleVisibility";
@@ -176,7 +177,7 @@ export function TaskDetailDrawer({
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-6 pb-4 space-y-4">
-          <form id="task-detail-form" onSubmit={handleSubmit(onFormSubmit)} className="space-y-3">
+          <form id="task-detail-form" onSubmit={(e) => { e.preventDefault(); const submitter = (e.nativeEvent as SubmitEvent).submitter; if (submitter?.getAttribute("data-save") === "true") handleSubmit(onFormSubmit)(e); }} className="space-y-3">
             <div className="space-y-1">
               <BaseLabel htmlFor="drawer-title">Title</BaseLabel>
               <BaseInput id="drawer-title" {...register("title")} aria-invalid={!!errors.title} disabled={!canEditDetails} />
@@ -187,6 +188,16 @@ export function TaskDetailDrawer({
               <BaseLabel htmlFor="drawer-desc">Description</BaseLabel>
               <BaseTextarea id="drawer-desc" className="resize-y" rows={7} {...register("description")} disabled={!canEditDetails} />
             </div>
+
+            {task && (
+              <div
+                className="border-t pt-3"
+                onSubmit={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onKeyDown={(e) => { if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") { e.preventDefault(); e.stopPropagation(); } }}
+              >
+                <TaskChecklist taskId={task.id} />
+              </div>
+            )}
 
             {canManageTasks && (
               <SelectField
@@ -280,7 +291,7 @@ export function TaskDetailDrawer({
               )}
               <div className="flex-1" />
               <BaseButton type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</BaseButton>
-              <BaseButton type="submit" disabled={updateTask.isPending}>
+              <BaseButton type="submit" data-save="true" disabled={updateTask.isPending}>
                 {updateTask.isPending ? "Saving..." : "Save"}
               </BaseButton>
             </div>

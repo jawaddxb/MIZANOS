@@ -47,6 +47,7 @@ from .settings import (
 )
 from .specification import Specification, SpecificationFeature, SpecificationSource
 from .task import Task, TaskTemplate, TaskTemplateGroup
+from .task_checklist import TaskChecklistItem
 from .task_comment import TaskComment
 from .user import (
     InvitationToken,
@@ -123,6 +124,7 @@ __all__ = [
     "SpecificationSource",
     # Task
     "Task",
+    "TaskChecklistItem",
     "TaskComment",
     "TaskTemplate",
     "TaskTemplateGroup",

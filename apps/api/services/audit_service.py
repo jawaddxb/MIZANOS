@@ -95,10 +95,13 @@ class AuditService(BaseService[Audit]):
         if total_tasks > 0:
             done = sum(1 for t in tasks if t.status in ("done", "live"))
             now = datetime.now(timezone.utc)
-            overdue = sum(
-                1 for t in tasks
-                if t.due_date and t.due_date < now and t.status not in ("done", "live")
-            )
+            overdue = 0
+            for t in tasks:
+                if not t.due_date or t.status in ("done", "live"):
+                    continue
+                dd = t.due_date if t.due_date.tzinfo else t.due_date.replace(tzinfo=timezone.utc)
+                if dd < now:
+                    overdue += 1
             completion_ratio = done / total_tasks
             security = round(completion_ratio * 100, 1)
             if overdue > 0:

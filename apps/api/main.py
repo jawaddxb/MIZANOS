@@ -50,6 +50,7 @@ from apps.api.routers import (
     product_members,
     product_notification_settings,
     specification_sources,
+    task_checklist,
     task_comments,
 )
 
@@ -118,6 +119,9 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 # product_members must come before products so /all-members isn't caught by /{product_id}
 app.include_router(product_members.router, prefix="/products", tags=["product-members"])
 app.include_router(products.router, prefix="/products", tags=["products"])
+# checklist + comments must be before tasks so /{task_id}/checklist isn't caught by /{task_id}
+app.include_router(task_checklist.router, prefix="/tasks", tags=["task-checklist"])
+app.include_router(task_comments.router, prefix="/tasks", tags=["task-comments"])
 app.include_router(tasks.router, prefix="/tasks", tags=["tasks"])
 app.include_router(qa.router, prefix="/qa", tags=["qa"])
 app.include_router(documents.router, prefix="/documents", tags=["documents"])
@@ -143,7 +147,6 @@ app.include_router(document_folders.router, prefix="/products", tags=["document-
 app.include_router(evaluations.router, prefix="/evaluations", tags=["evaluations"])
 app.include_router(org_chart.router, prefix="/org-chart", tags=["org-chart"])
 app.include_router(product_notification_settings.router, prefix="/products", tags=["product-notification-settings"])
-app.include_router(task_comments.router, prefix="/tasks", tags=["task-comments"])
 app.include_router(specification_sources.router, prefix="/products", tags=["specification-sources"])
 app.include_router(utilities.router, prefix="/utilities", tags=["utilities"])
 app.include_router(scans.router, prefix="/scans", tags=["scans"])
