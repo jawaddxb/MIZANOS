@@ -1,9 +1,9 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { productsRepository, tasksRepository, qaRepository, auditRepository, notificationsRepository } from "@/lib/api/repositories";
+import { productsRepository, tasksRepository, auditRepository, notificationsRepository } from "@/lib/api/repositories";
 import { useAuth } from "@/contexts/AuthContext";
-import type { Product, Task, QACheck, Audit, Notification } from "@/lib/types";
+import type { Product, Task, Audit, Notification } from "@/lib/types";
 
 export interface DashboardMetrics {
   overdueTasks: Array<{

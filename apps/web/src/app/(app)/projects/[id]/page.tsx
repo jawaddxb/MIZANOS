@@ -18,14 +18,9 @@ import { DeploymentChecklist } from "@/components/organisms/product/DeploymentCh
 import { ProjectLinksSection } from "@/components/organisms/product/ProjectLinksSection";
 import { GoLiveChecklist } from "@/components/organisms/product/GoLiveChecklist";
 import { ProjectIntegrations } from "@/components/organisms/product/ProjectIntegrations";
-import { CommitHistory } from "@/components/organisms/product/CommitHistory";
-import { PullRequestList } from "@/components/organisms/product/PullRequestList";
-import { QATab } from "@/components/organisms/product/QATab";
 import { EnvironmentsTab } from "@/components/organisms/product/EnvironmentsTab";
-import { FeaturesTab } from "@/components/organisms/product/FeaturesTab";
 import { MarketingTab } from "@/components/organisms/marketing/MarketingTab";
 import { SourcesTab } from "@/components/organisms/product/SourcesTab";
-import { SystemDocsTab } from "@/components/organisms/product/SystemDocsTab";
 import { BugsTab } from "@/components/organisms/product/BugsTab";
 import { ProductSettingsDialog } from "@/components/organisms/product/ProductSettingsDialog";
 import { LinkGitHubDialog } from "@/components/organisms/product/LinkGitHubDialog";
@@ -86,7 +81,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
       </div>
       {specEditing
         ? <SpecEditor productId={id} />
-        : <SpecViewer productId={id} productName={product.product?.name ?? "Product"} onNavigateToFeatures={() => setActiveTab("features")} />}
+        : <SpecViewer productId={id} productName={product.product?.name ?? "Product"} />}
     </div>
   );
 
@@ -163,18 +158,9 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
             <ProjectIntegrations productId={id} />
           </div>
         }
-        commitContent={
-          <div className="space-y-6">
-            <CommitHistory productId={id} repositoryUrl={product.product?.repository_url} onLinkGitHub={() => setLinkGitHubOpen(true)} />
-            <PullRequestList productId={id} repositoryUrl={product.product?.repository_url} />
-          </div>
-        }
-        qaContent={<QATab productId={id} />}
         environmentsContent={<EnvironmentsTab productId={id} />}
-        featuresContent={<FeaturesTab productId={id} />}
         marketingContent={<MarketingTab productId={id} />}
         sourcesContent={<SourcesTab productId={id} />}
-        systemDocsContent={<SystemDocsTab productId={id} />}
       />
       <LinkGitHubDialog
         open={linkGitHubOpen}

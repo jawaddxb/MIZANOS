@@ -15,13 +15,9 @@ import {
   FolderOpen,
   History,
   Rocket,
-  GitCommitHorizontal,
-  Shield,
   Server,
-  Layers,
   Megaphone,
   FolderGit2,
-  BookOpen,
   Users,
   Bug,
 } from "lucide-react";
@@ -45,13 +41,9 @@ interface ProductTabsProps {
   documentsContent?: ReactNode;
   auditContent?: ReactNode;
   deploymentContent?: ReactNode;
-  commitContent?: ReactNode;
-  qaContent?: ReactNode;
   environmentsContent?: ReactNode;
-  featuresContent?: ReactNode;
   marketingContent?: ReactNode;
   sourcesContent?: ReactNode;
-  systemDocsContent?: ReactNode;
   defaultTab?: string;
   activeTab?: string;
   onTabChange?: (tab: string) => void;
@@ -69,13 +61,9 @@ function ProductTabs({
   documentsContent,
   auditContent,
   deploymentContent,
-  commitContent,
-  qaContent,
   environmentsContent,
-  featuresContent,
   marketingContent,
   sourcesContent,
-  systemDocsContent,
   defaultTab = "overview",
   activeTab: controlledTab,
   onTabChange,
@@ -124,12 +112,6 @@ function ProductTabs({
       content: documentsContent,
     },
     {
-      value: "system-docs",
-      label: "System Docs",
-      icon: <BookOpen className="h-4 w-4" />,
-      content: systemDocsContent,
-    },
-    {
       value: "marketing",
       label: "Marketing",
       icon: <Megaphone className="h-4 w-4" />,
@@ -148,28 +130,10 @@ function ProductTabs({
       content: deploymentContent,
     },
     {
-      value: "commits",
-      label: "Commits",
-      icon: <GitCommitHorizontal className="h-4 w-4" />,
-      content: commitContent,
-    },
-    {
-      value: "qa",
-      label: "QA",
-      icon: <Shield className="h-4 w-4" />,
-      content: qaContent,
-    },
-    {
       value: "environments",
       label: "Environments",
       icon: <Server className="h-4 w-4" />,
       content: environmentsContent,
-    },
-    {
-      value: "features",
-      label: "Features",
-      icon: <Layers className="h-4 w-4" />,
-      content: featuresContent,
     },
     {
       value: "sources",

@@ -105,7 +105,7 @@ export function TaskDetailDrawer({
   const isAIEngineerOnly = isEngineer && !isAdmin && !isProjectManager;
   const isCreator = !!task?.createdBy && task.createdBy === user?.profile_id;
   const canEditDetails = canManageTasks || isCreator;
-  const canDeleteTask = canEditDetails && !isAIEngineerOnly;
+  const canDeleteTask = canEditDetails;
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const assigneeOptions = useMemo(() => {

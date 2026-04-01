@@ -15,9 +15,7 @@ import type { ProductMember } from "@/lib/types";
 import { StakeholdersList } from "./StakeholdersList";
 import { ManagementNotes } from "./ManagementNotes";
 import { PartnerNotes } from "./PartnerNotes";
-import { PortTaskGenerator } from "./PortTaskGenerator";
 import { DevelopmentHealthSection } from "./DevelopmentHealthSection";
-import { FunctionalSpecSection } from "./FunctionalSpecSection";
 import { ExternalDocumentsOverview } from "./ExternalDocumentsOverview";
 import { ScanProgressCard } from "@/components/molecules/indicators/ScanProgressCard";
 import type { ProductStage } from "@/lib/constants";
@@ -193,8 +191,6 @@ function ProductOverview({ productId }: ProductOverviewProps) {
         />
       </div>
 
-      <PortTaskGenerator productId={productId} sourceType={product.source_type ?? undefined} />
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <TeamCard members={members} />
         <ExternalDocumentsOverview productId={productId} />
@@ -227,13 +223,6 @@ function ProductOverview({ productId }: ProductOverviewProps) {
         />
       )}
 
-      {product.repository_url && (
-        <FunctionalSpecSection
-          productId={productId}
-          repositoryUrl={product.repository_url}
-          specificationId={specification?.id}
-        />
-      )}
     </div>
   );
 }

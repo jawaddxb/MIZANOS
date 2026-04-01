@@ -46,7 +46,7 @@ export function BulkActionsToolbar({
   const { isAdmin, isProjectManager, isEngineer } = useRoleVisibility();
   const isAIEngineerOnly = isEngineer && !isAdmin && !isProjectManager;
   const canManageTasks = isAdmin || isProjectManager || isEngineer;
-  const canDelete = canManageTasks && !isAIEngineerOnly;
+  const canDelete = canManageTasks;
   const canEditDueDate = canManageTasks && !isAIEngineerOnly;
 
   const allSelected = taskCount > 0 && selectedIds.size === taskCount;

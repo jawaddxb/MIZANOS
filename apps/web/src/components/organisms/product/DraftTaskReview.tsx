@@ -24,14 +24,12 @@ interface DraftTaskReviewProps {
   productId: string;
   onGenerateFromSpec?: () => void;
   onGenerateFromTemplates?: () => void;
-  onGenerateFromPort?: () => void;
   isGenerating?: boolean;
-  showLovable?: boolean;
 }
 
 export function DraftTaskReview({
-  productId, onGenerateFromSpec, onGenerateFromTemplates, onGenerateFromPort,
-  isGenerating, showLovable,
+  productId, onGenerateFromSpec, onGenerateFromTemplates,
+  isGenerating,
 }: DraftTaskReviewProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [viewTask, setViewTask] = useState<DraftTask | null>(null);
@@ -102,12 +100,6 @@ export function DraftTaskReview({
                 <DropdownMenuItem onClick={onGenerateFromTemplates}>
                   <LayoutTemplate className="h-4 w-4 mr-2" />
                   From Templates
-                </DropdownMenuItem>
-              )}
-              {showLovable && onGenerateFromPort && (
-                <DropdownMenuItem onClick={onGenerateFromPort}>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  From Lovable Manifest
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>

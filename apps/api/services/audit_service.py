@@ -108,38 +108,8 @@ class AuditService(BaseService[Audit]):
     async def _run_repo_evaluation(
         self, repository_url: str
     ) -> dict | None:
-        """Clone repo to temp dir and run evaluator."""
-        import logging
-        import shutil
-        import subprocess
-        import tempfile
-
-        logger = logging.getLogger(__name__)
-        tmp_dir = None
-        try:
-            tmp_dir = tempfile.mkdtemp(prefix="mizan-audit-")
-            subprocess.run(
-                ["git", "clone", "--depth", "1", repository_url, tmp_dir],
-                capture_output=True,
-                timeout=60,
-                check=True,
-            )
-
-            from apps.api.services.repo_evaluator import RepoEvaluator
-
-            result = RepoEvaluator().evaluate(tmp_dir)
-            return {
-                "categories": {
-                    "code_quality": result.summary_score,
-                },
-                "violations": [],
-            }
-        except Exception:
-            logger.debug("Repo evaluation skipped", exc_info=True)
-            return None
-        finally:
-            if tmp_dir:
-                shutil.rmtree(tmp_dir, ignore_errors=True)
+        """Repo evaluation removed — always returns None."""
+        return None
 
     async def compare(self, product_id: UUID) -> dict:
         """Compare the latest two audits for a product."""

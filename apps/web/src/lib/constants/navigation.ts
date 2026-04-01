@@ -8,8 +8,6 @@ import {
   Users,
   Network,
   BookOpen,
-  Shield,
-  FlaskConical,
   LayoutTemplate,
   Settings,
   type LucideIcon,
@@ -46,14 +44,12 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: "/knowledge", icon: BookOpen, label: "Knowledge Base" },
     ],
   },
-  {
-    label: "TOOLS",
-    items: [
-      { href: "/vault", icon: Shield, label: "Vault" },
-      { href: "/evaluator", icon: FlaskConical, label: "Evaluator" },
-      { href: "/templates", icon: LayoutTemplate, label: "Templates" },
-    ],
-  },
+  // {
+  //   label: "TOOLS",
+  //   items: [
+  //     { href: "/templates", icon: LayoutTemplate, label: "Templates" },
+  //   ],
+  // },
 ];
 
 export const SETTINGS_NAV_ITEM: NavItem = {

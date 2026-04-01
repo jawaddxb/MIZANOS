@@ -29,15 +29,11 @@ from apps.api.routers import (
     audit,
     marketing,
     knowledge,
-    vault,
     team,
     settings as settings_router,
     specifications,
     scrape,
     transcription,
-    system_documents,
-    port_generator,
-    repo_evaluator,
     deployment_checklist,
     stakeholders,
     integrations,
@@ -132,7 +128,6 @@ app.include_router(github_pats.router, prefix="/github-pats", tags=["github-pats
 app.include_router(audit.router, prefix="/audits", tags=["audit"])
 app.include_router(marketing.router, prefix="/marketing", tags=["marketing"])
 app.include_router(knowledge.router, prefix="/knowledge", tags=["knowledge"])
-app.include_router(vault.router, prefix="/vault", tags=["vault"])
 app.include_router(team.router, prefix="/team", tags=["team"])
 app.include_router(settings_router.router, prefix="/settings", tags=["settings"])
 app.include_router(specifications.router, prefix="/specifications", tags=["specifications"])
@@ -140,9 +135,6 @@ app.include_router(task_templates.router, prefix="/task-templates", tags=["task-
 app.include_router(task_template_groups.router, prefix="/task-template-groups", tags=["task-template-groups"])
 app.include_router(scrape.router, prefix="/scrape", tags=["scrape"])
 app.include_router(transcription.router, prefix="/transcription", tags=["transcription"])
-app.include_router(system_documents.router, prefix="/system-documents", tags=["system-documents"])
-app.include_router(port_generator.router, prefix="/port-generator", tags=["port-generator"])
-app.include_router(repo_evaluator.router, prefix="/repo-evaluator", tags=["repo-evaluator"])
 app.include_router(deployment_checklist.router, prefix="/products", tags=["deployment-checklist"])
 app.include_router(stakeholders.router, prefix="/products", tags=["stakeholders"])
 app.include_router(integrations.router, prefix="/products", tags=["integrations"])

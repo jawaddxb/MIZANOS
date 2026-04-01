@@ -4,8 +4,6 @@ export const ROUTE_LABELS: Record<string, string> = {
   "/team": "Team",
   "/org-chart": "Org Chart",
   "/knowledge": "Knowledge Base",
-  "/vault": "Vault",
-  "/evaluator": "Evaluator",
   "/templates": "Templates",
   "/settings": "Settings",
   "/projects": "Projects",
