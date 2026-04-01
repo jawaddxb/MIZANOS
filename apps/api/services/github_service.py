@@ -78,6 +78,10 @@ class GitHubService:
 
     async def analyze_repo(self, product_id: UUID, repository_url: str) -> RepositoryAnalysis:
         """Analyze a GitHub repository using the GitHub API."""
+        import base64
+        import json
+        import re
+
         owner_repo = self._parse_owner_repo(repository_url)
         tech_stack: dict = {}
         overall_score: float = 0
@@ -108,11 +112,129 @@ class GitHubService:
                 if contrib_resp.status_code == 200:
                     link_header = contrib_resp.headers.get("link", "")
                     if 'rel="last"' in link_header:
-                        import re
                         match = re.search(r"page=(\d+)>; rel=\"last\"", link_header)
                         tech_stack["contributors"] = int(match.group(1)) if match else 1
                     else:
                         tech_stack["contributors"] = len(contrib_resp.json())
+
+                # --- Framework detection from config files ---
+                frameworks: dict[str, list[str]] = {
+                    "frontend": [], "backend": [], "database": [],
+                    "infrastructure": [], "testing": [], "styling": [],
+                }
+
+                async def fetch_file(path: str) -> str | None:
+                    r = await client.get(f"{base}/contents/{path}", headers=headers, timeout=10)
+                    if r.status_code == 200:
+                        content = r.json().get("content", "")
+                        try:
+                            return base64.b64decode(content).decode("utf-8", errors="ignore")
+                        except Exception:
+                            return None
+                    return None
+
+                # package.json detection
+                pkg_json = await fetch_file("package.json")
+                if not pkg_json:
+                    pkg_json = await fetch_file("apps/web/package.json")
+                if pkg_json:
+                    try:
+                        pkg = json.loads(pkg_json)
+                        all_deps = {**pkg.get("dependencies", {}), **pkg.get("devDependencies", {})}
+                        dep_map = {
+                            "frontend": [
+                                ("next", "Next.js"), ("react", "React"), ("vue", "Vue.js"),
+                                ("nuxt", "Nuxt"), ("svelte", "Svelte"), ("angular", "Angular"),
+                                ("@remix-run/react", "Remix"),
+                            ],
+                            "styling": [
+                                ("tailwindcss", "Tailwind CSS"), ("sass", "Sass"),
+                                ("styled-components", "Styled Components"),
+                                ("@mui/material", "Material UI"), ("antd", "Ant Design"),
+                                ("bootstrap", "Bootstrap"),
+                            ],
+                            "testing": [
+                                ("jest", "Jest"), ("vitest", "Vitest"), ("cypress", "Cypress"),
+                                ("playwright", "Playwright"), ("@testing-library/react", "Testing Library"),
+                            ],
+                            "infrastructure": [
+                                ("prisma", "Prisma"), ("drizzle-orm", "Drizzle"),
+                                ("@tanstack/react-query", "React Query"),
+                                ("axios", "Axios"), ("socket.io", "Socket.io"),
+                            ],
+                        }
+                        for category, deps in dep_map.items():
+                            for dep_name, label in deps:
+                                if dep_name in all_deps:
+                                    frameworks[category].append(label)
+                    except json.JSONDecodeError:
+                        pass
+
+                # requirements.txt / pyproject.toml detection
+                req_txt = await fetch_file("requirements.txt")
+                if not req_txt:
+                    req_txt = await fetch_file("pyproject.toml")
+                if req_txt:
+                    content_lower = req_txt.lower()
+                    py_map = {
+                        "backend": [
+                            ("fastapi", "FastAPI"), ("django", "Django"), ("flask", "Flask"),
+                            ("starlette", "Starlette"), ("litestar", "Litestar"),
+                        ],
+                        "database": [
+                            ("sqlalchemy", "SQLAlchemy"), ("asyncpg", "AsyncPG"),
+                            ("psycopg", "Psycopg"), ("pymongo", "PyMongo"),
+                            ("redis", "Redis"), ("celery", "Celery"), ("arq", "Arq"),
+                        ],
+                        "testing": [
+                            ("pytest", "Pytest"), ("unittest", "Unittest"),
+                        ],
+                        "infrastructure": [
+                            ("pydantic", "Pydantic"), ("alembic", "Alembic"),
+                            ("boto3", "AWS SDK"), ("httpx", "HTTPX"),
+                        ],
+                    }
+                    for category, deps in py_map.items():
+                        for dep_name, label in deps:
+                            if dep_name in content_lower:
+                                frameworks[category].append(label)
+
+                # Dockerfile / docker-compose detection
+                dockerfile = await fetch_file("Dockerfile")
+                if not dockerfile:
+                    dockerfile = await fetch_file("Dockerfile.api")
+                compose = await fetch_file("docker-compose.yml")
+                if not compose:
+                    compose = await fetch_file("docker-compose.yaml")
+                if not compose:
+                    compose = await fetch_file("infra/docker-compose.yml")
+
+                if dockerfile:
+                    frameworks["infrastructure"].append("Docker")
+                if compose:
+                    compose_lower = compose.lower()
+                    if "postgres" in compose_lower:
+                        frameworks["database"].append("PostgreSQL")
+                    if "redis" in compose_lower:
+                        frameworks["database"].append("Redis")
+                    if "mongo" in compose_lower:
+                        frameworks["database"].append("MongoDB")
+                    if "mysql" in compose_lower:
+                        frameworks["database"].append("MySQL")
+                    if "rabbitmq" in compose_lower:
+                        frameworks["infrastructure"].append("RabbitMQ")
+
+                # CI/CD detection
+                ci = await fetch_file(".github/workflows/ci.yml")
+                if not ci:
+                    ci = await fetch_file(".github/workflows/main.yml")
+                if ci:
+                    frameworks["infrastructure"].append("GitHub Actions")
+
+                # Deduplicate and store
+                tech_stack["frameworks"] = {
+                    k: sorted(set(v)) for k, v in frameworks.items() if v
+                }
 
             overall_score = sum([
                 30 if tech_stack.get("description") else 0,
