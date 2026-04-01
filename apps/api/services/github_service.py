@@ -82,13 +82,23 @@ class GitHubService:
         import json
         import re
 
+        from apps.api.models.product import Product
+
         owner_repo = self._parse_owner_repo(repository_url)
         tech_stack: dict = {}
         overall_score: float = 0
 
         if owner_repo:
             owner, repo = owner_repo
-            headers = self._github_headers()
+            # Use the project's stored PAT for authenticated access
+            token = None
+            product = await self.session.get(Product, product_id)
+            if product and product.github_pat_id:
+                token = await self._resolve_token(pat_id=str(product.github_pat_id))
+            if not token:
+                from apps.api.config import settings
+                token = settings.github_api_token or None
+            headers = self._github_headers(token)
             base = f"https://api.github.com/repos/{owner}/{repo}"
             async with httpx.AsyncClient() as client:
                 lang_resp = await client.get(f"{base}/languages", headers=headers, timeout=15)
