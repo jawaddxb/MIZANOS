@@ -45,17 +45,24 @@ async def fill_missing_descriptions(
 
     spec = spec_content or {}
     summary = spec.get("summary", "")
-    feature_list = "\n".join(
-        f"- {f.name}" for f in missing
-    )
+    feature_details = []
+    for f in missing:
+        detail = f"- {f.name}"
+        if isinstance(f.acceptance_criteria, list) and f.acceptance_criteria:
+            detail += f" (criteria: {', '.join(str(c) for c in f.acceptance_criteria[:3])})"
+        if f.priority:
+            detail += f" [priority: {f.priority}]"
+        feature_details.append(detail)
+    feature_list = "\n".join(feature_details)
 
     prompt = (
-        "Generate a plain-text description for each feature listed below. "
-        "Structure each description as two short paragraphs separated by "
-        "a blank line (\\n\\n):\n"
-        "- Paragraph 1: What the feature does and the user problem it solves.\n"
-        "- Paragraph 2: Expected behavior and key implementation details.\n\n"
-        "Keep each paragraph 2-3 sentences. Use plain text only, no markdown.\n\n"
+        "Generate a UNIQUE plain-text description for EACH feature below. "
+        "Each description MUST be different and specific to that feature. "
+        "Structure as two short paragraphs separated by \\n\\n:\n"
+        "- Paragraph 1: What this specific feature does and what user problem it solves.\n"
+        "- Paragraph 2: Expected behavior and key implementation considerations.\n\n"
+        "Keep each paragraph 2-3 sentences. Use plain text only, no markdown. "
+        "Do NOT reuse descriptions across features.\n\n"
         f"Project summary: {summary}\n\n"
         f"Features needing descriptions:\n{feature_list}\n\n"
         "Respond ONLY with valid JSON (no markdown, no code fences). "
