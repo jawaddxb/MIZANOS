@@ -78,6 +78,8 @@ class GitHubService:
 
     async def analyze_repo(self, product_id: UUID, repository_url: str) -> RepositoryAnalysis:
         """Analyze a GitHub repository using the GitHub API."""
+        import re
+
         owner_repo = self._parse_owner_repo(repository_url)
         tech_stack: dict = {}
         overall_score: float = 0
@@ -108,7 +110,6 @@ class GitHubService:
                 if contrib_resp.status_code == 200:
                     link_header = contrib_resp.headers.get("link", "")
                     if 'rel="last"' in link_header:
-                        import re
                         match = re.search(r"page=(\d+)>; rel=\"last\"", link_header)
                         tech_stack["contributors"] = int(match.group(1)) if match else 1
                     else:

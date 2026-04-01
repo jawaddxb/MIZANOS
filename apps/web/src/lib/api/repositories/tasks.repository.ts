@@ -131,6 +131,50 @@ export class TasksRepository extends BaseRepository<Task> {
     );
     return response.data;
   }
+
+  // Checklist
+  async getChecklistAssignees(taskIds: string[]): Promise<Record<string, string[]>> {
+    const response = await this.client.post<Record<string, string[]>>(
+      `${this.basePath}/checklist-assignees`,
+      { task_ids: taskIds },
+    );
+    return response.data;
+  }
+
+  async getChecklist(taskId: string): Promise<ChecklistItem[]> {
+    const response = await this.client.get<ChecklistItem[]>(`${this.basePath}/${taskId}/checklist`);
+    return response.data;
+  }
+
+  async addChecklistItem(taskId: string, data: { title: string; assignee_id?: string | null }): Promise<ChecklistItem> {
+    const response = await this.client.post<ChecklistItem>(`${this.basePath}/${taskId}/checklist`, data);
+    return response.data;
+  }
+
+  async updateChecklistItem(taskId: string, itemId: string, data: Partial<ChecklistItem>): Promise<ChecklistItem> {
+    const response = await this.client.patch<ChecklistItem>(`${this.basePath}/${taskId}/checklist/${itemId}`, data);
+    return response.data;
+  }
+
+  async toggleChecklistItem(taskId: string, itemId: string): Promise<ChecklistItem> {
+    const response = await this.client.patch<ChecklistItem>(`${this.basePath}/${taskId}/checklist/${itemId}/toggle`);
+    return response.data;
+  }
+
+  async deleteChecklistItem(taskId: string, itemId: string): Promise<void> {
+    await this.client.delete(`${this.basePath}/${taskId}/checklist/${itemId}`);
+  }
+}
+
+export interface ChecklistItem {
+  id: string;
+  task_id: string;
+  title: string;
+  is_checked: boolean;
+  assignee_id: string | null;
+  assignee_name: string | null;
+  sort_order: number;
+  created_at: string;
 }
 
 export const tasksRepository = new TasksRepository();

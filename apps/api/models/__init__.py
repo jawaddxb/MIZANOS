@@ -46,8 +46,8 @@ from .settings import (
     TeamHoliday,
 )
 from .specification import Specification, SpecificationFeature, SpecificationSource
-from .system_document import SystemDocument
 from .task import Task, TaskTemplate, TaskTemplateGroup
+from .task_checklist import TaskChecklistItem
 from .task_comment import TaskComment
 from .user import (
     InvitationToken,
@@ -59,7 +59,6 @@ from .user import (
     UserRole,
 )
 from .github_pat import GitHubPat
-from .vault import CompanyCredential
 
 __all__ = [
     # Enums
@@ -123,10 +122,9 @@ __all__ = [
     "Specification",
     "SpecificationFeature",
     "SpecificationSource",
-    # System Document
-    "SystemDocument",
     # Task
     "Task",
+    "TaskChecklistItem",
     "TaskComment",
     "TaskTemplate",
     "TaskTemplateGroup",
@@ -140,6 +138,4 @@ __all__ = [
     "PasswordResetToken",
     # GitHub PAT
     "GitHubPat",
-    # Vault
-    "CompanyCredential",
 ]

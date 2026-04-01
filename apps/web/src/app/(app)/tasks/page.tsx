@@ -19,7 +19,7 @@ import { useProfiles } from "@/hooks/queries/useProfiles";
 import { TASK_STATUS_DISPLAY, TASK_PRIORITY_COLORS, TASK_STATUSES } from "@/lib/constants";
 import { isMyDashboardEnabled } from "@/hooks/utils/useMyDashboard";
 import type { Task, KanbanTask } from "@/lib/types";
-import { ClipboardCheck, ListTodo, Loader2, Plus } from "lucide-react";
+import { ClipboardCheck, FolderKanban, ListTodo, Loader2, Plus } from "lucide-react";
 
 export default function TasksPage() {
   return (
@@ -101,6 +101,23 @@ function TasksPageContent() {
     return counts;
   }, [tasks]);
 
+  const groupedTasks = useMemo(() => {
+    if (!tasks) return [];
+    const groups = new Map<string, Task[]>();
+    for (const task of tasks) {
+      const pid = task.product_id ?? "unknown";
+      if (!groups.has(pid)) groups.set(pid, []);
+      groups.get(pid)!.push(task);
+    }
+    return Array.from(groups.entries())
+      .map(([productId, projectTasks]) => ({
+        productId,
+        productName: productMap.get(productId) ?? "Unknown Project",
+        tasks: projectTasks,
+      }))
+      .sort((a, b) => a.productName.localeCompare(b.productName));
+  }, [tasks, productMap]);
+
   const hasActiveFilters =
     search !== "" ||
     projectFilter !== "all" ||
@@ -181,18 +198,28 @@ function TasksPageContent() {
       {isLoading && <TasksSkeleton />}
 
       {!isLoading && tasks && tasks.length > 0 && (
-        <div className="space-y-2">
-          {tasks.map((task) => (
-            <TaskRow
-              key={task.id}
-              task={task}
-              projectName={productMap.get(task.product_id)}
-              assigneeName={task.assignee_id ? profileMap.get(task.assignee_id) : undefined}
-              onClick={() => {
-                setEditTask(toKanbanTask(task, profileMap));
-                setEditDialogOpen(true);
-              }}
-            />
+        <div className="space-y-6">
+          {groupedTasks.map((group) => (
+            <div key={group.productId}>
+              <div className="flex items-center gap-2 mb-2 sticky top-0 bg-background/95 backdrop-blur-sm z-10 py-1.5">
+                <FolderKanban className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold text-foreground">{group.productName}</h3>
+                <Badge variant="secondary" className="text-[10px]">{group.tasks.length}</Badge>
+              </div>
+              <div className="space-y-1.5 pl-1">
+                {group.tasks.map((task) => (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    assigneeName={task.assignee_id ? profileMap.get(task.assignee_id) : undefined}
+                    onClick={() => {
+                      setEditTask(toKanbanTask(task, profileMap));
+                      setEditDialogOpen(true);
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}
@@ -223,12 +250,10 @@ function TasksPageContent() {
 
 function TaskRow({
   task,
-  projectName,
   assigneeName,
   onClick,
 }: {
   task: Task;
-  projectName?: string;
   assigneeName?: string;
   onClick: () => void;
 }) {
@@ -249,12 +274,8 @@ function TaskRow({
         )}
       </div>
 
-      {projectName && (
-        <span className="text-xs text-muted-foreground truncate max-w-[120px] shrink-0">{projectName}</span>
-      )}
-
       {assigneeName && (
-        <span className="text-xs text-muted-foreground truncate max-w-[100px] shrink-0">{assigneeName}</span>
+        <span className="text-xs text-muted-foreground truncate max-w-[120px] shrink-0">{assigneeName}</span>
       )}
 
       {task.priority && (

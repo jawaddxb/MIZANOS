@@ -10,13 +10,12 @@ import type { ProductDocument, DocumentFolder } from "@/lib/types";
 import { useQuery } from "@tanstack/react-query";
 import {
   FolderOpen, FileText, FileX, Search, FolderPlus, Upload,
-  Home, ChevronRight, Pencil, History, Trash2, Link2, Globe,
+  Home, ChevronRight, Pencil, History, Trash2, Globe,
 } from "lucide-react";
 import { CreateFolderDialog } from "./CreateFolderDialog";
 import { EditDocumentDialog } from "./EditDocumentDialog";
 import { VersionHistoryDialog } from "./VersionHistoryDialog";
 import { RenameFolderDialog } from "./RenameFolderDialog";
-import { AccessLinksTab } from "./AccessLinksTab";
 import { ExternalDocsTab } from "./ExternalDocsTab";
 import { useDeleteFolder } from "@/hooks/mutations/useDocumentFolderMutations";
 
@@ -35,7 +34,6 @@ const CATEGORIES = [
 const DOC_TABS = [
   { id: "files", label: "Files", icon: FileText },
   { id: "external", label: "External Docs", icon: Globe },
-  { id: "access-links", label: "Access Links", icon: Link2 },
 ] as const;
 
 type DocTabId = (typeof DOC_TABS)[number]["id"];
@@ -125,8 +123,6 @@ function DocumentsList({ productId, onUploadClick }: DocumentsListProps) {
 
       {activeDocTab === "external" ? (
         <ExternalDocsTab productId={productId} />
-      ) : activeDocTab === "access-links" ? (
-        <AccessLinksTab productId={productId} />
       ) : (
         <>
           <div className="flex items-center gap-2 text-sm">

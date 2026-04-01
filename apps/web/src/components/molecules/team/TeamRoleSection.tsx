@@ -94,10 +94,10 @@ export function TeamRoleSection({
         <button
           type="button"
           onClick={() => setShowAddMore(true)}
-          className="flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors mt-2"
+          className="flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 border border-primary/30 rounded-md px-3 py-1.5 hover:bg-primary/5 transition-colors mt-3"
         >
           <Plus className="h-3.5 w-3.5" />
-          Add Another
+          Add Member
         </button>
       )}
 

@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/atoms/display/Skeleton";
 import { useRepositoryAnalysis, useAnalyzeRepository } from "@/hooks/queries/useRepositoryAnalysis";
 import { useLatestAudit } from "@/hooks/queries/useAuditHistory";
 import { useRunAudit } from "@/hooks/mutations/useAuditMutations";
+import { useScanResult, useProgressSummary } from "@/hooks/queries/useScans";
 import {
   Activity,
   Code2,
@@ -69,17 +70,80 @@ function HealthCard({
   );
 }
 
+
+function computeSpecAlignment(scanResult: { gap_analysis?: { progress_pct?: number; verified?: number; total_tasks?: number } | null } | null | undefined): number {
+  if (!scanResult?.gap_analysis) return 0;
+  const ga = scanResult.gap_analysis;
+  if (typeof ga.progress_pct === "number") return Math.round(ga.progress_pct);
+  if (ga.total_tasks && ga.total_tasks > 0 && typeof ga.verified === "number") {
+    return Math.round((ga.verified / ga.total_tasks) * 100);
+  }
+  return 0;
+}
+
+function computeCodeQuality(scanResult: { functional_inventory?: Array<{ confidence?: number; artifacts_found?: string[] }> | null; file_count?: number | null } | null | undefined): number {
+  if (!scanResult?.functional_inventory?.length) return 0;
+  const evidence = scanResult.functional_inventory;
+  const totalTasks = evidence.length;
+  if (totalTasks === 0) return 0;
+
+  // Average confidence of task evidence (0-1 scale from LLM)
+  const avgConfidence = evidence.reduce((sum, e) => sum + (e.confidence ?? 0), 0) / totalTasks;
+
+  // Artifact coverage: how many tasks have at least one artifact found
+  const tasksWithArtifacts = evidence.filter((e) => e.artifacts_found && e.artifacts_found.length > 0).length;
+  const artifactCoverage = tasksWithArtifacts / totalTasks;
+
+  // Weighted: 60% confidence + 40% artifact coverage
+  return Math.round((avgConfidence * 60 + artifactCoverage * 40));
+}
+
+function computeStandards(scanResult: { gap_analysis?: { total_tasks?: number; verified?: number; partial?: number; no_evidence?: number } | null; file_count?: number | null } | null | undefined, analysis: { tech_stack?: unknown } | null | undefined): number {
+  const techStack = (typeof analysis?.tech_stack === "object" && analysis.tech_stack !== null ? analysis.tech_stack : {}) as Record<string, unknown>;
+  let score = 0;
+  let checks = 0;
+
+  // Check 1: Has repo description (from GitHub analysis)
+  checks++;
+  if (techStack.description) score++;
+
+  // Check 2: Has multiple contributors
+  checks++;
+  const contributors = Number(techStack.contributors ?? 0);
+  if (contributors > 1) score++;
+
+  // Check 3: Reasonable file count (project has substance)
+  checks++;
+  const fileCount = scanResult?.file_count ?? 0;
+  if (fileCount > 10) score++;
+
+  // Check 4: Low no-evidence ratio (code covers most tasks)
+  checks++;
+  const ga = scanResult?.gap_analysis;
+  if (ga && ga.total_tasks && ga.total_tasks > 0) {
+    const noEvidenceRatio = (ga.no_evidence ?? 0) / ga.total_tasks;
+    if (noEvidenceRatio < 0.3) score++;
+  }
+
+  // Check 5: Has verified tasks (code actually maps to spec)
+  checks++;
+  if (ga && (ga.verified ?? 0) > 0) score++;
+
+  return checks > 0 ? Math.round((score / checks) * 100) : 0;
+}
+
 export function DevelopmentHealthSection({
   productId,
   repositoryUrl,
-  specificationId,
 }: DevelopmentHealthSectionProps) {
   const { data: analysis, isLoading: analysisLoading } = useRepositoryAnalysis(productId);
   const { data: audit, isLoading: auditLoading } = useLatestAudit(productId);
+  const { data: scanResult, isLoading: scanLoading } = useScanResult(productId);
+  const { data: progressSummary } = useProgressSummary(productId);
   const analyzeRepo = useAnalyzeRepository(productId);
   const runAudit = useRunAudit(productId);
 
-  const isLoading = analysisLoading || auditLoading;
+  const isLoading = analysisLoading || auditLoading || scanLoading;
 
   if (isLoading) {
     return (
@@ -101,12 +165,14 @@ export function DevelopmentHealthSection({
     );
   }
 
-  const repoScore = analysis?.overall_score ?? 0;
-  const auditScore = audit?.overall_score ?? 0;
-  const complianceScore = extractComplianceScore(analysis);
-  const overallScore = Math.round(repoScore * 0.4 + auditScore * 0.35 + complianceScore * 0.25);
+  // Use scan data for real scores, fall back to old analysis data
+  const specAlignment = computeSpecAlignment(scanResult) || (analysis?.overall_score ?? 0);
+  const codeQuality = computeCodeQuality(scanResult) || (audit?.overall_score ?? 0);
+  const standards = computeStandards(scanResult, analysis);
+  const overallScore = Math.round(specAlignment * 0.4 + codeQuality * 0.35 + standards * 0.25);
 
-  const criticalGaps = extractCriticalGaps(analysis);
+  const hasScanData = !!scanResult?.gap_analysis;
+  const lastScanAt = progressSummary?.last_scan_at;
 
   return (
     <Card>
@@ -155,46 +221,47 @@ export function DevelopmentHealthSection({
                 style={{ width: `${overallScore}%` }}
               />
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Overall Health Score</p>
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-xs text-muted-foreground">Overall Health Score</p>
+              {lastScanAt && (
+                <p className="text-[10px] text-muted-foreground">
+                  Last scan: {new Date(lastScanAt).toLocaleDateString()}
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
-          <HealthCard title="Spec Alignment" icon={FileCheck} score={repoScore} label="from analysis" />
-          <HealthCard title="Standards" icon={Shield} score={complianceScore} label="compliance" />
-          <HealthCard title="Code Quality" icon={Code2} score={auditScore} label="audit score" />
-        </div>
-
-        {criticalGaps.length > 0 && (
-          <div className="rounded-lg border border-status-critical/30 bg-status-critical/5 p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="h-4 w-4 text-status-critical" />
-              <span className="text-sm font-medium">Critical Gaps</span>
-            </div>
-            <ul className="space-y-1">
-              {criticalGaps.slice(0, 3).map((gap, i) => (
-                <li key={i} className="text-xs text-muted-foreground">
-                  {gap}
-                </li>
-              ))}
-            </ul>
+        {!hasScanData && (
+          <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+            <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+            <p className="text-xs text-muted-foreground">
+              Run a <strong>Code Progress Scan</strong> from the overview to get accurate health scores based on your actual codebase.
+            </p>
           </div>
         )}
+
+        <div className="grid grid-cols-3 gap-3">
+          <HealthCard
+            title="Spec Alignment"
+            icon={FileCheck}
+            score={specAlignment}
+            label={hasScanData ? "tasks verified" : "from analysis"}
+          />
+          <HealthCard
+            title="Standards"
+            icon={Shield}
+            score={standards}
+            label="compliance"
+          />
+          <HealthCard
+            title="Code Quality"
+            icon={Code2}
+            score={codeQuality}
+            label={hasScanData ? "evidence quality" : "audit score"}
+          />
+        </div>
       </CardContent>
     </Card>
   );
-}
-
-function extractComplianceScore(analysis: ReturnType<typeof useRepositoryAnalysis>["data"]): number {
-  if (!analysis?.standards_compliance) return 0;
-  const compliance = analysis.standards_compliance as Record<string, unknown>;
-  return typeof compliance.score === "number" ? compliance.score : 0;
-}
-
-function extractCriticalGaps(analysis: ReturnType<typeof useRepositoryAnalysis>["data"]): string[] {
-  if (!analysis?.gap_analysis) return [];
-  const gaps = analysis.gap_analysis as Record<string, unknown>;
-  const items = gaps.critical_gaps ?? gaps.gaps ?? [];
-  if (!Array.isArray(items)) return [];
-  return items.map((g) => (typeof g === "string" ? g : String((g as Record<string, unknown>).description ?? g)));
 }

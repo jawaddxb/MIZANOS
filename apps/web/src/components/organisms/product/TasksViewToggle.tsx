@@ -19,7 +19,6 @@ import {
   useGenerateTasksFromSpec,
   useGenerateTasksFromTemplates,
 } from "@/hooks/mutations/useTaskGenerationMutations";
-import { useGeneratePortTasks } from "@/hooks/mutations/usePortGenerator";
 import { useDeleteAllDrafts } from "@/hooks/mutations/useTaskApprovalMutations";
 import { useProductDetail } from "@/hooks/queries/useProductDetail";
 import { useDraftTasks } from "@/hooks/queries/useDraftTasks";
@@ -29,7 +28,7 @@ import { useProductNotificationSettings } from "@/hooks/queries/useProductNotifi
 import { useUpdateProductNotificationSettings } from "@/hooks/mutations/useProductNotificationSettingsMutations";
 
 type ViewMode = "board" | "list" | "drafts";
-type GenerateSource = "spec" | "templates" | "port";
+type GenerateSource = "spec" | "templates";
 
 interface TasksViewToggleProps {
   productId: string;
@@ -52,24 +51,20 @@ export function TasksViewToggle({ productId, openTaskId }: TasksViewToggleProps)
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const generateFromSpec = useGenerateTasksFromSpec(productId);
   const generateFromTemplates = useGenerateTasksFromTemplates(productId);
-  const generateFromPort = useGeneratePortTasks(productId);
   const deleteAllDrafts = useDeleteAllDrafts(productId);
   const { data: notifSettings } = useProductNotificationSettings(productId);
   const updateNotifSettings = useUpdateProductNotificationSettings(productId);
 
   const isGenerating =
     generateFromSpec.isPending ||
-    generateFromTemplates.isPending ||
-    generateFromPort.isPending;
+    generateFromTemplates.isPending;
 
-  const showLovable = productData?.product?.source_type?.includes("lovable");
   const showDraftsTab = isAdmin || isProjectManager;
   const draftCount = drafts.length;
 
   const fireGenerate = (source: GenerateSource) => {
     if (source === "spec") generateFromSpec.mutate();
-    else if (source === "templates") generateFromTemplates.mutate();
-    else generateFromPort.mutate(undefined);
+    else generateFromTemplates.mutate();
   };
 
   return (
@@ -173,12 +168,6 @@ export function TasksViewToggle({ productId, openTaskId }: TasksViewToggleProps)
                   <LayoutTemplate className="h-4 w-4 mr-2" />
                   From Templates
                 </DropdownMenuItem>
-                {showLovable && (
-                  <DropdownMenuItem onClick={() => fireGenerate("port")}>
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    From Lovable Manifest
-                  </DropdownMenuItem>
-                )}
               </DropdownMenuContent>
             </DropdownMenu>
           )
@@ -193,9 +182,7 @@ export function TasksViewToggle({ productId, openTaskId }: TasksViewToggleProps)
           productId={productId}
           onGenerateFromSpec={() => fireGenerate("spec")}
           onGenerateFromTemplates={() => fireGenerate("templates")}
-          onGenerateFromPort={() => fireGenerate("port")}
           isGenerating={isGenerating}
-          showLovable={!!showLovable}
         />
       )}
 

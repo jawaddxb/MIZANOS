@@ -12,12 +12,13 @@ import {
 } from "@/components/atoms/inputs/BaseSelect";
 import { TASK_STATUS_DISPLAY, TASK_PRIORITY_COLORS, type TaskStatusConfig } from "@/lib/constants";
 import type { Task } from "@/lib/types";
-import { MessageSquare, User } from "lucide-react";
+import { ListChecks, MessageSquare, User } from "lucide-react";
 
 interface TaskRowProps {
   task: Task;
   selected: boolean;
   assigneeName?: string;
+  checklistAssignees?: string[];
   onToggle: () => void;
   onClick: () => void;
   onStatusChange?: (taskId: string, status: string) => void;
@@ -25,7 +26,7 @@ interface TaskRowProps {
   hideCheckbox?: boolean;
 }
 
-export function TaskRow({ task, selected, assigneeName, onToggle, onClick, onStatusChange, statusDisplay, hideCheckbox }: TaskRowProps) {
+export function TaskRow({ task, selected, assigneeName, checklistAssignees, onToggle, onClick, onStatusChange, statusDisplay, hideCheckbox }: TaskRowProps) {
   const display = statusDisplay ?? TASK_STATUS_DISPLAY;
   const fallbackKey = statusDisplay ? Object.keys(display)[0] : "backlog";
   const statusConfig = display[task.status ?? fallbackKey] ?? display[fallbackKey];
@@ -86,17 +87,26 @@ export function TaskRow({ task, selected, assigneeName, onToggle, onClick, onSta
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {assigneeName ? (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground max-w-[120px] truncate">
-              <User className="h-3 w-3 shrink-0" />
-              {assigneeName}
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium">
-              <span className="flex items-center justify-center h-4 w-4 rounded-full bg-amber-100 dark:bg-amber-900/40 text-[10px] font-bold shrink-0">?</span>
-              Unassigned
-            </span>
-          )}
+          <div className="flex flex-col items-end gap-0.5">
+            {assigneeName ? (
+              <span className="flex items-center gap-1 text-xs text-muted-foreground max-w-[120px] truncate">
+                <User className="h-3 w-3 shrink-0" />
+                {assigneeName}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium">
+                <span className="flex items-center justify-center h-4 w-4 rounded-full bg-amber-100 dark:bg-amber-900/40 text-[10px] font-bold shrink-0">?</span>
+                Unassigned
+              </span>
+            )}
+            {checklistAssignees && checklistAssignees.length > 0 && (
+              <span className="flex items-center gap-1 text-[10px] text-primary/70">
+                <ListChecks className="h-2.5 w-2.5 shrink-0" />
+                {checklistAssignees.slice(0, 2).join(", ")}
+                {checklistAssignees.length > 2 && ` +${checklistAssignees.length - 2}`}
+              </span>
+            )}
+          </div>
           {onStatusChange ? (
             <div onClick={(e) => e.stopPropagation()}>
               <Select

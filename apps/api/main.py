@@ -29,15 +29,11 @@ from apps.api.routers import (
     audit,
     marketing,
     knowledge,
-    vault,
     team,
     settings as settings_router,
     specifications,
     scrape,
     transcription,
-    system_documents,
-    port_generator,
-    repo_evaluator,
     deployment_checklist,
     stakeholders,
     integrations,
@@ -54,6 +50,7 @@ from apps.api.routers import (
     product_members,
     product_notification_settings,
     specification_sources,
+    task_checklist,
     task_comments,
 )
 
@@ -122,6 +119,9 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 # product_members must come before products so /all-members isn't caught by /{product_id}
 app.include_router(product_members.router, prefix="/products", tags=["product-members"])
 app.include_router(products.router, prefix="/products", tags=["products"])
+# checklist + comments must be before tasks so /{task_id}/checklist isn't caught by /{task_id}
+app.include_router(task_checklist.router, prefix="/tasks", tags=["task-checklist"])
+app.include_router(task_comments.router, prefix="/tasks", tags=["task-comments"])
 app.include_router(tasks.router, prefix="/tasks", tags=["tasks"])
 app.include_router(qa.router, prefix="/qa", tags=["qa"])
 app.include_router(documents.router, prefix="/documents", tags=["documents"])
@@ -132,7 +132,6 @@ app.include_router(github_pats.router, prefix="/github-pats", tags=["github-pats
 app.include_router(audit.router, prefix="/audits", tags=["audit"])
 app.include_router(marketing.router, prefix="/marketing", tags=["marketing"])
 app.include_router(knowledge.router, prefix="/knowledge", tags=["knowledge"])
-app.include_router(vault.router, prefix="/vault", tags=["vault"])
 app.include_router(team.router, prefix="/team", tags=["team"])
 app.include_router(settings_router.router, prefix="/settings", tags=["settings"])
 app.include_router(specifications.router, prefix="/specifications", tags=["specifications"])
@@ -140,9 +139,6 @@ app.include_router(task_templates.router, prefix="/task-templates", tags=["task-
 app.include_router(task_template_groups.router, prefix="/task-template-groups", tags=["task-template-groups"])
 app.include_router(scrape.router, prefix="/scrape", tags=["scrape"])
 app.include_router(transcription.router, prefix="/transcription", tags=["transcription"])
-app.include_router(system_documents.router, prefix="/system-documents", tags=["system-documents"])
-app.include_router(port_generator.router, prefix="/port-generator", tags=["port-generator"])
-app.include_router(repo_evaluator.router, prefix="/repo-evaluator", tags=["repo-evaluator"])
 app.include_router(deployment_checklist.router, prefix="/products", tags=["deployment-checklist"])
 app.include_router(stakeholders.router, prefix="/products", tags=["stakeholders"])
 app.include_router(integrations.router, prefix="/products", tags=["integrations"])
@@ -151,7 +147,6 @@ app.include_router(document_folders.router, prefix="/products", tags=["document-
 app.include_router(evaluations.router, prefix="/evaluations", tags=["evaluations"])
 app.include_router(org_chart.router, prefix="/org-chart", tags=["org-chart"])
 app.include_router(product_notification_settings.router, prefix="/products", tags=["product-notification-settings"])
-app.include_router(task_comments.router, prefix="/tasks", tags=["task-comments"])
 app.include_router(specification_sources.router, prefix="/products", tags=["specification-sources"])
 app.include_router(utilities.router, prefix="/utilities", tags=["utilities"])
 app.include_router(scans.router, prefix="/scans", tags=["scans"])

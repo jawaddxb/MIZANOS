@@ -1,4 +1,4 @@
-"""GitHub webhook handler for auto-regenerating system documents."""
+"""GitHub webhook handler for auto-triggering scans on push."""
 
 import hashlib
 import hmac
@@ -9,7 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.models.product import Product
 from apps.api.services.scan_service import ScanService
-from apps.api.services.system_doc_generator import SystemDocGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +29,7 @@ class GitHubWebhookService:
         return hmac.compare_digest(expected, signature)
 
     async def handle_push_event(self, payload: dict) -> dict | None:
-        """Process a GitHub push event and trigger doc regeneration."""
+        """Process a GitHub push event and trigger a progress scan."""
         repo_data = payload.get("repository", {})
         clone_url = repo_data.get("clone_url", "")
         html_url = repo_data.get("html_url", "")
@@ -39,7 +38,6 @@ class GitHubWebhookService:
             logger.warning("Push event missing repository URL")
             return None
 
-        # Match repository to a product
         product = await self._find_product_by_repo(clone_url, html_url)
         if not product:
             logger.info("No product matched for repo: %s", clone_url or html_url)
@@ -47,14 +45,10 @@ class GitHubWebhookService:
 
         commit_sha = payload.get("after", "")
         logger.info(
-            "Triggering doc regeneration for product %s (commit: %s)",
+            "Triggering scan for product %s (commit: %s)",
             product.id, commit_sha[:8],
         )
 
-        generator = SystemDocGenerator(self.session)
-        docs = await generator.regenerate_from_github(product.id, commit_sha)
-
-        # Auto-trigger high-level progress scan
         scan_triggered = False
         try:
             scan_svc = ScanService(self.session)
@@ -68,7 +62,6 @@ class GitHubWebhookService:
 
         return {
             "product_id": str(product.id),
-            "docs_regenerated": len(docs),
             "commit_sha": commit_sha,
             "scan_triggered": scan_triggered,
         }

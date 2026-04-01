@@ -287,6 +287,7 @@ class AuthService:
                 id_token_str,
                 google_requests.Request(),
                 settings.google_oauth_client_id,
+                clock_skew_in_seconds=10,
             )
         except ValueError as e:
             raise bad_request(f"Invalid Google token: {e}")

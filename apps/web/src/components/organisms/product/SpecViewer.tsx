@@ -13,7 +13,7 @@ import {
 import { useSpecificationSources } from "@/hooks/queries/useSpecificationSources";
 import { useRegenerateSpecification } from "@/hooks/mutations/useSpecificationMutations";
 import type { Specification, JsonValue } from "@/lib/types";
-import { History, FileText, RefreshCw, Loader2, Sparkles, Layers, ChevronDown, FolderOpen } from "lucide-react";
+import { History, FileText, RefreshCw, Loader2, Sparkles, ChevronDown, FolderOpen } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/atoms/layout/Collapsible";
 import { SourceCard, type SpecSource } from "./SourceCard";
 import { cn } from "@/lib/utils/cn";
@@ -23,7 +23,6 @@ import { CustomInstructionsBadge } from "@/components/molecules/specifications/C
 interface SpecViewerProps {
   productId: string;
   productName: string;
-  onNavigateToFeatures?: () => void;
 }
 
 function VersionSidebar({
@@ -80,7 +79,7 @@ function VersionSidebar({
   );
 }
 
-function SpecViewer({ productId, productName, onNavigateToFeatures }: SpecViewerProps) {
+function SpecViewer({ productId, productName }: SpecViewerProps) {
   const { data: specifications, isLoading } = useSpecifications(productId);
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
   const regenerate = useRegenerateSpecification(productId);
@@ -143,12 +142,6 @@ function SpecViewer({ productId, productName, onNavigateToFeatures }: SpecViewer
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {onNavigateToFeatures && (
-              <Button variant="outline" size="sm" onClick={onNavigateToFeatures}>
-                <Layers className="h-4 w-4 mr-1" />
-                View Features
-              </Button>
-            )}
             <Button
               variant="outline"
               size="sm"

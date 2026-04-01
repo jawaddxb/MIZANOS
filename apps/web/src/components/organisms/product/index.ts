@@ -28,17 +28,8 @@ export type { TasksTabProps } from "./TasksTab";
 export { DeploymentChecklist } from "./DeploymentChecklist";
 export type { DeploymentChecklistProps } from "./DeploymentChecklist";
 
-export { CommitHistory } from "./CommitHistory";
-export type { CommitHistoryProps } from "./CommitHistory";
-
-export { QATab } from "./QATab";
-export type { QATabProps } from "./QATab";
-
 export { EnvironmentsTab } from "./EnvironmentsTab";
 export type { EnvironmentsTabProps } from "./EnvironmentsTab";
-
-export { FeaturesTab } from "./FeaturesTab";
-export type { FeaturesTabProps } from "./FeaturesTab";
 
 export { SourcesTab } from "./SourcesTab";
 export type { SourcesTabProps } from "./SourcesTab";

@@ -62,8 +62,6 @@ export type { Notification, NotificationPreference } from "./notification";
 
 export type { KnowledgeEntry } from "./knowledge";
 
-export type { CompanyCredential } from "./vault";
-
 export type {
   MarketingDomain,
   MarketingSocialHandle,
@@ -91,27 +89,6 @@ export { STAKEHOLDER_ROLE_LABELS } from "./stakeholder";
 export type { DeploymentChecklistItem } from "./deployment";
 
 export type {
-  LovableManifest,
-  ManifestSummary,
-  ExtractedTable,
-  ExtractedQuery,
-  ExtractedEdgeFunction,
-  ExtractedRLSPolicy,
-  ExtractedRoute,
-  ExtractedComponent,
-  ExtractedHook,
-  ExtractedAuth,
-  ColumnDef,
-  GenerateTasksResponse,
-} from "./port-generator";
-
-export type {
-  SystemDocument,
-  SystemDocType,
-  GenerateDocsResponse,
-} from "./system-document";
-
-export type {
   GitHubCommit,
   GitHubPullRequest,
   GitHubFork,
@@ -128,17 +105,6 @@ export type {
   ProfileProject,
   TaskCount,
 } from "./permission";
-
-export type {
-  TechStackInfo,
-  FileStats,
-  StructureInfo,
-  PatternFinding,
-  EvaluationDocument,
-  EvaluationResult,
-  BrowseEntry,
-  BrowseResponse,
-} from "./repo-evaluator";
 
 export type {
   EngineerEvaluation,
