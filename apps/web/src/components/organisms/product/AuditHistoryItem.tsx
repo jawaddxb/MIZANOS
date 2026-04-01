@@ -65,16 +65,6 @@ function parseCategories(categories: JsonValue): AuditCategories {
   return { style: 0, architecture: 0, security: 0, performance: 0 };
 }
 
-function parseFrameworks(issues: JsonValue): Record<string, string[]> {
-  if (issues && typeof issues === "object" && !Array.isArray(issues)) {
-    const fw = (issues as Record<string, unknown>).frameworks;
-    if (fw && typeof fw === "object" && !Array.isArray(fw)) {
-      return fw as Record<string, string[]>;
-    }
-  }
-  return {};
-}
-
 function parseIssues(issues: JsonValue): AuditIssue[] {
   if (Array.isArray(issues)) {
     return issues as unknown as AuditIssue[];
@@ -87,8 +77,6 @@ function AuditHistoryItem({ audit, isLatest, canDelete, onDelete, isDeleting }: 
 
   const categories = parseCategories(audit.categories);
   const issues = parseIssues(audit.issues);
-  const frameworks = parseFrameworks(audit.issues);
-  const allTechTags = Object.entries(frameworks).flatMap(([, tags]) => Array.isArray(tags) ? tags : []);
   const criticalCount = issues.filter((i) => i.severity === "critical").length;
   const runDate = new Date(audit.run_at);
 
@@ -154,16 +142,6 @@ function AuditHistoryItem({ audit, isLatest, canDelete, onDelete, isDeleting }: 
 
         <CollapsibleContent>
           <div className="p-4 border-t bg-secondary/20 space-y-4">
-            {allTechTags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {allTechTags.map((tag) => (
-                  <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-
             <div className="grid grid-cols-4 gap-4">
               {(
                 Object.entries(categories) as [
@@ -172,24 +150,11 @@ function AuditHistoryItem({ audit, isLatest, canDelete, onDelete, isDeleting }: 
                 ][]
               ).map(([key, value]) => {
                 const Icon = CATEGORY_ICONS[key] ?? FileCode;
-                const categoryFrameworks = key === "style" ? [...(frameworks.frontend ?? []), ...(frameworks.backend ?? [])]
-                  : key === "architecture" ? [...(frameworks.languages ?? []), ...(frameworks.database ?? [])]
-                  : key === "security" ? [...(frameworks.infrastructure ?? [])]
-                  : [...(frameworks.testing ?? []), ...(frameworks.styling ?? [])];
                 return (
-                  <div key={key}>
-                    <div className="flex items-center gap-2">
-                      <Icon className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm capitalize">{key}:</span>
-                      <span className="text-sm font-medium">{value}</span>
-                    </div>
-                    {categoryFrameworks.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1 ml-6">
-                        {categoryFrameworks.map((t) => (
-                          <span key={t} className="text-[9px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">{t}</span>
-                        ))}
-                      </div>
-                    )}
+                  <div key={key} className="flex items-center gap-2">
+                    <Icon className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm capitalize">{key}:</span>
+                    <span className="text-sm font-medium">{value}</span>
                   </div>
                 );
               })}

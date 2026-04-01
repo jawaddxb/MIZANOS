@@ -27,13 +27,11 @@ function HealthCard({
   icon: Icon,
   score,
   label,
-  techTags,
 }: {
   title: string;
   icon: typeof Activity;
   score: number;
   label: string;
-  techTags?: string[];
 }) {
   const color =
     score >= 80
@@ -67,27 +65,11 @@ function HealthCard({
             style={{ width: `${score}%` }}
           />
         </div>
-        {techTags && techTags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {techTags.map((tag) => (
-              <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
       </CardContent>
     </Card>
   );
 }
 
-function extractFrameworks(analysis: { tech_stack?: unknown } | null | undefined): Record<string, string[]> {
-  if (!analysis?.tech_stack || typeof analysis.tech_stack !== "object") return {};
-  const ts = analysis.tech_stack as Record<string, unknown>;
-  const fw = ts.frameworks;
-  if (!fw || typeof fw !== "object") return {};
-  return fw as Record<string, string[]>;
-}
 
 function computeSpecAlignment(scanResult: { gap_analysis?: { progress_pct?: number; verified?: number; total_tasks?: number } | null } | null | undefined): number {
   if (!scanResult?.gap_analysis) return 0;
@@ -191,8 +173,6 @@ export function DevelopmentHealthSection({
 
   const hasScanData = !!scanResult?.gap_analysis;
   const lastScanAt = progressSummary?.last_scan_at;
-  const fw = extractFrameworks(analysis);
-  const allFrameworkTags = Object.entries(fw).flatMap(([, tags]) => tags);
 
   return (
     <Card>
@@ -261,37 +241,24 @@ export function DevelopmentHealthSection({
           </div>
         )}
 
-        {allFrameworkTags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {allFrameworkTags.map((tag) => (
-              <span key={tag} className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
-
         <div className="grid grid-cols-3 gap-3">
           <HealthCard
             title="Spec Alignment"
             icon={FileCheck}
             score={specAlignment}
             label={hasScanData ? "tasks verified" : "from analysis"}
-            techTags={[...(fw.frontend ?? []), ...(fw.backend ?? [])]}
           />
           <HealthCard
             title="Standards"
             icon={Shield}
             score={standards}
             label="compliance"
-            techTags={[...(fw.infrastructure ?? []), ...(fw.testing ?? [])]}
           />
           <HealthCard
             title="Code Quality"
             icon={Code2}
             score={codeQuality}
             label={hasScanData ? "evidence quality" : "audit score"}
-            techTags={[...(fw.styling ?? []), ...(fw.database ?? [])]}
           />
         </div>
       </CardContent>

@@ -155,16 +155,6 @@ class AuditService(BaseService[Audit]):
             "performance": performance,
         }
 
-        # Extract detected frameworks from analysis tech_stack
-        frameworks: dict[str, list[str]] = {}
-        if tech.get("frameworks") and isinstance(tech["frameworks"], dict):
-            frameworks = tech["frameworks"]
-        if tech.get("languages") and isinstance(tech["languages"], dict):
-            top_langs = sorted(tech["languages"].items(), key=lambda x: x[1], reverse=True)[:5]
-            frameworks["languages"] = [lang for lang, _ in top_langs]
-
-        issues["frameworks"] = frameworks
-
         overall_score = round(sum(categories.values()) / len(categories), 1)
 
         audit = Audit(
