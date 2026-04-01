@@ -45,14 +45,24 @@ class AuditService(BaseService[Audit]):
 
         issues: dict[str, list] = {"critical": [], "warnings": []}
 
-        # Fetch latest scan result
+        # Fetch latest scan result (with functional_inventory from Code Progress Scan)
         scan_stmt = (
+            select(RepositoryAnalysis)
+            .where(RepositoryAnalysis.product_id == product_id)
+            .where(RepositoryAnalysis.functional_inventory.is_not(None))
+            .order_by(RepositoryAnalysis.created_at.desc())
+            .limit(1)
+        )
+        scan = (await self.repo.session.execute(scan_stmt)).scalar_one_or_none()
+
+        # Also fetch latest analysis (from Analyze button, has tech_stack)
+        analysis_stmt = (
             select(RepositoryAnalysis)
             .where(RepositoryAnalysis.product_id == product_id)
             .order_by(RepositoryAnalysis.created_at.desc())
             .limit(1)
         )
-        scan = (await self.repo.session.execute(scan_stmt)).scalar_one_or_none()
+        analysis = (await self.repo.session.execute(analysis_stmt)).scalar_one_or_none()
 
         # Fetch tasks for the product
         task_stmt = select(Task).where(Task.product_id == product_id)
@@ -67,12 +77,16 @@ class AuditService(BaseService[Audit]):
         if scan:
             evidence = scan.functional_inventory or []
             if isinstance(evidence, list) and evidence:
-                # Avg confidence of task-code matching (higher = better organized code)
                 confidences = [e.get("confidence", 0) for e in evidence if isinstance(e, dict)]
                 style = round((sum(confidences) / len(confidences)) * 100, 1) if confidences else 0
-            tech = scan.tech_stack if isinstance(scan.tech_stack, dict) else {}
-            if tech.get("description"):
-                style = min(100, style + 10)
+        # Use analysis tech_stack for description bonus
+        tech = {}
+        if analysis and isinstance(analysis.tech_stack, dict):
+            tech = analysis.tech_stack
+        elif scan and isinstance(scan.tech_stack, dict):
+            tech = scan.tech_stack
+        if tech.get("description"):
+            style = min(100, style + 10)
 
         # --- Architecture score: task coverage & component structure ---
         architecture = 0.0
@@ -140,6 +154,16 @@ class AuditService(BaseService[Audit]):
             "security": security,
             "performance": performance,
         }
+
+        # Extract detected frameworks from analysis tech_stack
+        frameworks: dict[str, list[str]] = {}
+        if tech.get("frameworks") and isinstance(tech["frameworks"], dict):
+            frameworks = tech["frameworks"]
+        if tech.get("languages") and isinstance(tech["languages"], dict):
+            top_langs = sorted(tech["languages"].items(), key=lambda x: x[1], reverse=True)[:5]
+            frameworks["languages"] = [lang for lang, _ in top_langs]
+
+        issues["frameworks"] = frameworks
 
         overall_score = round(sum(categories.values()) / len(categories), 1)
 
