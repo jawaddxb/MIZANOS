@@ -16,13 +16,13 @@ import { useCreateTask, useUpdateTask } from "@/hooks/mutations/useTaskMutations
 import { useQuery } from "@tanstack/react-query";
 import { tasksRepository } from "@/lib/api/repositories";
 import { useMilestones } from "@/hooks/queries/useMilestones";
-import { useCreateMilestone, useDeleteMilestone } from "@/hooks/mutations/useMilestoneMutations";
+import { useCreateMilestone, useUpdateMilestone, useDeleteMilestone } from "@/hooks/mutations/useMilestoneMutations";
 import { TASK_STATUS_DISPLAY } from "@/lib/constants";
 import type { KanbanTask, TaskStatus, TaskPriority } from "@/lib/types";
 import type { Milestone } from "@/lib/types/milestone";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/inputs/BaseSelect";
 import { Badge } from "@/components/atoms/display/Badge";
-import { ChevronDown, ChevronRight, Filter, FolderOpen, ListTodo, Milestone as MilestoneIcon, Plus, Trash2, User } from "lucide-react";
+import { ChevronDown, ChevronRight, Filter, FolderOpen, ListTodo, Pencil, Plus, Trash2, User } from "lucide-react";
 
 interface TasksTabProps { productId: string; openTaskId?: string }
 type FilterStatus = TaskStatus | "all";
@@ -44,10 +44,16 @@ function TasksTab({ productId, openTaskId }: TasksTabProps) {
   const [addTaskMilestoneId, setAddTaskMilestoneId] = useState<string | null>(null);
   const [milestoneTitle, setMilestoneTitle] = useState("");
   const [milestoneDesc, setMilestoneDesc] = useState("");
+  const [milestonePillar, setMilestonePillar] = useState("development");
+  const [milestonePriority, setMilestonePriority] = useState("medium");
+  const [milestoneStatus, setMilestoneStatus] = useState("backlog");
+  const [milestoneAssignees, setMilestoneAssignees] = useState<string[]>([]);
+  const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null);
   const [collapsedMilestones, setCollapsedMilestones] = useState<Set<string>>(new Set());
   const { data: milestones = [] } = useMilestones(productId);
   const createMilestone = useCreateMilestone(productId);
   const deleteMilestone = useDeleteMilestone(productId);
+  const updateMilestone = useUpdateMilestone(productId);
   const createTask = useCreateTask(productId);
   const updateTask = useUpdateTask(productId);
 
@@ -123,12 +129,43 @@ function TasksTab({ productId, openTaskId }: TasksTabProps) {
     });
   }, []);
 
+  const resetMilestoneForm = () => {
+    setMilestoneTitle(""); setMilestoneDesc(""); setMilestonePillar("development");
+    setMilestonePriority("medium"); setMilestoneStatus("backlog"); setMilestoneAssignees([]);
+    setEditingMilestoneId(null); setAddMilestoneOpen(false);
+  };
+
   const handleCreateMilestone = () => {
     if (!milestoneTitle.trim()) return;
-    createMilestone.mutate(
-      { title: milestoneTitle.trim(), description: milestoneDesc.trim() || undefined },
-      { onSuccess: () => { setAddMilestoneOpen(false); setMilestoneTitle(""); setMilestoneDesc(""); } },
-    );
+    const data = {
+      title: milestoneTitle.trim(),
+      description: milestoneDesc.trim() || undefined,
+      pillar: milestonePillar,
+      priority: milestonePriority,
+      status: milestoneStatus,
+      assignee_ids: milestoneAssignees.length > 0 ? milestoneAssignees : undefined,
+      assignee_id: milestoneAssignees[0] || null,
+    };
+    if (editingMilestoneId) {
+      updateMilestone.mutate({ id: editingMilestoneId, ...data }, { onSuccess: resetMilestoneForm });
+    } else {
+      createMilestone.mutate(data, { onSuccess: resetMilestoneForm });
+    }
+  };
+
+  const openEditMilestone = (m: Milestone) => {
+    setEditingMilestoneId(m.id);
+    setMilestoneTitle(m.title);
+    setMilestoneDesc(m.description ?? "");
+    setMilestonePillar(m.pillar ?? "development");
+    setMilestonePriority(m.priority ?? "medium");
+    setMilestoneStatus(m.status ?? "backlog");
+    setMilestoneAssignees(m.assignee_ids ?? (m.assignee_id ? [m.assignee_id] : []));
+    setAddMilestoneOpen(true);
+  };
+
+  const toggleAssignee = (id: string) => {
+    setMilestoneAssignees((prev) => prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]);
   };
 
   const toggleSelect = useCallback((id: string) => {
@@ -283,8 +320,21 @@ function TasksTab({ productId, openTaskId }: TasksTabProps) {
               >
                 {isCollapsed ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                 <FolderOpen className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold flex-1">{milestone.title}</span>
+                <span className="text-sm font-semibold">{milestone.title}</span>
+                {(milestone.assignee_ids?.length ? milestone.assignee_ids : milestone.assignee_id ? [milestone.assignee_id] : []).map((aid) => (
+                  assigneeMap.get(aid) ? (
+                    <span key={aid} className="flex items-center gap-1 text-xs text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded">
+                      <User className="h-2.5 w-2.5" /> {assigneeMap.get(aid)}
+                    </span>
+                  ) : null
+                ))}
+                <span className="flex-1" />
                 <Badge variant="secondary" className="text-[10px]">{milestoneTasks.length} tasks</Badge>
+                {!milestone.is_default && (
+                  <button type="button" onClick={(e) => { e.stopPropagation(); openEditMilestone(milestone); }} className="p-1 rounded hover:bg-accent">
+                    <Pencil className="h-3 w-3 text-muted-foreground" />
+                  </button>
+                )}
                 {!milestone.is_default && (
                   <button type="button" onClick={(e) => { e.stopPropagation(); deleteMilestone.mutate(milestone.id); }} className="p-1 rounded hover:bg-destructive/10">
                     <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
@@ -340,32 +390,81 @@ function TasksTab({ productId, openTaskId }: TasksTabProps) {
       {/* Milestone creation dialog */}
       {addMilestoneOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-card rounded-lg p-6 w-full max-w-md space-y-4">
-            <h3 className="text-lg font-semibold">Create Milestone</h3>
+          <div className="bg-card rounded-lg p-6 w-full max-w-lg space-y-4">
+            <h3 className="text-lg font-semibold">{editingMilestoneId ? "Edit Milestone" : "Create Milestone"}</h3>
             <div>
               <label className="text-sm font-medium">Title</label>
-              <input
-                type="text"
-                value={milestoneTitle}
-                onChange={(e) => setMilestoneTitle(e.target.value)}
-                placeholder="Milestone title..."
-                className="w-full h-9 px-3 text-sm rounded-md border bg-background mt-1"
-                autoFocus
-              />
+              <input type="text" value={milestoneTitle} onChange={(e) => setMilestoneTitle(e.target.value)} placeholder="Milestone title..." className="w-full h-9 px-3 text-sm rounded-md border bg-background mt-1" autoFocus />
             </div>
             <div>
               <label className="text-sm font-medium">Description</label>
-              <textarea
-                value={milestoneDesc}
-                onChange={(e) => setMilestoneDesc(e.target.value)}
-                placeholder="Optional description..."
-                className="w-full h-20 px-3 py-2 text-sm rounded-md border bg-background mt-1 resize-none"
-              />
+              <textarea value={milestoneDesc} onChange={(e) => setMilestoneDesc(e.target.value)} placeholder="Optional description..." className="w-full h-20 px-3 py-2 text-sm rounded-md border bg-background mt-1 resize-none" />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Assignees</label>
+              <div className="mt-1 max-h-32 overflow-y-auto rounded-md border p-2 space-y-1">
+                {Array.from(new Map(members.map((m) => [m.profile_id, m])).values()).map((m) => {
+                  const selected = milestoneAssignees.includes(m.profile_id);
+                  return (
+                    <label key={m.profile_id} className={`flex items-center gap-2 text-sm px-2 py-1 rounded cursor-pointer hover:bg-accent ${selected ? "bg-primary/10" : ""}`}>
+                      <input type="checkbox" checked={selected} onChange={() => toggleAssignee(m.profile_id)} className="rounded" />
+                      {m.profile?.full_name ?? m.profile?.email ?? "Unknown"}
+                      {m.role && <span className="text-[10px] text-muted-foreground">({m.role})</span>}
+                    </label>
+                  );
+                })}
+              </div>
+              {milestoneAssignees.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">{milestoneAssignees.length} selected</p>
+              )}
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="text-sm font-medium">Business Vertical</label>
+                <Select value={milestonePillar} onValueChange={setMilestonePillar}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="development">Development</SelectItem>
+                    <SelectItem value="product">Product</SelectItem>
+                    <SelectItem value="business">Business</SelectItem>
+                    <SelectItem value="marketing">Marketing</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Priority</label>
+                <Select value={milestonePriority} onValueChange={setMilestonePriority}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Status</label>
+                <Select value={milestoneStatus} onValueChange={setMilestoneStatus}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="backlog">Backlog</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="review">Review</SelectItem>
+                    <SelectItem value="done">Done</SelectItem>
+                    <SelectItem value="live">Live</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Created Date</label>
+              <input type="date" defaultValue={new Date().toISOString().split("T")[0]} disabled className="w-full h-9 px-3 text-sm rounded-md border bg-background mt-1 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground mt-0.5">Defaults to today</p>
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={() => { setAddMilestoneOpen(false); setMilestoneTitle(""); setMilestoneDesc(""); }}>Cancel</Button>
-              <Button size="sm" onClick={handleCreateMilestone} disabled={!milestoneTitle.trim() || createMilestone.isPending}>
-                {createMilestone.isPending ? "Creating..." : "Create Milestone"}
+              <Button variant="outline" size="sm" onClick={resetMilestoneForm}>Cancel</Button>
+              <Button size="sm" onClick={handleCreateMilestone} disabled={!milestoneTitle.trim() || createMilestone.isPending || updateMilestone.isPending}>
+                {createMilestone.isPending || updateMilestone.isPending ? "Saving..." : editingMilestoneId ? "Update Milestone" : "Create Milestone"}
               </Button>
             </div>
           </div>

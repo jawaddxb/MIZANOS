@@ -7,6 +7,7 @@ export interface Milestone {
   priority: string | null;
   pillar: string | null;
   assignee_id: string | null;
+  assignee_ids: string[] | null;
   sort_order: number;
   is_default: boolean;
   task_count: number;

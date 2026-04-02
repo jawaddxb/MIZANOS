@@ -165,6 +165,7 @@ class AIService:
         """Gather summary of ALL projects for dashboard-level chat."""
         from apps.api.models.product import Product
         from apps.api.models.task import Task
+        from apps.api.models.audit import RepositoryAnalysis
 
         products = list((await self.session.execute(select(Product))).scalars().all())
         if not products:
@@ -182,7 +183,20 @@ class AIService:
             done = sum(1 for t in tasks if t.status in ("done", "live"))
             total_tasks += len(tasks)
             total_done += done
-            lines.append(f"  - {p.name} | Stage: {p.stage or 'N/A'} | Tasks: {done}/{len(tasks)}")
+            # Get scan data
+            scan_info = ""
+            scan_stmt = (
+                select(RepositoryAnalysis)
+                .where(RepositoryAnalysis.product_id == p.id)
+                .where(RepositoryAnalysis.functional_inventory.is_not(None))
+                .order_by(RepositoryAnalysis.created_at.desc())
+                .limit(1)
+            )
+            scan = (await self.session.execute(scan_stmt)).scalar_one_or_none()
+            if scan and scan.gap_analysis and isinstance(scan.gap_analysis, dict):
+                ga = scan.gap_analysis
+                scan_info = f" | Scan: {ga.get('verified', 0)}/{ga.get('total_tasks', 0)} verified ({ga.get('progress_pct', 0):.0f}%)"
+            lines.append(f"  - {p.name} | Stage: {p.stage or 'N/A'} | Tasks: {done}/{len(tasks)}{scan_info}")
 
         stage_str = ", ".join(f"{k}: {v}" for k, v in sorted(stages.items()))
         summary = (

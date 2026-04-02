@@ -13,6 +13,7 @@ class MilestoneCreate(BaseModel):
     priority: str = "medium"
     pillar: str = "development"
     assignee_id: UUID | None = None
+    assignee_ids: list[str] | None = None
 
 
 class MilestoneUpdate(BaseModel):
@@ -22,6 +23,7 @@ class MilestoneUpdate(BaseModel):
     priority: str | None = None
     pillar: str | None = None
     assignee_id: UUID | None = None
+    assignee_ids: list[str] | None = None
     sort_order: int | None = None
 
 
@@ -34,6 +36,7 @@ class MilestoneResponse(BaseModel):
     priority: str | None
     pillar: str | None
     assignee_id: UUID | None
+    assignee_ids: list[str] | None = None
     sort_order: int
     is_default: bool
     task_count: int = 0

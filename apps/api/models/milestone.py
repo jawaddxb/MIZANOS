@@ -4,7 +4,7 @@ import uuid
 from typing import Optional
 
 from sqlalchemy import Boolean, ForeignKey, Integer, String
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from packages.common.db.base import Base, TimestampMixin, UUIDMixin
@@ -24,5 +24,6 @@ class Milestone(Base, UUIDMixin, TimestampMixin):
     assignee_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True), ForeignKey("profiles.id"), nullable=True,
     )
+    assignee_ids: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True, default=list)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     is_default: Mapped[bool] = mapped_column(Boolean, default=False)
