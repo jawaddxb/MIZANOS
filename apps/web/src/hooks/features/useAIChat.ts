@@ -86,7 +86,13 @@ export function useAIChat(productId: string | null) {
         },
       ]);
 
-      await streamMessage(session.id, [...messagesRef.current], assistantMsgId);
+      // Pass user message explicitly since state may not be updated yet
+      const msgsForStream = [...messagesRef.current];
+      // Ensure the user message is in the list
+      if (!msgsForStream.some((m) => m.id === userMsgId)) {
+        msgsForStream.push(userMsg);
+      }
+      await streamMessage(session.id, msgsForStream, assistantMsgId);
     },
     [session, isStreaming, streamMessage],
   );
