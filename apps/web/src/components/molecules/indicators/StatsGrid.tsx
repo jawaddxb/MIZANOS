@@ -25,7 +25,7 @@ function StatsGrid({
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
-            Health Score
+            Task Health
           </CardTitle>
         </CardHeader>
         <CardContent>

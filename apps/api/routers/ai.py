@@ -32,6 +32,11 @@ async def create_session(body: ChatSessionCreate, user: CurrentUser, service: AI
     return await service.create_session(user.id, body.product_id)
 
 
+@router.delete("/chat/sessions/{session_id}", status_code=204)
+async def delete_session(session_id: UUID, user: CurrentUser, service: AIService = Depends(get_service)):
+    await service.delete_session(session_id, user.id)
+
+
 @router.get("/chat/sessions/{session_id}/messages", response_model=list[ChatMessageResponse])
 async def list_messages(session_id: UUID, user: CurrentUser, service: AIService = Depends(get_service)):
     return await service.get_messages(session_id, user.id)
