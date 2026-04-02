@@ -21,8 +21,9 @@ import {
 } from "@/hooks/mutations/useChecklistTemplateMutations";
 import { CHECKLIST_TEMPLATE_TYPES } from "@/lib/types/checklist-template";
 import type { ChecklistTemplate } from "@/lib/types/checklist-template";
-import { CheckSquare, ListChecks, Pencil, Plus, Trash2 } from "lucide-react";
+import { CheckSquare, ListChecks, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import Link from "next/link";
+import { UploadTemplateDialog } from "./UploadTemplateDialog";
 
 const TYPE_TABS = [
   { id: "all", label: "All" },
@@ -38,6 +39,7 @@ export function ChecklistTemplateSection() {
   const [formDesc, setFormDesc] = useState("");
   const [customType, setCustomType] = useState("");
   const [showCustomType, setShowCustomType] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   const { data: templates, isLoading } = useChecklistTemplates(typeFilter === "all" ? undefined : typeFilter);
   const createTemplate = useCreateChecklistTemplate();
@@ -82,9 +84,14 @@ export function ChecklistTemplateSection() {
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <ListChecks className="h-5 w-5" /> Checklist Templates
         </h2>
-        <Button size="sm" onClick={handleAdd}>
-          <Plus className="h-4 w-4 mr-1" /> New Checklist Template
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setUploadOpen(true)}>
+            <Upload className="h-4 w-4 mr-1" /> Upload File
+          </Button>
+          <Button size="sm" onClick={handleAdd}>
+            <Plus className="h-4 w-4 mr-1" /> New Template
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-1 border-b overflow-x-auto">
@@ -185,6 +192,8 @@ export function ChecklistTemplateSection() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <UploadTemplateDialog open={uploadOpen} onOpenChange={setUploadOpen} />
     </div>
   );
 }

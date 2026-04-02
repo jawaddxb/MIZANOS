@@ -54,6 +54,22 @@ class ChecklistTemplatesRepository {
     return response.data;
   }
 
+  // Upload
+  async uploadPreview(file: File): Promise<{ template_name: string; template_type: string; items: Array<{ title: string; category: string; default_status: string }> }> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await apiClient.post(`${this.basePath}/upload/preview`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+      timeout: 120_000,
+    });
+    return response.data;
+  }
+
+  async uploadConfirm(data: { template_name: string; template_type: string; items: Array<{ title: string; category: string; default_status: string }> }): Promise<unknown> {
+    const response = await apiClient.post(`${this.basePath}/upload/confirm`, data);
+    return response.data;
+  }
+
   // Categories
   async listCategories(): Promise<ChecklistCategory[]> {
     const response = await apiClient.get<ChecklistCategory[]>(`${this.basePath}/categories/all`);
