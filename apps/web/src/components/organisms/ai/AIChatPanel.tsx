@@ -122,7 +122,8 @@ export function AIChatPanel({
 
   const lastMsg = messages[messages.length - 1];
   const showStreamingIndicator =
-    isStreaming && lastMsg?.role === "assistant" && lastMsg.content === "";
+    (isStreaming && lastMsg?.role === "assistant" && lastMsg.content === "") ||
+    (lastMsg?.role === "user" && isStreaming);
 
   const chatBody = (
     <div className="flex flex-col flex-1 overflow-hidden">

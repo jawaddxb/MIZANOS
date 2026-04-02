@@ -73,8 +73,7 @@ export function useAIChat(productId: string | null) {
       };
       setMessages((prev) => [...prev, userMsg]);
 
-      await aiRepository.sendMessage(session.id, userMessage);
-
+      // Skip sendMessage POST — the streaming endpoint saves the message
       const assistantMsgId = crypto.randomUUID();
       setMessages((prev) => [
         ...prev,
