@@ -22,14 +22,12 @@ export function useAIChat(productId: string | null) {
       if (!user?.id) return null;
       const sessions = await aiRepository.getSessions();
       const existing = sessions.find(
-        (s) => s.product_id === productId,
+        (s) => (productId ? s.product_id === productId : !s.product_id),
       );
       if (existing) {
-        if (sessionIdRef.current !== existing.id) {
-          sessionIdRef.current = existing.id;
-          const msgs = await aiRepository.getMessages(existing.id);
-          setMessages(msgs);
-        }
+        sessionIdRef.current = existing.id;
+        const msgs = await aiRepository.getMessages(existing.id);
+        setMessages(msgs);
         return existing;
       }
       const newSession = await aiRepository.createSession(
@@ -44,9 +42,11 @@ export function useAIChat(productId: string | null) {
   });
 
   useEffect(() => {
-    sessionIdRef.current = null;
-    setMessages([]);
-    setError(null);
+    if (productId !== undefined) {
+      sessionIdRef.current = null;
+      setMessages([]);
+      setError(null);
+    }
   }, [productId]);
 
   const { isStreaming, streamMessage, cancelStream } = useAIChatStream({
