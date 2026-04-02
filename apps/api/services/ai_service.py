@@ -139,9 +139,17 @@ class AIService:
 
         except ValueError as e:
             full_response = str(e)
-        except Exception:
+        except Exception as e:
             logger.exception("LLM response error")
-            full_response = "Sorry, an error occurred while generating a response."
+            err_str = str(e).lower()
+            if "402" in err_str or "credit" in err_str or "afford" in err_str:
+                full_response = "⚠️ AI credits exhausted. Please add credits to your OpenRouter account at openrouter.ai/settings/credits to continue using the assistant."
+            elif "401" in err_str or "auth" in err_str:
+                full_response = "⚠️ AI API key is invalid or expired. Please check the OpenRouter API key in your settings."
+            elif "429" in err_str or "rate" in err_str:
+                full_response = "⚠️ Too many requests. Please wait a moment and try again."
+            else:
+                full_response = f"⚠️ AI error: {str(e)[:200]}"
 
         # Save and return assistant message
         assistant_msg = AIChatMessage(
@@ -311,10 +319,20 @@ class AIService:
         except ValueError as e:
             full_response = str(e)
             yield f"data: {full_response}\n\n"
-        except Exception:
+        except Exception as e:
             import logging
             logging.getLogger(__name__).exception("LLM streaming error")
-            full_response = "Sorry, an error occurred while generating a response."
+            err_str = str(e).lower()
+            if "402" in err_str or "credit" in err_str or "afford" in err_str:
+                full_response = "⚠️ AI credits exhausted. Please add credits to your OpenRouter account at openrouter.ai/settings/credits to continue using the assistant."
+            elif "401" in err_str or "auth" in err_str:
+                full_response = "⚠️ AI API key is invalid or expired. Please check the OpenRouter API key in your settings."
+            elif "429" in err_str or "rate" in err_str:
+                full_response = "⚠️ Too many requests. Please wait a moment and try again."
+            elif "timeout" in err_str:
+                full_response = "⚠️ The AI took too long to respond. Please try again."
+            else:
+                full_response = f"⚠️ AI error: {str(e)[:200]}"
             yield f"data: {full_response}\n\n"
 
         # Save assistant message
