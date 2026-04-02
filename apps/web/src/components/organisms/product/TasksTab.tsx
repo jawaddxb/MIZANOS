@@ -15,10 +15,14 @@ import { useProductMembers } from "@/hooks/queries/useProductMembers";
 import { useCreateTask, useUpdateTask } from "@/hooks/mutations/useTaskMutations";
 import { useQuery } from "@tanstack/react-query";
 import { tasksRepository } from "@/lib/api/repositories";
+import { useMilestones } from "@/hooks/queries/useMilestones";
+import { useCreateMilestone, useDeleteMilestone } from "@/hooks/mutations/useMilestoneMutations";
 import { TASK_STATUS_DISPLAY } from "@/lib/constants";
 import type { KanbanTask, TaskStatus, TaskPriority } from "@/lib/types";
+import type { Milestone } from "@/lib/types/milestone";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/inputs/BaseSelect";
-import { Filter, ListTodo, Plus, User } from "lucide-react";
+import { Badge } from "@/components/atoms/display/Badge";
+import { ChevronDown, ChevronRight, Filter, FolderOpen, ListTodo, Milestone as MilestoneIcon, Plus, Trash2, User } from "lucide-react";
 
 interface TasksTabProps { productId: string; openTaskId?: string }
 type FilterStatus = TaskStatus | "all";
@@ -36,6 +40,14 @@ function TasksTab({ productId, openTaskId }: TasksTabProps) {
   const [editTask, setEditTask] = useState<KanbanTask | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [addMilestoneOpen, setAddMilestoneOpen] = useState(false);
+  const [addTaskMilestoneId, setAddTaskMilestoneId] = useState<string | null>(null);
+  const [milestoneTitle, setMilestoneTitle] = useState("");
+  const [milestoneDesc, setMilestoneDesc] = useState("");
+  const [collapsedMilestones, setCollapsedMilestones] = useState<Set<string>>(new Set());
+  const { data: milestones = [] } = useMilestones(productId);
+  const createMilestone = useCreateMilestone(productId);
+  const deleteMilestone = useDeleteMilestone(productId);
   const createTask = useCreateTask(productId);
   const updateTask = useUpdateTask(productId);
 
@@ -91,6 +103,33 @@ function TasksTab({ productId, openTaskId }: TasksTabProps) {
       })
       .sort((a, b) => (STATUS_SORT_ORDER[a.status ?? "backlog"] ?? 9) - (STATUS_SORT_ORDER[b.status ?? "backlog"] ?? 9));
   }, [tasks, statusFilter, priorityFilter, assigneeFilter, myTasksOnly, user?.profile_id]);
+
+  const tasksByMilestone = useMemo(() => {
+    const map = new Map<string, typeof filteredTasks>();
+    for (const t of filteredTasks) {
+      const mid = t.milestone_id ?? "ungrouped";
+      if (!map.has(mid)) map.set(mid, []);
+      map.get(mid)!.push(t);
+    }
+    return map;
+  }, [filteredTasks]);
+
+  const toggleMilestoneCollapse = useCallback((id: string) => {
+    setCollapsedMilestones((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handleCreateMilestone = () => {
+    if (!milestoneTitle.trim()) return;
+    createMilestone.mutate(
+      { title: milestoneTitle.trim(), description: milestoneDesc.trim() || undefined },
+      { onSuccess: () => { setAddMilestoneOpen(false); setMilestoneTitle(""); setMilestoneDesc(""); } },
+    );
+  };
 
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -218,8 +257,8 @@ function TasksTab({ productId, openTaskId }: TasksTabProps) {
           <span className="text-sm text-muted-foreground">
             {filteredTasks.length} task{filteredTasks.length !== 1 ? "s" : ""}
           </span>
-          <Button size="sm" onClick={() => setAddDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-1" /> Add Task
+          <Button size="sm" variant="outline" onClick={() => setAddMilestoneOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Add Milestone
           </Button>
         </div>
       </div>
@@ -232,23 +271,106 @@ function TasksTab({ productId, openTaskId }: TasksTabProps) {
         productId={productId}
       />
 
-      <div className="space-y-2">
-        {filteredTasks.map((task) => (
-          <TaskRow
-            key={task.id}
-            task={task}
-            selected={selectedIds.has(task.id)}
-            assigneeName={task.assignee_id ? assigneeMap.get(task.assignee_id) : undefined}
-            checklistAssignees={checklistAssigneesMap[task.id]}
-            onToggle={() => toggleSelect(task.id)}
-            onClick={() => {
-              setEditTask(toKanbanTask(task, assigneeMap));
-              setEditDialogOpen(true);
-            }}
-            onStatusChange={handleStatusChange}
-          />
-        ))}
+      <div className="space-y-4">
+        {milestones.map((milestone) => {
+          const milestoneTasks = tasksByMilestone.get(milestone.id) ?? [];
+          const isCollapsed = collapsedMilestones.has(milestone.id);
+          return (
+            <div key={milestone.id} className="rounded-lg border">
+              <div
+                className="flex items-center gap-2 px-3 py-2.5 bg-secondary/30 cursor-pointer hover:bg-secondary/50 transition-colors"
+                onClick={() => toggleMilestoneCollapse(milestone.id)}
+              >
+                {isCollapsed ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                <FolderOpen className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold flex-1">{milestone.title}</span>
+                <Badge variant="secondary" className="text-[10px]">{milestoneTasks.length} tasks</Badge>
+                {!milestone.is_default && (
+                  <button type="button" onClick={(e) => { e.stopPropagation(); deleteMilestone.mutate(milestone.id); }} className="p-1 rounded hover:bg-destructive/10">
+                    <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                  </button>
+                )}
+                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); setAddTaskMilestoneId(milestone.id); setAddDialogOpen(true); }}>
+                  <Plus className="h-3 w-3 mr-1" /> Add Task
+                </Button>
+              </div>
+              {milestone.description && !isCollapsed && (
+                <p className="text-xs text-muted-foreground px-3 py-1 border-b">{milestone.description}</p>
+              )}
+              {!isCollapsed && (
+                <div className="p-1.5 space-y-1">
+                  {milestoneTasks.length > 0 ? milestoneTasks.map((task) => (
+                    <TaskRow
+                      key={task.id}
+                      task={task}
+                      selected={selectedIds.has(task.id)}
+                      assigneeName={task.assignee_id ? assigneeMap.get(task.assignee_id) : undefined}
+                      checklistAssignees={checklistAssigneesMap[task.id]}
+                      onToggle={() => toggleSelect(task.id)}
+                      onClick={() => { setEditTask(toKanbanTask(task, assigneeMap)); setEditDialogOpen(true); }}
+                      onStatusChange={handleStatusChange}
+                    />
+                  )) : (
+                    <p className="text-xs text-muted-foreground text-center py-4">No tasks in this milestone</p>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {/* Show ungrouped tasks if any */}
+        {(tasksByMilestone.get("ungrouped")?.length ?? 0) > 0 && (
+          <div className="space-y-1">
+            {tasksByMilestone.get("ungrouped")!.map((task) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                selected={selectedIds.has(task.id)}
+                assigneeName={task.assignee_id ? assigneeMap.get(task.assignee_id) : undefined}
+                checklistAssignees={checklistAssigneesMap[task.id]}
+                onToggle={() => toggleSelect(task.id)}
+                onClick={() => { setEditTask(toKanbanTask(task, assigneeMap)); setEditDialogOpen(true); }}
+                onStatusChange={handleStatusChange}
+              />
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* Milestone creation dialog */}
+      {addMilestoneOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-card rounded-lg p-6 w-full max-w-md space-y-4">
+            <h3 className="text-lg font-semibold">Create Milestone</h3>
+            <div>
+              <label className="text-sm font-medium">Title</label>
+              <input
+                type="text"
+                value={milestoneTitle}
+                onChange={(e) => setMilestoneTitle(e.target.value)}
+                placeholder="Milestone title..."
+                className="w-full h-9 px-3 text-sm rounded-md border bg-background mt-1"
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Description</label>
+              <textarea
+                value={milestoneDesc}
+                onChange={(e) => setMilestoneDesc(e.target.value)}
+                placeholder="Optional description..."
+                className="w-full h-20 px-3 py-2 text-sm rounded-md border bg-background mt-1 resize-none"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => { setAddMilestoneOpen(false); setMilestoneTitle(""); setMilestoneDesc(""); }}>Cancel</Button>
+              <Button size="sm" onClick={handleCreateMilestone} disabled={!milestoneTitle.trim() || createMilestone.isPending}>
+                {createMilestone.isPending ? "Creating..." : "Create Milestone"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <TaskDetailDrawer
         open={editDialogOpen}
@@ -258,12 +380,13 @@ function TasksTab({ productId, openTaskId }: TasksTabProps) {
       />
       <AddTaskDialog
         open={addDialogOpen}
-        onOpenChange={setAddDialogOpen}
+        onOpenChange={(open) => { setAddDialogOpen(open); if (!open) setAddTaskMilestoneId(null); }}
         defaultStatus="backlog"
         productId={productId}
         isLoading={createTask.isPending}
         onSubmit={(data) => {
-          createTask.mutate(data, { onSuccess: () => setAddDialogOpen(false) });
+          const taskData = addTaskMilestoneId ? { ...data, milestone_id: addTaskMilestoneId } : data;
+          createTask.mutate(taskData, { onSuccess: () => { setAddDialogOpen(false); setAddTaskMilestoneId(null); } });
         }}
       />
     </div>
