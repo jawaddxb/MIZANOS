@@ -49,6 +49,13 @@ const CATEGORY_ICONS: Record<string, typeof FileCode> = {
   performance: Gauge,
 };
 
+const CATEGORY_DESCRIPTIONS: Record<string, string> = {
+  style: "Code-task matching confidence from scan",
+  architecture: "Task coverage verified in codebase",
+  security: "Task completion rate minus overdue penalties",
+  performance: "Repo health checks (scan, files, artifacts)",
+};
+
 function parseCategories(categories: JsonValue): AuditCategories {
   if (
     categories &&
@@ -89,7 +96,7 @@ function AuditHistoryItem({ audit, isLatest, canDelete, onDelete, isDeleting }: 
             className="w-full flex items-center justify-between p-4 h-auto hover:bg-secondary/50"
           >
             <div className="flex items-center gap-4">
-              <HealthScore score={audit.overall_score} size="sm" showLabel={false} />
+              <HealthScore score={Math.round(audit.overall_score * 10) / 10} size="sm" showLabel={false} />
               <div className="text-left">
                 <p className="text-sm font-medium">
                   {runDate.toLocaleDateString("en-US", {
@@ -142,7 +149,7 @@ function AuditHistoryItem({ audit, isLatest, canDelete, onDelete, isDeleting }: 
 
         <CollapsibleContent>
           <div className="p-4 border-t bg-secondary/20 space-y-4">
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {(
                 Object.entries(categories) as [
                   keyof AuditCategories,
@@ -150,11 +157,18 @@ function AuditHistoryItem({ audit, isLatest, canDelete, onDelete, isDeleting }: 
                 ][]
               ).map(([key, value]) => {
                 const Icon = CATEGORY_ICONS[key] ?? FileCode;
+                const rounded = Math.round(value * 10) / 10;
+                const color = rounded >= 80 ? "text-status-healthy" : rounded >= 50 ? "text-status-warning" : "text-status-critical";
                 return (
-                  <div key={key} className="flex items-center gap-2">
-                    <Icon className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm capitalize">{key}:</span>
-                    <span className="text-sm font-medium">{value}</span>
+                  <div key={key} className="space-y-1">
+                    <div className="flex items-center gap-1.5">
+                      <Icon className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm capitalize font-medium">{key}</span>
+                    </div>
+                    <span className={`text-lg font-bold tabular-nums ${color}`}>{rounded}%</span>
+                    <p className="text-[10px] text-muted-foreground leading-tight">
+                      {CATEGORY_DESCRIPTIONS[key] ?? ""}
+                    </p>
                   </div>
                 );
               })}

@@ -91,12 +91,12 @@ export function AIChatPanel({
     clearChat,
   } = useAIChat(productId);
 
-  // Auto-scroll on new messages
+  // Auto-scroll on new messages and during streaming
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, isStreaming]);
 
   // Focus input when panel opens
   useEffect(() => {
@@ -122,7 +122,8 @@ export function AIChatPanel({
 
   const lastMsg = messages[messages.length - 1];
   const showStreamingIndicator =
-    isStreaming && lastMsg?.role === "assistant" && lastMsg.content === "";
+    (isStreaming && lastMsg?.role === "assistant" && lastMsg.content === "") ||
+    (lastMsg?.role === "user" && isStreaming);
 
   const chatBody = (
     <div className="flex flex-col flex-1 overflow-hidden">

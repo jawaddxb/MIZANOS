@@ -65,7 +65,11 @@ export function useAIChatStream({ onChunk, onError }: UseAIChatStreamOptions) {
                 onChunk(content, assistantMsgId);
               }
             } catch {
-              // incomplete JSON
+              // Not JSON — treat as plain text chunk from backend
+              if (jsonStr) {
+                content += jsonStr;
+                onChunk(content, assistantMsgId);
+              }
             }
           }
         }

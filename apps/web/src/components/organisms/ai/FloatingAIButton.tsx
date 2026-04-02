@@ -13,7 +13,7 @@ import { AIChatPanel } from "./AIChatPanel";
 // ---------------------------------------------------------------------------
 
 interface FloatingAIButtonProps {
-  productId: string | null;
+  productId?: string | null;
   productName?: string;
 }
 
@@ -190,7 +190,7 @@ export function FloatingAIButton({
             <AIChatPanel
               isOpen={isOpen}
               onClose={handleMinimize}
-              productId={productId}
+              productId={productId ?? null}
               productName={productName}
               embedded
             />
