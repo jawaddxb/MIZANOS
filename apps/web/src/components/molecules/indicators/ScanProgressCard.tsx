@@ -37,7 +37,7 @@ interface ScanProgressCardProps {
   productId: string;
 }
 
-function SegmentedBar({ summary }: { summary: { verified: number; partial: number; no_evidence: number; total_tasks: number } }) {
+function SegmentedBar({ summary, onFilterClick }: { summary: { verified: number; partial: number; no_evidence: number; total_tasks: number }; onFilterClick?: (filter: "verified" | "partial" | "no_evidence") => void }) {
   const total = summary.total_tasks || 1;
   const verifiedPct = (summary.verified / total) * 100;
   const partialPct = (summary.partial / total) * 100;
@@ -57,18 +57,18 @@ function SegmentedBar({ summary }: { summary: { verified: number; partial: numbe
         )}
       </div>
       <div className="flex gap-4 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1">
+        <button onClick={() => onFilterClick?.("verified")} className="flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer">
           <span className="inline-block h-2 w-2 rounded-full bg-status-healthy" />
           Verified ({summary.verified})
-        </span>
-        <span className="flex items-center gap-1">
+        </button>
+        <button onClick={() => onFilterClick?.("partial")} className="flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer">
           <span className="inline-block h-2 w-2 rounded-full bg-status-warning" />
           Partial ({summary.partial})
-        </span>
-        <span className="flex items-center gap-1">
+        </button>
+        <button onClick={() => onFilterClick?.("no_evidence")} className="flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer">
           <span className="inline-block h-2 w-2 rounded-full bg-muted-foreground/30" />
           No evidence ({summary.no_evidence})
-        </span>
+        </button>
       </div>
     </div>
   );
@@ -83,6 +83,7 @@ function ScanProgressCard({ productId }: ScanProgressCardProps) {
   const [jobId, setJobId] = useState<string | null>(null);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [evidenceExpanded, setEvidenceExpanded] = useState(false);
+  const [evidenceFilter, setEvidenceFilter] = useState<"all" | "verified" | "partial" | "no_evidence">("all");
 
   // Pick up active job from summary (e.g. page reload while scan runs)
   const activeJobId = jobId ?? data?.active_job_id ?? null;
@@ -135,8 +136,13 @@ function ScanProgressCard({ productId }: ScanProgressCardProps) {
   const summary = data?.scan_summary as { verified: number; partial: number; no_evidence: number; total_tasks: number } | null;
   const progressPct = data?.progress_pct ?? 0;
   const evidence = (scanResult?.functional_inventory ?? []) as TaskEvidence[];
-  const verifiedEvidence = evidence.filter((e) => e.verified);
-  const unverifiedEvidence = evidence.filter((e) => !e.verified);
+  const verifiedEvidence = evidence.filter((e) => e.verified && e.confidence >= 0.7);
+  const partialEvidence = evidence.filter((e) => e.verified && e.confidence < 0.7 || (!e.verified && e.confidence >= 0.4));
+  const noEvidenceList = evidence.filter((e) => !e.verified && e.confidence < 0.4);
+  const filteredEvidence = evidenceFilter === "all" ? evidence
+    : evidenceFilter === "verified" ? verifiedEvidence
+    : evidenceFilter === "partial" ? partialEvidence
+    : noEvidenceList;
 
   return (
     <>
@@ -199,7 +205,7 @@ function ScanProgressCard({ productId }: ScanProgressCardProps) {
                   {summary.verified} of {summary.total_tasks} verified
                 </Badge>
               </div>
-              <SegmentedBar summary={summary} />
+              <SegmentedBar summary={summary} onFilterClick={(f) => { setEvidenceFilter(f); setEvidenceExpanded(true); }} />
             </>
           ) : (
             <p className="text-sm text-muted-foreground">
@@ -256,13 +262,36 @@ function ScanProgressCard({ productId }: ScanProgressCardProps) {
                 </button>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="space-y-0.5 pt-1">
-                  {verifiedEvidence.map((e) => (
-                    <EvidenceRow key={e.task_id} evidence={e} />
+                <div className="flex gap-1 pt-2 pb-1">
+                  {([
+                    { key: "all", label: "All", count: evidence.length },
+                    { key: "verified", label: "Verified", count: verifiedEvidence.length },
+                    { key: "partial", label: "Partial", count: partialEvidence.length },
+                    { key: "no_evidence", label: "No Evidence", count: noEvidenceList.length },
+                  ] as const).map((tab) => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setEvidenceFilter(tab.key)}
+                      className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors ${
+                        evidenceFilter === tab.key
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                      }`}
+                    >
+                      {tab.label} ({tab.count})
+                    </button>
                   ))}
-                  {unverifiedEvidence.map((e) => (
-                    <EvidenceRow key={e.task_id} evidence={e} />
-                  ))}
+                </div>
+                <div className="space-y-0.5 pt-1 max-h-[400px] overflow-y-auto">
+                  {filteredEvidence.length > 0 ? (
+                    filteredEvidence.map((e) => (
+                      <EvidenceRow key={e.task_id} evidence={e} />
+                    ))
+                  ) : (
+                    <p className="text-xs text-muted-foreground text-center py-4">
+                      No tasks in this category
+                    </p>
+                  )}
                 </div>
               </CollapsibleContent>
             </Collapsible>
