@@ -7,9 +7,9 @@ import {
   DialogTitle,
 } from "@/components/atoms/layout/Dialog";
 import { Badge } from "@/components/atoms/display/Badge";
-import { ScrollArea } from "@/components/atoms/layout/ScrollArea";
 import { EnhancedMarkdownViewer } from "@/components/molecules/display/EnhancedMarkdownViewer";
 import type { SpecSource } from "./SourceCard";
+import type { JsonValue } from "@/lib/types";
 
 interface SourceContentDialogProps {
   source: SpecSource | null;
@@ -39,7 +39,8 @@ export function SourceContentDialog({ source, open, onOpenChange }: SourceConten
             <Badge variant="outline" className="text-xs">{label}</Badge>
           </DialogTitle>
         </DialogHeader>
-        <ScrollArea className="flex-1 -mx-6 px-6">
+        <div className="flex-1 overflow-y-auto -mx-6 px-6 max-h-[60vh]">
+          {source.ai_summary && <EnrichedSummary summary={source.ai_summary} />}
           {isMarkdown ? (
             <EnhancedMarkdownViewer content={content} />
           ) : (
@@ -47,9 +48,59 @@ export function SourceContentDialog({ source, open, onOpenChange }: SourceConten
               {content}
             </p>
           )}
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function EnrichedSummary({ summary }: { summary: Record<string, JsonValue> }) {
+  const title = summary.title as string | undefined;
+  const summaryText = summary.summary as string | undefined;
+  const sections = (summary.sections ?? []) as Array<{ heading: string; details: string[] }>;
+  const entities = (summary.key_entities ?? []) as Array<{ name: string; role: string }>;
+  const metrics = (summary.metrics ?? []) as string[];
+
+  if (!summaryText && sections.length === 0 && entities.length === 0) return null;
+
+  return (
+    <div className="mb-4 p-3 rounded-lg border bg-primary/5 space-y-3">
+      <div className="flex items-center gap-2">
+        <Badge variant="secondary" className="text-[10px]">AI Enriched</Badge>
+        {title && <span className="text-sm font-medium">{title}</span>}
+      </div>
+      {summaryText && <p className="text-xs text-muted-foreground">{summaryText}</p>}
+      {sections.map((section, i) => (
+        <div key={i}>
+          <p className="text-xs font-semibold">{section.heading}</p>
+          <ul className="ml-4 space-y-0.5">
+            {section.details.map((d, j) => (
+              <li key={j} className="text-xs text-muted-foreground list-disc">{d}</li>
+            ))}
+          </ul>
+        </div>
+      ))}
+      {entities.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold mb-1">Key Entities</p>
+          <div className="flex flex-wrap gap-1">
+            {entities.map((e, i) => (
+              <Badge key={i} variant="outline" className="text-[10px]">{e.name}{e.role ? ` — ${e.role}` : ""}</Badge>
+            ))}
+          </div>
+        </div>
+      )}
+      {metrics.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold mb-1">Metrics</p>
+          <ul className="ml-4 space-y-0.5">
+            {metrics.map((m, i) => (
+              <li key={i} className="text-xs text-muted-foreground list-disc">{m}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 }
 

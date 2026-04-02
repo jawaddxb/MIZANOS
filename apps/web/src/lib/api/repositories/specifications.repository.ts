@@ -104,6 +104,15 @@ export class SpecificationsRepository extends BaseRepository<Specification> {
     return response.data.download_url;
   }
 
+  async enrichSource(sourceId: string): Promise<{ ai_summary: unknown; message: string }> {
+    const response = await this.client.post<{ ai_summary: unknown; message: string }>(
+      `/products/specification-sources/${sourceId}/enrich`,
+      {},
+      { timeout: 120_000 },
+    );
+    return response.data;
+  }
+
   async deleteSource(sourceId: string): Promise<void> {
     await this.client.delete(`/specification-sources/${sourceId}`);
   }

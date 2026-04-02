@@ -15,6 +15,7 @@ import {
   Loader2,
   Settings2,
   Play,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { specificationsRepository } from "@/lib/api/repositories";
@@ -204,8 +205,11 @@ function ContentPreview({ content }: { content?: string | null }) {
 }
 
 function SourceActions({ source }: { source: SpecSource }) {
+  const hasContent = !!(source.raw_content || source.transcription);
+
   return (
     <div className="flex items-center gap-1">
+      {hasContent && <EnrichButton sourceId={source.id} hasExisting={!!source.ai_summary} />}
       {source.file_url && source.source_type === "audio" && (
         <PlayButton sourceId={source.id} />
       )}
@@ -216,6 +220,34 @@ function SourceActions({ source }: { source: SpecSource }) {
         </a>
       )}
     </div>
+  );
+}
+
+function EnrichButton({ sourceId, hasExisting }: { sourceId: string; hasExisting: boolean }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleEnrich = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLoading(true);
+    try {
+      const resp = await specificationsRepository.enrichSource(sourceId);
+      if (resp.message === "Enriched successfully") {
+        toast.success("Source enriched with AI details");
+        window.location.reload();
+      } else {
+        toast.error(resp.message || "Enrichment failed");
+      }
+    } catch {
+      toast.error("Failed to enrich source");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button onClick={handleEnrich} disabled={loading} className="p-1.5 rounded hover:bg-accent" title={hasExisting ? "Re-enrich with AI" : "Enrich with AI"}>
+      {loading ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : <Sparkles className="h-4 w-4 text-primary" />}
+    </button>
   );
 }
 

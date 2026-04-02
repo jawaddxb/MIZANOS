@@ -90,6 +90,66 @@ async def get_source_download_url(
     return {"download_url": storage.generate_signed_url(gcs_path)}
 
 
+@router.post("/specification-sources/{source_id}/enrich")
+async def enrich_source(
+    source_id: UUID,
+    user: CurrentUser = None,
+    db: DbSession = None,
+):
+    """Use AI to extract detailed information from a source's content."""
+    import json
+    import httpx
+    from apps.api.config import settings
+    from apps.api.models.specification import SpecificationSource
+
+    source = await db.get(SpecificationSource, source_id)
+    if not source:
+        raise not_found("SpecificationSource")
+
+    content = source.raw_content or source.transcription or ""
+    if not content or len(content.strip()) < 20:
+        return {"ai_summary": source.ai_summary, "message": "Not enough content to enrich"}
+
+    api_key = settings.openrouter_api_key
+    if not api_key:
+        return {"ai_summary": source.ai_summary, "message": "No AI API key configured"}
+
+    prompt = (
+        "Analyze the following document and extract a detailed structured summary. "
+        "Include ALL specific names, numbers, details, and data points mentioned. "
+        "Do NOT summarize vaguely — list every specific item.\n\n"
+        "Return ONLY valid JSON (no markdown) with this structure:\n"
+        '{"title":"<document title>","summary":"<2-3 sentence overview>",'
+        '"sections":[{"heading":"<section name>","details":["<specific detail 1>","<specific detail 2>"]}],'
+        '"key_entities":[{"name":"<person/thing name>","role":"<role/description>"}],'
+        '"metrics":["<any numbers or stats mentioned>"]}\n\n'
+        f"Document content:\n{content[:8000]}"
+    )
+
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            resp = await client.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                json={"model": "anthropic/claude-sonnet-4", "max_tokens": 4096, "messages": [{"role": "user", "content": prompt}]},
+            )
+            if resp.status_code != 200:
+                return {"ai_summary": source.ai_summary, "message": f"AI error: {resp.status_code}"}
+
+            raw = resp.json()["choices"][0]["message"]["content"].strip()
+            if raw.startswith("```"):
+                raw = raw.split("\n", 1)[1] if "\n" in raw else raw[3:]
+                if raw.endswith("```"):
+                    raw = raw[:-3]
+
+            enriched = json.loads(raw)
+            source.ai_summary = enriched
+            await db.flush()
+            return {"ai_summary": enriched, "message": "Enriched successfully"}
+    except Exception as e:
+        return {"ai_summary": source.ai_summary, "message": f"Enrichment failed: {str(e)}"}
+
+
 @router.delete("/specification-sources/{source_id}", status_code=204)
 async def delete_product_source(
     source_id: UUID,
