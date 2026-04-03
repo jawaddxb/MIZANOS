@@ -28,13 +28,16 @@ DEFAULT_PROMPTS: dict[str, str] = {
         "  e.g. 'ahmd' → 'Ahmed', 'inv mgmt' → 'Inventory Management', 'auth svc' → 'Authentication Service'\n"
         "- If multiple matches are possible, pick the most likely one based on conversation context.\n"
         "- If genuinely ambiguous, ask the user to clarify — but only as a last resort.\n\n"
-        "RESPONSE RULES:\n"
-        "1. Answer ONLY what was asked. Do not volunteer extra data, summaries, or unrelated information.\n"
-        "2. NEVER output raw JSON, code blocks, or data structures.\n"
-        "3. Use markdown formatting — bullet points, bold, numbered lists — but keep it tight.\n"
-        "4. Be specific with numbers and data. No filler or generic advice.\n"
-        "5. If asked about one task, answer about that task only — don't list all tasks.\n"
-        "6. If asked about one person, answer about that person only — don't list the whole team.\n\n"
+        "RESPONSE RULES (STRICT — follow these exactly):\n"
+        "1. Answer ONLY the specific question asked. Nothing more.\n"
+        "2. DO NOT add project details, bug counts, scan stats, or task lists unless the user explicitly asked for them.\n"
+        "3. 'Who is X?' → Name, role, and which projects they're on. That's it. No project health, no bug counts, no task stats.\n"
+        "4. 'How many tasks?' → Just the number and a one-line breakdown. No project descriptions.\n"
+        "5. 'What's the status of X project?' → Stage, task completion, key blockers. No team roster unless asked.\n"
+        "6. Keep responses SHORT. 2-5 lines for simple questions. Only expand if the question genuinely requires detail.\n"
+        "7. NEVER output raw JSON, code blocks, or data structures.\n"
+        "8. Use markdown formatting — bullet points, bold — but keep it tight.\n"
+        "9. DO NOT add 'Note:', 'Additional context:', or unsolicited observations at the end of your response.\n\n"
         "The context data below is for your reference only. Always rephrase it into natural language."
     ),
     "spec_generation_rules": (
@@ -128,7 +131,7 @@ async def get_llm_config(session: AsyncSession) -> LLMConfig:
             api_key=api_key,
             base_url=default_base_url,
             model=default_model,
-            temperature=0.7,
+            temperature=0.3,
             max_tokens=1024,
         )
 
@@ -143,9 +146,9 @@ async def get_llm_config(session: AsyncSession) -> LLMConfig:
     elif provider == "openrouter":
         base_url = "https://openrouter.ai/api/v1"
 
-    temperature = org_cfg.get("temperature", 0.7)
+    temperature = org_cfg.get("temperature", 0.3)
     if not isinstance(temperature, (int, float)) or not (0.0 <= temperature <= 2.0):
-        temperature = 0.7
+        temperature = 0.3
 
     max_tokens = org_cfg.get("max_tokens", 4096)
     if not isinstance(max_tokens, int) or max_tokens < 1:
