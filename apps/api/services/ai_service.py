@@ -1,5 +1,6 @@
 """AI service with LLM integration and SSE streaming."""
 
+import json
 from collections.abc import AsyncIterator
 from uuid import UUID
 
@@ -189,15 +190,37 @@ class AIService:
         if not products:
             return "\n\n--- APPLICATION CONTEXT ---\n" + sections[0] + "\n--- END ---\n"
 
+        # Pre-index profiles for O(1) lookup
+        profile_map = {p.id: p for p in profiles}
+
         all_members = list((await self.session.execute(select(ProductMember))).scalars().all())
         member_map: dict[str, list[tuple[str, str]]] = {}
         for m in all_members:
             pid = str(m.product_id)
             if pid not in member_map:
                 member_map[pid] = []
-            profile = next((p for p in profiles if p.id == m.profile_id), None)
+            profile = profile_map.get(m.profile_id)
             name = profile.full_name if profile else "Unknown"
             member_map[pid].append((name, m.role or "member"))
+
+        # Batch-load all tasks and bugs in 2 queries (not N+1)
+        product_ids = [p.id for p in products[:25]]
+        all_tasks = list((await self.session.execute(
+            select(Task).where(Task.product_id.in_(product_ids), Task.is_draft == False)
+        )).scalars().all())
+        all_scans = list((await self.session.execute(
+            select(RepositoryAnalysis)
+            .where(RepositoryAnalysis.product_id.in_(product_ids))
+            .where(RepositoryAnalysis.functional_inventory.is_not(None))
+        )).scalars().all())
+
+        # Group by product_id
+        tasks_by_product: dict[str, list] = {}
+        for t in all_tasks:
+            tasks_by_product.setdefault(str(t.product_id), []).append(t)
+        scans_by_product: dict[str, RepositoryAnalysis] = {}
+        for s in sorted(all_scans, key=lambda x: x.created_at or x.id):
+            scans_by_product[str(s.product_id)] = s  # last one wins (most recent)
 
         proj_lines = [f"PROJECTS: {len(products)} total"]
         stages: dict[str, int] = {}
@@ -207,15 +230,12 @@ class AIService:
 
         for p in products[:25]:
             stages[p.stage or "Unknown"] = stages.get(p.stage or "Unknown", 0) + 1
-            # Tasks
-            task_stmt = select(Task).where(Task.product_id == p.id, Task.is_draft == False, Task.task_type == "task")
-            tasks = list((await self.session.execute(task_stmt)).scalars().all())
+            p_tasks = tasks_by_product.get(str(p.id), [])
+            tasks = [t for t in p_tasks if t.task_type == "task"]
+            bugs = [t for t in p_tasks if t.task_type == "bug"]
             done = sum(1 for t in tasks if t.status in ("done", "live"))
             total_tasks += len(tasks)
             total_done += done
-            # Bugs
-            bug_stmt = select(Task).where(Task.product_id == p.id, Task.task_type == "bug")
-            bugs = list((await self.session.execute(bug_stmt)).scalars().all())
             total_bugs += len(bugs)
             bug_info = f" | Bugs: {len(bugs)}" if bugs else ""
             # Team on this project
@@ -225,14 +245,7 @@ class AIService:
                 team_str = " | Team: " + ", ".join(f"{n} ({r})" for n, r in team[:5])
             # Scan
             scan_info = ""
-            scan_stmt = (
-                select(RepositoryAnalysis)
-                .where(RepositoryAnalysis.product_id == p.id)
-                .where(RepositoryAnalysis.functional_inventory.is_not(None))
-                .order_by(RepositoryAnalysis.created_at.desc())
-                .limit(1)
-            )
-            scan = (await self.session.execute(scan_stmt)).scalar_one_or_none()
+            scan = scans_by_product.get(str(p.id))
             if scan and scan.gap_analysis and isinstance(scan.gap_analysis, dict):
                 ga = scan.gap_analysis
                 scan_info = f" | Scan: {ga.get('progress_pct', 0):.0f}%"
@@ -419,11 +432,11 @@ class AIService:
                 delta = chunk.choices[0].delta.content
                 if delta:
                     full_response += delta
-                    yield f"data: {delta}\n\n"
+                    yield f"data: {json.dumps(delta)}\n\n"
 
         except ValueError as e:
             full_response = str(e)
-            yield f"data: {full_response}\n\n"
+            yield f"data: {json.dumps(full_response)}\n\n"
         except Exception as e:
             import logging
             logging.getLogger(__name__).exception("LLM streaming error")
@@ -438,7 +451,7 @@ class AIService:
                 full_response = "⚠️ The AI took too long to respond. Please try again."
             else:
                 full_response = f"⚠️ AI error: {str(e)[:200]}"
-            yield f"data: {full_response}\n\n"
+            yield f"data: {json.dumps(full_response)}\n\n"
 
         # Save assistant message
         assistant_msg = AIChatMessage(
