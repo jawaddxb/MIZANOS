@@ -1,20 +1,31 @@
-FROM python:3.12-slim
-
+# --- Build Stage ---
+FROM python:3.12-slim AS builder
 WORKDIR /app
 
-ENV PYTHONPATH=/app
-
 COPY pyproject.toml .
-RUN pip install --no-cache-dir -e .
+RUN pip install --no-cache-dir .
+
+# --- Production Stage ---
+FROM python:3.12-slim
+WORKDIR /app
+
+ENV PYTHONPATH=/app \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 
 COPY apps/api/ ./apps/api/
 COPY packages/common/ ./packages/common/
 COPY infra/alembic/ ./infra/alembic/
 COPY infra/alembic.ini ./infra/alembic.ini
-
 COPY infra/start-api.sh ./start-api.sh
 RUN chmod +x ./start-api.sh
 
-EXPOSE ${PORT:-8000}
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser \
+    && mkdir -p /app/uploads && chown appuser:appgroup /app/uploads
+USER appuser
 
+EXPOSE ${PORT:-8000}
 CMD ["./start-api.sh"]

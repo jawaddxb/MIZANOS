@@ -222,4 +222,18 @@
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background-color: hsl(var(--muted-foreground) / 0.3);
   }
+
+  /* AI streaming cursor — blinks at the end of the last rendered element */
+  .streaming-cursor > :last-child::after {
+    content: "\25AE";
+    animation: blink 1s steps(2, start) infinite;
+    margin-left: 1px;
+    color: currentColor;
+  }
+}
+
+@keyframes blink {
+  to {
+    visibility: hidden;
+  }
 }

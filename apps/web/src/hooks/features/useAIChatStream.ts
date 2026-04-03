@@ -54,23 +54,20 @@ export function useAIChatStream({ onChunk, onError }: UseAIChatStreamOptions) {
             if (line.endsWith("\r")) line = line.slice(0, -1);
             if (!line.startsWith("data: ")) continue;
 
-            const jsonStr = line.slice(6);
-            if (jsonStr.trim() === "[DONE]") break;
-            if (!jsonStr) continue;
+            const payload = line.slice(6);
+            if (payload.trim() === "[DONE]") break;
+            if (!payload) continue;
 
+            let delta: string;
             try {
-              const parsed = JSON.parse(jsonStr);
-              const delta = parsed.choices?.[0]?.delta?.content;
-              if (delta) {
-                content += delta;
-                onChunk(content, assistantMsgId);
-              }
+              delta = JSON.parse(payload) as string;
             } catch {
-              // Not JSON — treat as plain text chunk from backend
-              if (jsonStr) {
-                content += jsonStr;
-                onChunk(content, assistantMsgId);
-              }
+              delta = payload;
+            }
+
+            if (delta) {
+              content += delta;
+              onChunk(content, assistantMsgId);
             }
           }
         }

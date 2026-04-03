@@ -15,6 +15,14 @@ export interface DashboardMetrics {
     assignee_name: string | null;
     priority: string;
   }>;
+  dueSoonTasks: Array<{
+    id: string;
+    title: string;
+    due_date: string;
+    product_id: string;
+    product_name: string;
+    priority: string;
+  }>;
   failedQAChecks: Array<{
     id: string;
     title: string;
@@ -92,9 +100,30 @@ export function useDashboardMetrics() {
           priority: t.priority ?? "medium",
         }));
 
+      // Tasks due within 3 days (not overdue yet)
+      const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+      const overdueIds = new Set(overdueTasks.map((t) => t.id));
+      const dueSoonTasks = allTasks
+        .filter((t) =>
+          t.due_date &&
+          !overdueIds.has(t.id) &&
+          new Date(t.due_date) >= now &&
+          new Date(t.due_date) <= threeDaysFromNow &&
+          t.status !== "done" && t.status !== "live" && t.status !== "cancelled"
+        )
+        .slice(0, 10)
+        .map((t) => ({
+          id: t.id,
+          title: t.title,
+          due_date: t.due_date!,
+          product_id: t.product_id,
+          product_name: productMap.get(t.product_id) ?? "Unknown",
+          priority: t.priority ?? "medium",
+        }));
+
       // Low score audits — fetch latest audit per product
       const lowScoreAudits: DashboardMetrics["lowScoreAudits"] = [];
-      for (const p of products.slice(0, 15)) {
+      for (const p of products) {
         try {
           const audit = await auditRepository.getLatest(p.id);
           if (audit && audit.overall_score < 60) {
@@ -122,6 +151,7 @@ export function useDashboardMetrics() {
 
       return {
         overdueTasks,
+        dueSoonTasks,
         failedQAChecks: [],
         lowScoreAudits,
         incompleteDeployments: [],

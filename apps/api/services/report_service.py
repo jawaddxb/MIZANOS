@@ -107,7 +107,7 @@ class ReportService:
         return product
 
     async def _fetch_members_map(self, product_ids: list[UUID]) -> dict:
-        """Return {product_id: {pm_name, dev_name}}."""
+        """Return {product_id: {pm_name, dev_name, dev_names: list}}."""
         stmt = (
             select(ProductMember)
             .where(
@@ -118,14 +118,17 @@ class ReportService:
         result = await self.session.execute(stmt)
         rows = result.scalars().all()
 
-        members: dict[UUID, dict[str, str | None]] = {}
+        members: dict[UUID, dict[str, str | None | list]] = {}
         for member in rows:
-            entry = members.setdefault(member.product_id, {"pm_name": None, "dev_name": None})
+            entry = members.setdefault(member.product_id, {"pm_name": None, "dev_name": None, "dev_names": []})
             name = member.profile.full_name if member.profile else None
             if member.role == "project_manager":
                 entry["pm_name"] = name
             elif member.role == "ai_engineer":
-                entry["dev_name"] = name
+                if name:
+                    entry["dev_names"].append(name)
+                if entry["dev_name"] is None:
+                    entry["dev_name"] = name
         return members
 
     async def _fetch_task_counts(self, product_ids: list[UUID]) -> dict:
@@ -418,6 +421,7 @@ class ReportService:
                 "product_id": p.id, "product_name": p.name,
                 "stage": p.stage, "status": p.status, "created_at": p.created_at,
                 "pm_name": m.get("pm_name"), "dev_name": m.get("dev_name"),
+                "dev_names": m.get("dev_names", []),
                 "total_tasks": total, "completed_tasks": completed,
                 "in_progress_tasks": in_progress,
                 "task_completion_pct": _pct(completed, total),
@@ -592,37 +596,48 @@ class ReportService:
 
             summary = f"Tasks: {total} total | {done} Done | {in_progress} In Progress | {backlog} Backlog | Code Progress: {cp}%"
 
-            all_tasks = await self._fetch_task_details_for_report(pid, today)
+            task_result = await self._fetch_task_details_for_report(pid, today)
 
             result[pid] = {
                 "summary_line": summary,
-                "non_done_tasks": all_tasks,
+                "milestones": task_result.get("milestones", {}),
+                "has_multiple_assignees": task_result.get("has_multiple_assignees", False),
                 "links": links_map.get(pid, []),
                 "code_progress": cp,
             }
 
         return result
 
-    async def _fetch_task_details_for_report(self, product_id: UUID, today) -> list[dict]:
-        """Fetch in-progress tasks + tasks completed today for report."""
+    async def _fetch_task_details_for_report(self, product_id: UUID, today) -> dict:
+        """Fetch in-progress tasks + tasks completed today, grouped by milestone."""
+        from apps.api.models.milestone import Milestone
         from apps.api.models.user import Profile
 
         stmt = (
             select(
                 Task.title, Task.status, Task.priority,
-                Task.due_date, Task.updated_at,
+                Task.due_date, Task.updated_at, Task.assignee_id,
+                Task.milestone_id,
                 Profile.full_name.label("assignee_name"),
+                Milestone.title.label("milestone_name"),
+                Milestone.sort_order.label("milestone_order"),
             )
             .outerjoin(Profile, Task.assignee_id == Profile.id)
+            .outerjoin(Milestone, Task.milestone_id == Milestone.id)
             .where(
                 Task.product_id == product_id,
                 Task.task_type == "task",
                 Task.is_draft == False,  # noqa: E712
             )
-            .order_by(Task.status, Task.priority.desc())
+            .order_by(Milestone.sort_order.nulls_last(), Task.status, Task.priority.desc())
         )
         result = await self.session.execute(stmt)
-        tasks = []
+
+        # Group tasks by milestone
+        milestones: dict[str, list[dict]] = {}
+        milestone_order: dict[str, int] = {}
+        assignee_ids = set()
+
         for row in result.all():
             status = (row.status or "").lower()
             is_in_progress = status in IN_PROGRESS_STATUSES
@@ -633,8 +648,13 @@ class ReportService:
             )
             if not is_in_progress and not is_done_today:
                 continue
+            if row.assignee_id:
+                assignee_ids.add(row.assignee_id)
+
+            milestone_name = row.milestone_name or "General"
             tag = "DONE TODAY" if is_done_today else row.status.upper().replace("_", " ")
-            tasks.append({
+
+            task_data = {
                 "title": row.title,
                 "status": row.status or "unknown",
                 "priority": row.priority or "none",
@@ -642,8 +662,26 @@ class ReportService:
                 "due_date": row.due_date.isoformat() if row.due_date else None,
                 "is_overdue": False,
                 "tag": tag,
-            })
-        return tasks
+            }
+
+            if milestone_name not in milestones:
+                milestones[milestone_name] = []
+                milestone_order[milestone_name] = row.milestone_order if row.milestone_order is not None else 9999
+            milestones[milestone_name].append(task_data)
+
+        # Flag if project has multiple assignees
+        has_multiple_assignees = len(assignee_ids) > 1
+        for tasks in milestones.values():
+            for t in tasks:
+                t["show_assignee"] = has_multiple_assignees
+
+        # Sort milestones by order, with "General" last if it exists
+        sorted_milestones = sorted(milestones.keys(), key=lambda m: (m == "General", milestone_order.get(m, 9999)))
+
+        return {
+            "milestones": {m: milestones[m] for m in sorted_milestones},
+            "has_multiple_assignees": has_multiple_assignees,
+        }
 
     async def _fetch_code_progress_batch(self, product_ids: list[UUID]) -> dict[UUID, float]:
         """Return {product_id: progress_pct} from latest RepositoryAnalysis."""

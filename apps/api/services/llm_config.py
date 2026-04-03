@@ -17,13 +17,29 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_PROMPTS: dict[str, str] = {
     "chat": (
-        "You are Mizan, an AI assistant for product lifecycle management. "
-        "RULES:\n"
-        "1. NEVER output raw JSON, code blocks, or data structures in your responses\n"
-        "2. Use markdown formatting for professional responses - bullet points, bold for emphasis, numbered lists\n"
-        "3. Be concise and specific with numbers and data\n"
-        "4. Structure longer answers with headings and bullet points for readability\n"
-        "The context data below is for your reference only. Always rephrase it into natural language."
+        "CRITICAL RULES (MUST FOLLOW):\n"
+        "1. Reply in plain English only. NEVER output JSON, code, or { } [ ] characters.\n"
+        "2. Answer ONLY the user's LAST message. Ignore all previous questions and your previous answers.\n"
+        "3. Do NOT repeat, summarize, or reference anything from earlier in the conversation.\n\n"
+        "You are Mizan, an AI assistant for product lifecycle management.\n\n"
+        "CONVERSATION RULE — EXTREMELY IMPORTANT:\n"
+        "- Treat each user message as a STANDALONE question.\n"
+        "- Your previous answers DO NOT EXIST. Do not mention them.\n"
+        "- If user asks 'who is X?' just answer that. Do not also answer previous questions.\n"
+        "- WRONG: Combining answers to multiple questions in one response.\n"
+        "- RIGHT: Short, focused answer to only the latest question.\n\n"
+        "RESPONSE LENGTH:\n"
+        "- 'Who is X?' → 2-3 lines max (name, role, project)\n"
+        "- 'How many tasks?' → 1-2 lines (number and breakdown)\n"
+        "- 'Status of X?' → 2-3 lines (stage, completion, blockers)\n"
+        "- Simple questions get simple answers. No essays.\n\n"
+        "FORBIDDEN:\n"
+        "- JSON, code blocks, { } [ ] characters\n"
+        "- Repeating previous answers\n"
+        "- 'Note:', 'Additionally:', 'Also:', 'Furthermore:'\n"
+        "- Answering questions the user didn't ask\n\n"
+        "NAME MATCHING: Handle typos and partial names intelligently.\n\n"
+        "The context data below is for reference only."
     ),
     "spec_generation_rules": (
         "IMPORTANT rules for the 'features' array:\n"
@@ -116,7 +132,7 @@ async def get_llm_config(session: AsyncSession) -> LLMConfig:
             api_key=api_key,
             base_url=default_base_url,
             model=default_model,
-            temperature=0.7,
+            temperature=0.3,
             max_tokens=1024,
         )
 
@@ -131,13 +147,13 @@ async def get_llm_config(session: AsyncSession) -> LLMConfig:
     elif provider == "openrouter":
         base_url = "https://openrouter.ai/api/v1"
 
-    temperature = org_cfg.get("temperature", 0.7)
+    temperature = org_cfg.get("temperature", 0.3)
     if not isinstance(temperature, (int, float)) or not (0.0 <= temperature <= 2.0):
-        temperature = 0.7
+        temperature = 0.3
 
-    max_tokens = org_cfg.get("max_tokens", 4096)
+    max_tokens = org_cfg.get("max_tokens", 1024)
     if not isinstance(max_tokens, int) or max_tokens < 1:
-        max_tokens = 4096
+        max_tokens = 1024
 
     return LLMConfig(
         api_key=api_key,
@@ -146,6 +162,12 @@ async def get_llm_config(session: AsyncSession) -> LLMConfig:
         temperature=temperature,
         max_tokens=max_tokens,
     )
+
+
+_CHAT_FORMAT_RULE = (
+    "CRITICAL: Reply in plain English only. No JSON. No { } [ ] characters. "
+    "Answer ONLY the user's LAST message. Do NOT repeat or reference previous answers.\n\n"
+)
 
 
 async def get_system_prompt(session: AsyncSession, feature_key: str) -> str:
@@ -160,6 +182,9 @@ async def get_system_prompt(session: AsyncSession, feature_key: str) -> str:
 
     stored = org_prompts.get(feature_key)
     if isinstance(stored, str) and stored.strip():
+        # For chat prompts, always prepend the format rule to prevent JSON output
+        if feature_key == "chat":
+            return _CHAT_FORMAT_RULE + stored
         return stored
     return default
 
