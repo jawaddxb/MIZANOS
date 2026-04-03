@@ -112,7 +112,7 @@ export function ChatMessage({ message, streaming }: ChatMessageProps) {
         ) : (
           <div
             className={cn(
-              "prose prose-sm dark:prose-invert max-w-none",
+              "max-w-none",
               streaming && "streaming-cursor",
             )}
           >
