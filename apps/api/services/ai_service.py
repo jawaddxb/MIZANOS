@@ -144,9 +144,13 @@ class AIService:
             client = openai.AsyncOpenAI(api_key=config.api_key, base_url=config.base_url)
 
             messages: list[dict] = [{"role": "system", "content": system_prompt}]
+            # Only include USER messages from history (not assistant responses)
+            # This prevents the model from repeating its previous answers
             for msg in history:
-                if msg.content and msg.content.strip():
-                    messages.append({"role": msg.role, "content": msg.content})
+                if msg.content and msg.content.strip() and msg.role == "user":
+                    messages.append({"role": "user", "content": msg.content})
+                    # Add placeholder for assistant to maintain conversation structure
+                    messages.append({"role": "assistant", "content": "(answered)"})
 
             user_content = self._build_user_content(content, images)
             messages.append({"role": "user", "content": user_content})
@@ -200,9 +204,13 @@ class AIService:
             system_prompt += project_context
 
             messages: list[dict[str, str]] = [{"role": "system", "content": system_prompt}]
+            # Only include USER messages from history (not assistant responses)
+            # This prevents the model from repeating its previous answers
             for msg in history:
-                if msg.content and msg.content.strip():
-                    messages.append({"role": msg.role, "content": msg.content})
+                if msg.content and msg.content.strip() and msg.role == "user":
+                    messages.append({"role": "user", "content": msg.content})
+                    # Add placeholder for assistant to maintain conversation structure
+                    messages.append({"role": "assistant", "content": "(answered)"})
 
             client = openai.AsyncOpenAI(api_key=config.api_key, base_url=config.base_url)
             stream = await client.chat.completions.create(
