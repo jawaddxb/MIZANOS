@@ -82,7 +82,7 @@ class AIService:
             parts.append({"type": "image_url", "image_url": {"url": img}})
         return parts
 
-    async def _load_history(self, session_id: UUID, limit: int = 20) -> list[AIChatMessage]:
+    async def _load_history(self, session_id: UUID, limit: int = 10) -> list[AIChatMessage]:
         """Load recent conversation history for a session."""
         stmt = (
             select(AIChatMessage)

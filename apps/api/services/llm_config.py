@@ -150,9 +150,9 @@ async def get_llm_config(session: AsyncSession) -> LLMConfig:
     if not isinstance(temperature, (int, float)) or not (0.0 <= temperature <= 2.0):
         temperature = 0.3
 
-    max_tokens = org_cfg.get("max_tokens", 4096)
+    max_tokens = org_cfg.get("max_tokens", 1024)
     if not isinstance(max_tokens, int) or max_tokens < 1:
-        max_tokens = 4096
+        max_tokens = 1024
 
     return LLMConfig(
         api_key=api_key,

@@ -97,18 +97,9 @@ async def _gather_all_projects_context(session: AsyncSession) -> str:
 
         bug_info = f" | Bugs: {len(bugs)}" if bugs else ""
         proj_lines.append(
-            f"\n  [{p.name}] Stage: {p.stage or 'N/A'} | "
+            f"  [{p.name}] Stage: {p.stage or 'N/A'} | "
             f"Tasks: {done}/{len(tasks)}{bug_info}{scan_info}{team_str}"
         )
-
-        for t in tasks:
-            priority = f" [{t.priority}]" if t.priority else ""
-            due = f" (due {t.due_date.strftime('%m/%d')})" if t.due_date else ""
-            proj_lines.append(f"    - [{t.status or 'backlog'}]{priority} {t.title}{due}")
-
-        for b in bugs:
-            priority = f" [{b.priority}]" if b.priority else ""
-            proj_lines.append(f"    - BUG [{b.status or 'reported'}]{priority} {b.title}")
 
     stage_str = ", ".join(f"{k}: {v}" for k, v in sorted(stages.items()))
     proj_lines.insert(1, f"Stages: {stage_str}")
