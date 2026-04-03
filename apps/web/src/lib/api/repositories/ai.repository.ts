@@ -2,6 +2,8 @@ import type { AxiosInstance } from "axios";
 import type { AIChatSession, AIChatMessage } from "@/lib/types";
 import { apiClient, AUTH_TOKEN_KEY } from "../client";
 
+const STREAM_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 export class AIRepository {
   private readonly client: AxiosInstance;
   private readonly basePath = "/ai/chat";
@@ -70,7 +72,7 @@ export class AIRepository {
     // Find the last user message (skip empty assistant placeholders)
     const lastUserMessage = [...messages].reverse().find((m) => m.role === "user" && m.content);
     const response = await fetch(
-      "/api/ai/chat",
+      `${STREAM_BASE_URL}/ai/chat`,
       {
         method: "POST",
         headers: {
