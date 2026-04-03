@@ -22,7 +22,7 @@ import { useDashboardMetrics, type DashboardMetrics } from "@/hooks/queries/useD
 interface ActionItem {
   id: string;
   taskId?: string;
-  type: "overdue" | "failed_qa" | "low_audit" | "deployment";
+  type: "overdue" | "due_soon" | "failed_qa" | "low_audit" | "deployment";
   title: string;
   subtitle: string;
   productId: string;
@@ -38,6 +38,7 @@ interface ActionItemsProps {
 
 const iconMap: Record<ActionItem["type"], React.ReactNode> = {
   overdue: <Clock className="h-4 w-4" />,
+  due_soon: <AlertTriangle className="h-4 w-4" />,
   failed_qa: <XCircle className="h-4 w-4" />,
   low_audit: <ShieldAlert className="h-4 w-4" />,
   deployment: <Rocket className="h-4 w-4" />,
@@ -76,6 +77,18 @@ function buildActionItems(metrics: DashboardMetrics | undefined): ActionItem[] {
       productName: t.product_name,
       severity: "critical",
       meta: t.assignee_name || "Unassigned",
+    }),
+  );
+  metrics.dueSoonTasks.forEach((t) =>
+    items.push({
+      id: `soon-${t.id}`,
+      taskId: t.id,
+      type: "due_soon",
+      title: t.title,
+      subtitle: `Due ${formatDistanceToNow(new Date(t.due_date), { addSuffix: true })}`,
+      productId: t.product_id,
+      productName: t.product_name,
+      severity: "warning",
     }),
   );
   metrics.failedQAChecks.forEach((q) =>
