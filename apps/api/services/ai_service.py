@@ -127,12 +127,14 @@ class AIService:
         if not chat_session:
             raise ValueError("Session not found")
 
+        # Load history BEFORE saving current message (so current isn't included)
+        history = await self._load_history(session_id)
+        project_context = await gather_project_context(self.session, chat_session.product_id)
+
+        # Now save the current user message
         user_msg = AIChatMessage(session_id=session_id, role="user", content=content)
         self.session.add(user_msg)
         await self.session.flush()
-
-        history = await self._load_history(session_id)
-        project_context = await gather_project_context(self.session, chat_session.product_id)
 
         full_response = ""
         try:
@@ -188,12 +190,14 @@ class AIService:
             yield "data: [DONE]\n\n"
             return
 
+        # Load history BEFORE saving current message (so current isn't included)
+        history = await self._load_history(session_id)
+        project_context = await gather_project_context(self.session, chat_session.product_id)
+
+        # Now save the current user message
         user_msg = AIChatMessage(session_id=session_id, role="user", content=content)
         self.session.add(user_msg)
         await self.session.flush()
-
-        history = await self._load_history(session_id)
-        project_context = await gather_project_context(self.session, chat_session.product_id)
 
         full_response = ""
         try:
@@ -209,8 +213,10 @@ class AIService:
             for msg in history:
                 if msg.content and msg.content.strip() and msg.role == "user":
                     messages.append({"role": "user", "content": msg.content})
-                    # Add placeholder for assistant to maintain conversation structure
                     messages.append({"role": "assistant", "content": "(answered)"})
+
+            # Add current user message at the end (no placeholder after it)
+            messages.append({"role": "user", "content": content})
 
             client = openai.AsyncOpenAI(api_key=config.api_key, base_url=config.base_url)
             stream = await client.chat.completions.create(
