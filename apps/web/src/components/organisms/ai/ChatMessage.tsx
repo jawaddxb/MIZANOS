@@ -24,8 +24,6 @@ function cleanAssistantContent(content: string): string {
     }
     return match;
   });
-  // Remove ** bold markers
-  cleaned = cleaned.replace(/\*\*/g, "");
   // Clean up extra whitespace
   cleaned = cleaned.replace(/\n{3,}/g, "\n\n").trim();
   return cleaned || content;
