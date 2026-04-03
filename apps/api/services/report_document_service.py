@@ -178,7 +178,9 @@ class ReportDocumentService:
             name = proj["product_name"]
             stage = proj.get("stage") or "N/A"
             pm = proj.get("pm_name") or "-"
-            dev = proj.get("dev_name") or "-"
+            # Show all dev names if multiple, otherwise single dev
+            dev_names = proj.get("dev_names", [])
+            dev = ", ".join(dev_names) if dev_names else (proj.get("dev_name") or "-")
             td = task_data.get(pid, {})
 
             # Project header
@@ -216,10 +218,23 @@ class ReportDocumentService:
             for t in report_tasks:
                 tag = t.get("tag", (t.get("status") or "unknown").upper())
                 title = t.get("title", "")[:65]
+                milestone_name = t.get("milestone_name")
+                show_assignee = t.get("show_assignee", False)
+                assignee_name = t.get("assignee_name")
 
                 tp = doc.add_paragraph(style="List Bullet")
                 run = tp.add_run(title)
                 run.font.size = Pt(9)
+                # Add milestone name if present
+                if milestone_name:
+                    run = tp.add_run(f"  [{milestone_name}]")
+                    run.font.size = Pt(7)
+                    run.font.color.rgb = RGBColor(100, 100, 180)
+                # Add assignee name if project has multiple assignees
+                if show_assignee and assignee_name and assignee_name != "Unassigned":
+                    run = tp.add_run(f"  @{assignee_name}")
+                    run.font.size = Pt(7)
+                    run.font.color.rgb = RGBColor(80, 80, 80)
                 run = tp.add_run(f"  [{tag}]")
                 run.font.size = Pt(7)
                 if tag == "DONE TODAY":
@@ -290,12 +305,16 @@ class ReportDocumentService:
             live_link = next((pl for pl in project_links if pl.get("name", "").lower() == "live"), None)
             other_links = [pl for pl in project_links if pl.get("name", "").lower() != "live"]
 
+            # Show all dev names if multiple
+            dev_names = proj.get("dev_names", [])
+            dev_display = ", ".join(dev_names) if dev_names else (proj.get("dev_name") or "-")
+
             row = table.add_row()
             cells = row.cells
             cells[0].text = proj["product_name"]
             cells[1].text = proj.get("stage") or "-"
             cells[2].text = proj.get("pm_name") or "-"
-            cells[3].text = proj.get("dev_name") or "-"
+            cells[3].text = dev_display
 
             # Live Link — from project_links "Live" or environment live_url
             live_url = live_link["url"] if live_link else proj.get("live_url")

@@ -107,7 +107,7 @@ class ReportService:
         return product
 
     async def _fetch_members_map(self, product_ids: list[UUID]) -> dict:
-        """Return {product_id: {pm_name, dev_name}}."""
+        """Return {product_id: {pm_name, dev_name, dev_names: list}}."""
         stmt = (
             select(ProductMember)
             .where(
@@ -118,14 +118,17 @@ class ReportService:
         result = await self.session.execute(stmt)
         rows = result.scalars().all()
 
-        members: dict[UUID, dict[str, str | None]] = {}
+        members: dict[UUID, dict[str, str | None | list]] = {}
         for member in rows:
-            entry = members.setdefault(member.product_id, {"pm_name": None, "dev_name": None})
+            entry = members.setdefault(member.product_id, {"pm_name": None, "dev_name": None, "dev_names": []})
             name = member.profile.full_name if member.profile else None
             if member.role == "project_manager":
                 entry["pm_name"] = name
             elif member.role == "ai_engineer":
-                entry["dev_name"] = name
+                if name:
+                    entry["dev_names"].append(name)
+                if entry["dev_name"] is None:
+                    entry["dev_name"] = name
         return members
 
     async def _fetch_task_counts(self, product_ids: list[UUID]) -> dict:
@@ -418,6 +421,7 @@ class ReportService:
                 "product_id": p.id, "product_name": p.name,
                 "stage": p.stage, "status": p.status, "created_at": p.created_at,
                 "pm_name": m.get("pm_name"), "dev_name": m.get("dev_name"),
+                "dev_names": m.get("dev_names", []),
                 "total_tasks": total, "completed_tasks": completed,
                 "in_progress_tasks": in_progress,
                 "task_completion_pct": _pct(completed, total),
@@ -605,15 +609,18 @@ class ReportService:
 
     async def _fetch_task_details_for_report(self, product_id: UUID, today) -> list[dict]:
         """Fetch in-progress tasks + tasks completed today for report."""
+        from apps.api.models.milestone import Milestone
         from apps.api.models.user import Profile
 
         stmt = (
             select(
                 Task.title, Task.status, Task.priority,
-                Task.due_date, Task.updated_at,
+                Task.due_date, Task.updated_at, Task.assignee_id,
                 Profile.full_name.label("assignee_name"),
+                Milestone.title.label("milestone_name"),
             )
             .outerjoin(Profile, Task.assignee_id == Profile.id)
+            .outerjoin(Milestone, Task.milestone_id == Milestone.id)
             .where(
                 Task.product_id == product_id,
                 Task.task_type == "task",
@@ -623,6 +630,7 @@ class ReportService:
         )
         result = await self.session.execute(stmt)
         tasks = []
+        assignee_ids = set()
         for row in result.all():
             status = (row.status or "").lower()
             is_in_progress = status in IN_PROGRESS_STATUSES
@@ -633,16 +641,23 @@ class ReportService:
             )
             if not is_in_progress and not is_done_today:
                 continue
+            if row.assignee_id:
+                assignee_ids.add(row.assignee_id)
             tag = "DONE TODAY" if is_done_today else row.status.upper().replace("_", " ")
             tasks.append({
                 "title": row.title,
                 "status": row.status or "unknown",
                 "priority": row.priority or "none",
                 "assignee_name": row.assignee_name or "Unassigned",
+                "milestone_name": row.milestone_name,
                 "due_date": row.due_date.isoformat() if row.due_date else None,
                 "is_overdue": False,
                 "tag": tag,
             })
+        # Flag if project has multiple assignees (show assignee name on each task)
+        has_multiple_assignees = len(assignee_ids) > 1
+        for t in tasks:
+            t["show_assignee"] = has_multiple_assignees
         return tasks
 
     async def _fetch_code_progress_batch(self, product_ids: list[UUID]) -> dict[UUID, float]:

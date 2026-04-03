@@ -121,7 +121,9 @@ class ReportPDFService:
             name = proj["product_name"]
             stage = (proj.get("stage") or "N/A").upper()
             pm = proj.get("pm_name") or "-"
-            dev = proj.get("dev_name") or "-"
+            # Show all dev names if multiple, otherwise single dev
+            dev_names = proj.get("dev_names", [])
+            dev = ", ".join(dev_names) if dev_names else (proj.get("dev_name") or "-")
             td = task_data.get(pid, {})
 
             if pdf.get_y() > pdf.h - 50:
@@ -158,12 +160,25 @@ class ReportPDFService:
                     pdf.add_page()
                 tag = t.get("tag", (t.get("status") or "unknown").upper())
                 title = _sanitize_text(t.get("title", ""))[:65]
+                milestone_name = t.get("milestone_name")
+                show_assignee = t.get("show_assignee", False)
+                assignee_name = t.get("assignee_name")
 
                 pdf.set_x(pdf.l_margin + 6)
                 pdf.set_font("Helvetica", "", 8)
                 pdf.set_text_color(0, 0, 0)
                 pdf.cell(4, 5, "*")
                 pdf.cell(0, 5, f" {title}", new_x="END")
+                # Add milestone name if present
+                if milestone_name:
+                    pdf.set_font("Helvetica", "", 6)
+                    pdf.set_text_color(100, 100, 180)
+                    pdf.cell(0, 5, f"  [{_sanitize_text(milestone_name)}]", new_x="END")
+                # Add assignee name if project has multiple assignees
+                if show_assignee and assignee_name and assignee_name != "Unassigned":
+                    pdf.set_font("Helvetica", "", 6)
+                    pdf.set_text_color(80, 80, 80)
+                    pdf.cell(0, 5, f"  @{_sanitize_text(assignee_name)}", new_x="END")
                 pdf.set_font("Helvetica", "", 6)
                 if tag == "DONE TODAY":
                     pdf.set_text_color(0, 150, 0)
@@ -252,11 +267,15 @@ class ReportPDFService:
             live_link = next((pl for pl in project_links if pl.get("name", "").lower() == "live"), None)
             other_links = [pl for pl in project_links if pl.get("name", "").lower() != "live"]
 
+            # Show all dev names if multiple
+            dev_names = proj.get("dev_names", [])
+            dev_display = ", ".join(dev_names) if dev_names else (proj.get("dev_name") or "-")
+
             pdf.set_text_color(0, 0, 0)
             pdf.cell(col_w[0], row_h, proj["product_name"][:18], border=1, fill=fill)
             pdf.cell(col_w[1], row_h, (proj.get("stage") or "-")[:12], border=1, fill=fill)
             pdf.cell(col_w[2], row_h, (proj.get("pm_name") or "-")[:16], border=1, fill=fill)
-            pdf.cell(col_w[3], row_h, (proj.get("dev_name") or "-")[:16], border=1, fill=fill)
+            pdf.cell(col_w[3], row_h, dev_display[:16], border=1, fill=fill)
 
             # Live Link column — from project_links "Live" or environment live_url
             live_url = live_link["url"] if live_link else proj.get("live_url")
