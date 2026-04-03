@@ -35,8 +35,8 @@ export default function DashboardPage() {
   const quickStats = useMemo(() => {
     const source = myProductIds ? filteredProducts : products;
     const total = source.length;
-    const healthy = source.filter((p) => p.stage === "Complete").length;
-    const deployment = source.filter((p) => p.stage === "Deployment").length;
+    const healthy = source.filter((p) => p.stage === "Launched" || p.stage === "Live").length;
+    const deployment = source.filter((p) => p.stage === "Dev Ready" || p.stage === "Soft Launch").length;
     return { totalProducts: total, healthyCount: healthy, deploymentStageCount: deployment };
   }, [myProductIds, filteredProducts, products]);
 
