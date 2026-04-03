@@ -213,36 +213,42 @@ class ReportDocumentService:
                 run.font.size = Pt(9)
                 run.font.color.rgb = RGBColor(80, 80, 80)
 
-            # In-progress + done-today tasks
-            report_tasks = td.get("non_done_tasks", [])
-            for t in report_tasks:
-                tag = t.get("tag", (t.get("status") or "unknown").upper())
-                title = t.get("title", "")[:65]
-                milestone_name = t.get("milestone_name")
-                show_assignee = t.get("show_assignee", False)
-                assignee_name = t.get("assignee_name")
+            # In-progress + done-today tasks grouped by milestone
+            milestones = td.get("milestones", {})
+            for milestone_name, tasks in milestones.items():
+                if not tasks:
+                    continue
 
-                tp = doc.add_paragraph(style="List Bullet")
-                run = tp.add_run(title)
+                # Milestone heading
+                mh = doc.add_paragraph()
+                run = mh.add_run(f"{milestone_name}:")
+                run.bold = True
                 run.font.size = Pt(9)
-                # Add milestone name if present
-                if milestone_name:
-                    run = tp.add_run(f"  [{milestone_name}]")
+                run.font.color.rgb = RGBColor(80, 80, 140)
+
+                # Tasks under this milestone
+                for t in tasks:
+                    tag = t.get("tag", (t.get("status") or "unknown").upper())
+                    title = t.get("title", "")[:65]
+                    show_assignee = t.get("show_assignee", False)
+                    assignee_name = t.get("assignee_name")
+
+                    tp = doc.add_paragraph(style="List Bullet")
+                    run = tp.add_run(title)
+                    run.font.size = Pt(9)
+                    # Add assignee name if project has multiple assignees
+                    if show_assignee and assignee_name and assignee_name != "Unassigned":
+                        run = tp.add_run(f"  @{assignee_name}")
+                        run.font.size = Pt(7)
+                        run.font.color.rgb = RGBColor(80, 80, 80)
+                    run = tp.add_run(f"  [{tag}]")
                     run.font.size = Pt(7)
-                    run.font.color.rgb = RGBColor(100, 100, 180)
-                # Add assignee name if project has multiple assignees
-                if show_assignee and assignee_name and assignee_name != "Unassigned":
-                    run = tp.add_run(f"  @{assignee_name}")
-                    run.font.size = Pt(7)
-                    run.font.color.rgb = RGBColor(80, 80, 80)
-                run = tp.add_run(f"  [{tag}]")
-                run.font.size = Pt(7)
-                if tag == "DONE TODAY":
-                    run.font.color.rgb = RGBColor(0, 150, 0)
-                elif tag in ("IN PROGRESS", "IN REVIEW", "REVIEW"):
-                    run.font.color.rgb = RGBColor(180, 100, 0)
-                else:
-                    run.font.color.rgb = RGBColor(130, 130, 130)
+                    if tag == "DONE TODAY":
+                        run.font.color.rgb = RGBColor(0, 150, 0)
+                    elif tag in ("IN PROGRESS", "IN REVIEW", "REVIEW"):
+                        run.font.color.rgb = RGBColor(180, 100, 0)
+                    else:
+                        run.font.color.rgb = RGBColor(130, 130, 130)
 
             # Explore this project
             project_links = td.get("links", [])

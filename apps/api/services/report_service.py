@@ -596,19 +596,20 @@ class ReportService:
 
             summary = f"Tasks: {total} total | {done} Done | {in_progress} In Progress | {backlog} Backlog | Code Progress: {cp}%"
 
-            all_tasks = await self._fetch_task_details_for_report(pid, today)
+            task_result = await self._fetch_task_details_for_report(pid, today)
 
             result[pid] = {
                 "summary_line": summary,
-                "non_done_tasks": all_tasks,
+                "milestones": task_result.get("milestones", {}),
+                "has_multiple_assignees": task_result.get("has_multiple_assignees", False),
                 "links": links_map.get(pid, []),
                 "code_progress": cp,
             }
 
         return result
 
-    async def _fetch_task_details_for_report(self, product_id: UUID, today) -> list[dict]:
-        """Fetch in-progress tasks + tasks completed today for report."""
+    async def _fetch_task_details_for_report(self, product_id: UUID, today) -> dict:
+        """Fetch in-progress tasks + tasks completed today, grouped by milestone."""
         from apps.api.models.milestone import Milestone
         from apps.api.models.user import Profile
 
@@ -616,8 +617,10 @@ class ReportService:
             select(
                 Task.title, Task.status, Task.priority,
                 Task.due_date, Task.updated_at, Task.assignee_id,
+                Task.milestone_id,
                 Profile.full_name.label("assignee_name"),
                 Milestone.title.label("milestone_name"),
+                Milestone.sort_order.label("milestone_order"),
             )
             .outerjoin(Profile, Task.assignee_id == Profile.id)
             .outerjoin(Milestone, Task.milestone_id == Milestone.id)
@@ -626,11 +629,15 @@ class ReportService:
                 Task.task_type == "task",
                 Task.is_draft == False,  # noqa: E712
             )
-            .order_by(Task.status, Task.priority.desc())
+            .order_by(Milestone.sort_order.nulls_last(), Task.status, Task.priority.desc())
         )
         result = await self.session.execute(stmt)
-        tasks = []
+
+        # Group tasks by milestone
+        milestones: dict[str, list[dict]] = {}
+        milestone_order: dict[str, int] = {}
         assignee_ids = set()
+
         for row in result.all():
             status = (row.status or "").lower()
             is_in_progress = status in IN_PROGRESS_STATUSES
@@ -643,22 +650,38 @@ class ReportService:
                 continue
             if row.assignee_id:
                 assignee_ids.add(row.assignee_id)
+
+            milestone_name = row.milestone_name or "General"
             tag = "DONE TODAY" if is_done_today else row.status.upper().replace("_", " ")
-            tasks.append({
+
+            task_data = {
                 "title": row.title,
                 "status": row.status or "unknown",
                 "priority": row.priority or "none",
                 "assignee_name": row.assignee_name or "Unassigned",
-                "milestone_name": row.milestone_name,
                 "due_date": row.due_date.isoformat() if row.due_date else None,
                 "is_overdue": False,
                 "tag": tag,
-            })
-        # Flag if project has multiple assignees (show assignee name on each task)
+            }
+
+            if milestone_name not in milestones:
+                milestones[milestone_name] = []
+                milestone_order[milestone_name] = row.milestone_order if row.milestone_order is not None else 9999
+            milestones[milestone_name].append(task_data)
+
+        # Flag if project has multiple assignees
         has_multiple_assignees = len(assignee_ids) > 1
-        for t in tasks:
-            t["show_assignee"] = has_multiple_assignees
-        return tasks
+        for tasks in milestones.values():
+            for t in tasks:
+                t["show_assignee"] = has_multiple_assignees
+
+        # Sort milestones by order, with "General" last if it exists
+        sorted_milestones = sorted(milestones.keys(), key=lambda m: (m == "General", milestone_order.get(m, 9999)))
+
+        return {
+            "milestones": {m: milestones[m] for m in sorted_milestones},
+            "has_multiple_assignees": has_multiple_assignees,
+        }
 
     async def _fetch_code_progress_batch(self, product_ids: list[UUID]) -> dict[UUID, float]:
         """Return {product_id: progress_pct} from latest RepositoryAnalysis."""
