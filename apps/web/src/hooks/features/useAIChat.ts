@@ -49,13 +49,17 @@ export function useAIChat(productId: string | null) {
     }
   }, [productId]);
 
+  const handleChunk = useCallback((content: string, msgId: string) => {
+    setMessages((prev) =>
+      prev.map((m) => (m.id === msgId ? { ...m, content } : m)),
+    );
+  }, []);
+
+  const handleError = useCallback((err: string) => setError(err), []);
+
   const { isStreaming, streamMessage, cancelStream } = useAIChatStream({
-    onChunk: (content, msgId) => {
-      setMessages((prev) =>
-        prev.map((m) => (m.id === msgId ? { ...m, content } : m)),
-      );
-    },
-    onError: (err) => setError(err),
+    onChunk: handleChunk,
+    onError: handleError,
   });
 
   const sendMessage = useCallback(
