@@ -54,23 +54,30 @@ export function useAIChatStream({ onChunk, onError }: UseAIChatStreamOptions) {
             if (line.endsWith("\r")) line = line.slice(0, -1);
             if (!line.startsWith("data: ")) continue;
 
-            const jsonStr = line.slice(6);
-            if (jsonStr.trim() === "[DONE]") break;
-            if (!jsonStr) continue;
+            const payload = line.slice(6);
+            if (payload.trim() === "[DONE]") break;
+            if (!payload) continue;
 
-            try {
-              const parsed = JSON.parse(jsonStr);
-              const delta = parsed.choices?.[0]?.delta?.content;
-              if (delta) {
-                content += delta;
-                onChunk(content, assistantMsgId);
+            // Backend sends plain text deltas directly.
+            // Only attempt JSON parse if payload looks like OpenAI-format JSON.
+            let delta: string | undefined;
+
+            if (payload.startsWith("{")) {
+              try {
+                const parsed = JSON.parse(payload) as {
+                  choices?: Array<{ delta?: { content?: string } }>;
+                };
+                delta = parsed.choices?.[0]?.delta?.content;
+              } catch {
+                delta = payload;
               }
-            } catch {
-              // Not JSON — treat as plain text chunk from backend
-              if (jsonStr) {
-                content += jsonStr;
-                onChunk(content, assistantMsgId);
-              }
+            } else {
+              delta = payload;
+            }
+
+            if (delta) {
+              content += delta;
+              onChunk(content, assistantMsgId);
             }
           }
         }

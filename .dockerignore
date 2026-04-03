@@ -1,6 +1,7 @@
 # Version control
 .git
 .gitignore
+.gitattributes
 
 # Dependencies
 node_modules
@@ -18,6 +19,8 @@ dist
 
 # Uploads and local data
 uploads/
+datapop/
+*.xlsx
 
 # IDE
 .vscode
@@ -31,8 +34,21 @@ Thumbs.db
 
 # Testing and docs
 tests/
+docs/
 *.md
 !README.md
 
-# Docker
+# Scripts (dev-only)
+scripts/
+
+# Claude workspace
+.claude/
+
+# Lovable legacy
+lovable-source/
+
+# Lock files (pnpm not used in Docker)
+pnpm-lock.yaml
+
+# Docker (prevent recursive context)
 infra/docker-compose.yml
