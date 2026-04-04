@@ -79,7 +79,7 @@ export function AddMarketingTaskDialog({
           <DialogTitle>{isSubtask ? "Add Subtask" : "Add Marketing Task"}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="flex flex-col gap-4 min-w-0 overflow-hidden">
           <div className="space-y-2">
             <BaseLabel htmlFor="mkt-title">Title</BaseLabel>
             <BaseInput id="mkt-title" placeholder="Task title..." {...register("title")} aria-invalid={!!errors.title} />
@@ -88,7 +88,7 @@ export function AddMarketingTaskDialog({
 
           <div className="space-y-2">
             <BaseLabel htmlFor="mkt-desc">Description</BaseLabel>
-            <BaseTextarea id="mkt-desc" placeholder="Task details..." className="resize-y" rows={8} {...register("description")} aria-invalid={!!errors.description} />
+            <BaseTextarea id="mkt-desc" placeholder="Task details..." className="resize-y w-full box-border" rows={6} {...register("description")} aria-invalid={!!errors.description} />
             {errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}
           </div>
 

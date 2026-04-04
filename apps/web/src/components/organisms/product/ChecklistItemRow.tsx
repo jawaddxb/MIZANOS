@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, useState } from "react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/atoms/inputs/BaseSelect";
@@ -15,8 +16,21 @@ interface ChecklistItemRowProps {
   onCreateTask: () => void;
 }
 
-export function ChecklistItemRow({ item, profiles, onUpdate, onDelete, onCreateTask }: ChecklistItemRowProps) {
+const STATUS_COLORS: Record<string, string> = {
+  new: "bg-muted text-muted-foreground",
+  in_progress: "bg-yellow-500/10 text-yellow-600",
+  complete: "bg-green-500/10 text-green-600",
+  blocked: "bg-red-500/10 text-red-600",
+  na: "bg-muted text-muted-foreground",
+};
+
+export const ChecklistItemRow = memo(function ChecklistItemRow({ item, profiles, onUpdate, onDelete, onCreateTask }: ChecklistItemRowProps) {
   const isComplete = item.status === "complete";
+  const [showStatusSelect, setShowStatusSelect] = useState(false);
+  const [showAssigneeSelect, setShowAssigneeSelect] = useState(false);
+
+  const statusLabel = CHECKLIST_STATUS_LABELS[item.status as keyof typeof CHECKLIST_STATUS_LABELS] ?? item.status;
+  const statusColor = STATUS_COLORS[item.status] ?? STATUS_COLORS.new;
 
   return (
     <div className="flex items-center gap-2 group rounded-md px-2 py-1.5 hover:bg-accent/50 transition-colors">
@@ -47,31 +61,59 @@ export function ChecklistItemRow({ item, profiles, onUpdate, onDelete, onCreateT
         </span>
       )}
 
-      <Select value={item.status} onValueChange={(v) => onUpdate({ status: v })}>
-        <SelectTrigger className="h-6 w-[100px] text-[10px] border-muted shrink-0">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {Object.entries(CHECKLIST_STATUS_LABELS).map(([val, label]) => (
-            <SelectItem key={val} value={val} className="text-xs">{label}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {showStatusSelect ? (
+        <Select
+          value={item.status}
+          open
+          onValueChange={(v) => { onUpdate({ status: v }); setShowStatusSelect(false); }}
+          onOpenChange={(open) => { if (!open) setShowStatusSelect(false); }}
+        >
+          <SelectTrigger className="h-6 w-[100px] text-[10px] border-muted shrink-0">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(CHECKLIST_STATUS_LABELS).map(([val, label]) => (
+              <SelectItem key={val} value={val} className="text-xs">{label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowStatusSelect(true)}
+          className={`h-6 px-2 rounded text-[10px] font-medium shrink-0 ${statusColor}`}
+        >
+          {statusLabel}
+        </button>
+      )}
 
-      <Select
-        value={item.assignee_id ?? "__none__"}
-        onValueChange={(v) => onUpdate({ assignee_id: v === "__none__" ? null : v })}
-      >
-        <SelectTrigger className="h-6 w-6 p-0 border-0 bg-transparent [&>svg]:hidden opacity-0 group-hover:opacity-100 shrink-0">
+      {showAssigneeSelect ? (
+        <Select
+          value={item.assignee_id ?? "__none__"}
+          open
+          onValueChange={(v) => { onUpdate({ assignee_id: v === "__none__" ? null : v }); setShowAssigneeSelect(false); }}
+          onOpenChange={(open) => { if (!open) setShowAssigneeSelect(false); }}
+        >
+          <SelectTrigger className="h-6 w-6 p-0 border-0 bg-transparent [&>svg]:hidden shrink-0">
+            <User className="h-3 w-3 text-muted-foreground" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none__">Unassigned</SelectItem>
+            {profiles.map((p) => (
+              <SelectItem key={p.id} value={p.id}>{p.full_name ?? p.email ?? "Unknown"}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowAssigneeSelect(true)}
+          className="p-0.5 rounded hover:bg-accent opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+          title="Assign"
+        >
           <User className="h-3 w-3 text-muted-foreground" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="__none__">Unassigned</SelectItem>
-          {profiles.map((p) => (
-            <SelectItem key={p.id} value={p.id}>{p.full_name ?? p.email ?? "Unknown"}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        </button>
+      )}
 
       <button
         type="button"
@@ -90,4 +132,4 @@ export function ChecklistItemRow({ item, profiles, onUpdate, onDelete, onCreateT
       </button>
     </div>
   );
-}
+});

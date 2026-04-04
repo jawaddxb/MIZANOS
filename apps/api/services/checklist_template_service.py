@@ -47,8 +47,8 @@ class ChecklistTemplateService:
         await self.session.flush()
         await self.session.refresh(t)
 
-        # Auto-apply QA templates to all existing projects
-        if t.template_type == "qa":
+        # Auto-apply QA and Development templates to all existing projects
+        if t.template_type in ("qa", "development"):
             await self._auto_apply_to_all_projects(t, created_by)
 
         return t
@@ -190,9 +190,9 @@ class ChecklistTemplateService:
     async def auto_apply_qa_templates_to_project(
         self, product_id: UUID, created_by: UUID | None = None,
     ) -> None:
-        """Apply all active QA templates to a newly created project."""
+        """Apply all active QA and Development templates to a newly created project."""
         stmt = select(ChecklistTemplate).where(
-            ChecklistTemplate.template_type == "qa",
+            ChecklistTemplate.template_type.in_(["qa", "development"]),
             ChecklistTemplate.is_active == True,
         )
         templates = list((await self.session.execute(stmt)).scalars().all())
