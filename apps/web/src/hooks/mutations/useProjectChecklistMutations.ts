@@ -17,7 +17,7 @@ export function useDeleteProjectChecklist(productId: string) {
 export function useAddProjectChecklistItem(productId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ checklistId, ...data }: { checklistId: string; title: string; category?: string; assignee_id?: string | null; due_date?: string | null }) =>
+    mutationFn: ({ checklistId, ...data }: { checklistId: string; title: string; category?: string; status?: string; assignee_id?: string | null; due_date?: string | null }) =>
       projectChecklistsRepository.addItem(checklistId, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["project-checklists", productId] }),
     onError: (e: Error) => toast.error("Failed: " + e.message),

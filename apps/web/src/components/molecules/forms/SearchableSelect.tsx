@@ -57,7 +57,7 @@ export function SearchableSelect({
             type="button"
             role="combobox"
             aria-expanded={open}
-            className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            className="flex h-9 w-full items-center justify-between overflow-hidden rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
           >
             <span className={cn("truncate", !selectedLabel && "text-muted-foreground")}>
               {selectedLabel ?? placeholder}
