@@ -123,6 +123,177 @@ DEVELOPMENT_ITEMS: list[tuple[str, str]] = [
 ]
 
 
+GTM_ITEMS: list[tuple[str, str]] = [
+    # Market Research & Positioning
+    ("Define target audience and ideal customer profile (ICP)", "Market Research & Positioning"),
+    ("Conduct competitive analysis and identify differentiators", "Market Research & Positioning"),
+    ("Define unique value proposition (UVP)", "Market Research & Positioning"),
+    ("Validate product-market fit with customer interviews", "Market Research & Positioning"),
+    ("Identify key market segments and prioritize", "Market Research & Positioning"),
+    ("Research pricing benchmarks in the target market", "Market Research & Positioning"),
+    ("Document buyer personas with pain points and motivations", "Market Research & Positioning"),
+    # Product Readiness
+    ("Core features complete and tested for launch", "Product Readiness"),
+    ("Product demo or walkthrough video created", "Product Readiness"),
+    ("Onboarding flow tested and optimized for new users", "Product Readiness"),
+    ("Help documentation and FAQ published", "Product Readiness"),
+    ("Known bugs triaged with no critical or blocker issues open", "Product Readiness"),
+    ("Performance tested under expected launch traffic", "Product Readiness"),
+    ("Mobile responsiveness verified", "Product Readiness"),
+    # Pricing & Packaging
+    ("Pricing model defined (freemium, subscription, one-time, usage-based)", "Pricing & Packaging"),
+    ("Pricing tiers and feature gates finalized", "Pricing & Packaging"),
+    ("Free trial or demo strategy decided", "Pricing & Packaging"),
+    ("Payment integration tested end-to-end", "Pricing & Packaging"),
+    ("Billing page and invoice templates ready", "Pricing & Packaging"),
+    ("Refund and cancellation policy documented", "Pricing & Packaging"),
+    # Branding & Messaging
+    ("Brand guidelines finalized (logo, colors, typography, tone)", "Branding & Messaging"),
+    ("Tagline and elevator pitch finalized", "Branding & Messaging"),
+    ("Key messaging framework documented for each persona", "Branding & Messaging"),
+    ("Case studies or testimonials collected (minimum 2)", "Branding & Messaging"),
+    ("Press kit and media assets prepared", "Branding & Messaging"),
+    ("Social media profiles created and branded", "Branding & Messaging"),
+    # Website & Landing Pages
+    ("Landing page live with clear CTA and value proposition", "Website & Landing Pages"),
+    ("SEO meta tags, OG tags, and structured data configured", "Website & Landing Pages"),
+    ("Analytics tracking installed (Google Analytics, Mixpanel, etc.)", "Website & Landing Pages"),
+    ("Conversion tracking set up for signups and purchases", "Website & Landing Pages"),
+    ("A/B test variants prepared for key landing pages", "Website & Landing Pages"),
+    ("Mobile and cross-browser testing complete", "Website & Landing Pages"),
+    ("Page load speed under 3 seconds", "Website & Landing Pages"),
+    ("Privacy policy and terms of service published", "Website & Landing Pages"),
+    ("Cookie consent banner implemented", "Website & Landing Pages"),
+    # Content & SEO
+    ("Launch blog post drafted and scheduled", "Content & SEO"),
+    ("Product announcement email drafted", "Content & SEO"),
+    ("SEO keyword strategy defined for top 10 target keywords", "Content & SEO"),
+    ("Content calendar created for first 90 days post-launch", "Content & SEO"),
+    ("Social media launch posts scheduled", "Content & SEO"),
+    ("Video content (demo, explainer, testimonial) produced", "Content & SEO"),
+    # Sales Enablement
+    ("Sales deck and pitch materials finalized", "Sales Enablement"),
+    ("Product one-pager or battle card created", "Sales Enablement"),
+    ("Objection handling guide documented", "Sales Enablement"),
+    ("CRM pipeline stages configured", "Sales Enablement"),
+    ("Lead scoring criteria defined", "Sales Enablement"),
+    ("Sales team trained on product features and positioning", "Sales Enablement"),
+    ("Demo script prepared and rehearsed", "Sales Enablement"),
+    # Launch Operations
+    ("Launch date and timeline confirmed with all stakeholders", "Launch Operations"),
+    ("Launch checklist reviewed and signed off by team leads", "Launch Operations"),
+    ("Rollback plan documented in case of critical issues", "Launch Operations"),
+    ("Customer support team briefed and ready", "Launch Operations"),
+    ("Monitoring and alerting configured for launch day", "Launch Operations"),
+    ("Internal communication plan for launch updates", "Launch Operations"),
+    ("Post-launch retrospective meeting scheduled", "Launch Operations"),
+    # Metrics & Analytics
+    ("KPIs defined for launch success (signups, revenue, activation rate)", "Metrics & Analytics"),
+    ("Dashboard built to track launch metrics in real-time", "Metrics & Analytics"),
+    ("Funnel tracking set up (visit to signup to activation to paid)", "Metrics & Analytics"),
+    ("Customer feedback collection mechanism in place (survey, NPS)", "Metrics & Analytics"),
+    ("Weekly reporting cadence established for first 30 days", "Metrics & Analytics"),
+    ("Churn tracking and early warning alerts configured", "Metrics & Analytics"),
+    # Legal & Compliance
+    ("Terms of service reviewed by legal", "Legal & Compliance"),
+    ("Privacy policy compliant with GDPR and CCPA", "Legal & Compliance"),
+    ("Data processing agreements ready for enterprise customers", "Legal & Compliance"),
+    ("Trademark and IP protections filed if needed", "Legal & Compliance"),
+    ("Export compliance reviewed for target markets", "Legal & Compliance"),
+    ("Accessibility (WCAG 2.1 AA) audit completed", "Legal & Compliance"),
+]
+
+QA_ITEMS: list[tuple[str, str]] = [
+    # Functional Testing
+    ("All core features work as per requirements/spec", "Functional Testing"),
+    ("Form validations enforce required fields and correct formats", "Functional Testing"),
+    ("Error messages are clear, user-friendly, and actionable", "Functional Testing"),
+    ("Navigation flows work correctly across all pages", "Functional Testing"),
+    ("Search and filter functionality returns accurate results", "Functional Testing"),
+    ("CRUD operations work without data loss", "Functional Testing"),
+    ("File upload/download works with supported formats and size limits", "Functional Testing"),
+    ("Pagination and sorting work correctly on all list views", "Functional Testing"),
+    # Authentication & Authorization
+    ("Login/logout flow works correctly", "Authentication & Authorization"),
+    ("Password reset and account recovery flow works", "Authentication & Authorization"),
+    ("Session timeout and token refresh work as expected", "Authentication & Authorization"),
+    ("Role-based access control restricts unauthorized actions", "Authentication & Authorization"),
+    ("Protected routes redirect unauthenticated users to login", "Authentication & Authorization"),
+    # UI/UX
+    ("Responsive design works on mobile, tablet, and desktop", "UI/UX"),
+    ("Dark/light mode renders correctly across all pages", "UI/UX"),
+    ("Loading states and spinners display during async operations", "UI/UX"),
+    ("Empty states show meaningful messages with call-to-action", "UI/UX"),
+    ("Toast notifications display for success, error, and warning actions", "UI/UX"),
+    ("Modals and dialogs open, close, and submit correctly", "UI/UX"),
+    ("No broken images, icons, or missing assets", "UI/UX"),
+    # Performance
+    ("Pages load within 3 seconds on standard connections", "Performance"),
+    ("No unnecessary API calls or duplicate network requests", "Performance"),
+    ("Large lists use pagination or virtual scrolling", "Performance"),
+    ("Images and assets are optimized for web delivery", "Performance"),
+    ("No memory leaks on long-running sessions", "Performance"),
+    # Security
+    ("No sensitive data exposed in browser console or network tab", "Security"),
+    ("API endpoints validate and sanitize all user inputs", "Security"),
+    ("No hardcoded secrets, API keys, or credentials in frontend code", "Security"),
+    ("HTTPS enforced on all environments", "Security"),
+    ("CORS policy configured correctly for allowed origins", "Security"),
+    # Cross-Browser & Compatibility
+    ("Works on Chrome, Firefox, Safari, and Edge (latest 2 versions)", "Cross-Browser & Compatibility"),
+    ("No layout breaks or JS errors on any supported browser", "Cross-Browser & Compatibility"),
+    ("Works on iOS Safari and Android Chrome", "Cross-Browser & Compatibility"),
+    # Data Integrity
+    ("Database transactions maintain consistency (no partial saves)", "Data Integrity"),
+    ("Concurrent edits do not cause data corruption or silent overwrites", "Data Integrity"),
+    ("Deleted records do not leave orphaned data or broken references", "Data Integrity"),
+    ("Date/time values display correctly across timezones", "Data Integrity"),
+    # Error Handling
+    ("API failures show user-friendly error messages (not raw stack traces)", "Error Handling"),
+    ("Network disconnection is handled gracefully with retry option", "Error Handling"),
+    ("404 pages display for invalid routes", "Error Handling"),
+    ("Rate limiting returns proper 429 responses with retry guidance", "Error Handling"),
+    # Deployment & Environment
+    ("Environment variables are set correctly (no dev values in production)", "Deployment & Environment"),
+    ("Database migrations run successfully without data loss", "Deployment & Environment"),
+    ("Health check endpoint returns 200 OK", "Deployment & Environment"),
+    ("Logs capture errors with sufficient context for debugging", "Deployment & Environment"),
+]
+
+
+async def seed_checklist(session: AsyncSession, name: str, template_type: str, description: str, items: list[tuple[str, str]]) -> None:
+    """Create a checklist template if it doesn't exist."""
+    stmt = select(ChecklistTemplate).where(
+        ChecklistTemplate.template_type == template_type,
+        ChecklistTemplate.name == name,
+    )
+    result = await session.execute(stmt)
+    if result.scalar_one_or_none():
+        return
+
+    template = ChecklistTemplate(
+        name=name,
+        template_type=template_type,
+        description=description,
+        is_active=True,
+    )
+    session.add(template)
+    await session.flush()
+
+    for i, (title, category) in enumerate(items):
+        item = ChecklistTemplateItem(
+            template_id=template.id,
+            title=title,
+            category=category,
+            default_status="new",
+            sort_order=i,
+        )
+        session.add(item)
+
+    await session.flush()
+    logger.info("Seeded %s with %d items", name, len(items))
+
+
 async def seed_development_checklist(session: AsyncSession) -> None:
     """Create the Development Standard Checklist if it doesn't exist."""
     stmt = select(ChecklistTemplate).where(
@@ -161,4 +332,18 @@ async def run_checklist_seeds() -> None:
     """Run all checklist seeds. Called from app lifespan."""
     async with async_session_factory() as session:
         await seed_development_checklist(session)
+        await seed_checklist(
+            session,
+            name="GTM Standard Checklist",
+            template_type="gtm",
+            description="Go-to-market standards for every product launch",
+            items=GTM_ITEMS,
+        )
+        await seed_checklist(
+            session,
+            name="QA Standard Checklist",
+            template_type="qa",
+            description="General QA standards to be followed for every project",
+            items=QA_ITEMS,
+        )
         await session.commit()
