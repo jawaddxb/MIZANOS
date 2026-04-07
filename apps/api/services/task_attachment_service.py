@@ -52,24 +52,40 @@ class TaskAttachmentService:
 
     async def download(self, attachment_id: UUID) -> tuple[bytes, str, str]:
         """Fetch file bytes from storage. Returns (content, filename, content_type)."""
-        import httpx
         from pathlib import Path
+        from apps.api.services.gcs_storage_service import GCSStorageService
+        from apps.api.config import settings
 
         attachment = await self.session.get(TaskAttachment, attachment_id)
         if not attachment:
             not_found("Attachment")
 
         file_path = attachment.file_path
-        if file_path.startswith("http"):
-            async with httpx.AsyncClient(timeout=30) as client:
-                resp = await client.get(file_path)
-                resp.raise_for_status()
-                return resp.content, attachment.file_name, attachment.file_type
-        else:
-            local = Path(file_path.lstrip("/"))
-            if not local.exists():
-                not_found("File")
-            return local.read_bytes(), attachment.file_name, attachment.file_type
+
+        # S3 stored file — use S3 client with credentials
+        if file_path.startswith("http") and settings.aws_s3_bucket_name:
+            storage = GCSStorageService()
+            # Extract the S3 key from the full URL
+            prefix = f"{settings.aws_endpoint_url}/{settings.aws_s3_bucket_name}/"
+            if file_path.startswith(prefix):
+                s3_key = file_path[len(prefix):]
+            else:
+                # Fallback: extract path after bucket name
+                parts = file_path.split(f"/{settings.aws_s3_bucket_name}/", 1)
+                s3_key = parts[1] if len(parts) > 1 else file_path
+
+            obj = storage._s3.get_object(
+                Bucket=settings.aws_s3_bucket_name,
+                Key=s3_key,
+            )
+            content = obj["Body"].read()
+            return content, attachment.file_name, attachment.file_type
+
+        # Local file fallback
+        local = Path(file_path.lstrip("/"))
+        if not local.exists():
+            not_found("File")
+        return local.read_bytes(), attachment.file_name, attachment.file_type
 
     async def delete(self, attachment_id: UUID) -> None:
         attachment = await self.session.get(TaskAttachment, attachment_id)
