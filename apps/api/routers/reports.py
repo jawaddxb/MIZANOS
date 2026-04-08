@@ -20,7 +20,9 @@ from apps.api.services.report_service import ReportService, _commit_cache
 
 class GenerateDocumentRequest(BaseModel):
     product_ids: list[UUID]
-    report_type: str = "general"  # "general" or "bugs"
+    report_type: str = "general"  # "general", "bugs", or "custom"
+    task_statuses: list[str] | None = None  # for custom: ["backlog", "in_progress", ...]
+    include_bugs: bool = False  # for custom: include bugs alongside tasks
 
 router = APIRouter()
 
@@ -88,8 +90,8 @@ async def generate_document(
 ):
     """Generate a downloadable .docx report for selected projects."""
     svc = ReportDocumentService(db)
-    buf = await svc.generate(body.product_ids, report_type=body.report_type)
-    filename = "Bug_Report" if body.report_type == "bugs" else "Project_Status_Update"
+    buf = await svc.generate(body.product_ids, report_type=body.report_type, task_statuses=body.task_statuses, include_bugs=body.include_bugs)
+    filename = "Bug_Report" if body.report_type == "bugs" else "Custom_Report" if body.report_type == "custom" else "Project_Status_Update"
     return StreamingResponse(
         buf,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -105,8 +107,8 @@ async def generate_pdf(
 ):
     """Generate a downloadable PDF report for selected projects."""
     svc = ReportPDFService(db)
-    buf = await svc.generate(body.product_ids, report_type=body.report_type)
-    filename = "Bug_Report" if body.report_type == "bugs" else "Project_Status_Update"
+    buf = await svc.generate(body.product_ids, report_type=body.report_type, task_statuses=body.task_statuses, include_bugs=body.include_bugs)
+    filename = "Bug_Report" if body.report_type == "bugs" else "Custom_Report" if body.report_type == "custom" else "Project_Status_Update"
     return StreamingResponse(
         buf,
         media_type="application/pdf",

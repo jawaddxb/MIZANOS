@@ -37,7 +37,7 @@ class ReportPDFService:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def generate(self, product_ids: list[UUID], report_type: str = "general") -> io.BytesIO:
+    async def generate(self, product_ids: list[UUID], report_type: str = "general", task_statuses: list[str] | None = None, include_bugs: bool = False) -> io.BytesIO:
         """Build a PDF report for the given product IDs."""
         svc = ReportService(self.session)
         summary = await svc.get_summary()
@@ -48,7 +48,14 @@ class ReportPDFService:
 
         pids = [p["product_id"] for p in projects]
         is_bugs = report_type == "bugs"
-        task_data = await svc.get_bugs_for_report(pids) if is_bugs else await svc.get_tasks_for_report(pids)
+        is_custom = report_type == "custom"
+        if is_bugs:
+            task_data = await svc.get_bugs_for_report(pids)
+        elif is_custom and task_statuses:
+            from apps.api.services.report_custom_service import ReportCustomService
+            task_data = await ReportCustomService(self.session).get_custom_report_data(pids, task_statuses, include_bugs)
+        else:
+            task_data = await svc.get_tasks_for_report(pids)
         ai_summary = await self._generate_executive_summary(projects, task_data)
 
         pdf = _ReportPDF()
@@ -56,7 +63,7 @@ class ReportPDFService:
         pdf.set_auto_page_break(auto=True, margin=20)
         pdf.add_page()
 
-        self._add_title(pdf, is_bugs=is_bugs)
+        self._add_title(pdf, is_bugs=is_bugs, is_custom=is_custom)
         self._add_executive_summary(pdf, ai_summary)
         self._add_project_updates(pdf, projects, task_data, is_bugs=is_bugs)
         self._add_portfolio_table(pdf, projects, task_data)
@@ -71,7 +78,7 @@ class ReportPDFService:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _add_title(pdf: _ReportPDF, is_bugs: bool = False) -> None:
+    def _add_title(pdf: _ReportPDF, is_bugs: bool = False, is_custom: bool = False) -> None:
         import os
         # Logo + "Mizan OS" top-right
         logo_path = os.path.join(os.path.dirname(__file__), "mizan_logo.png")
@@ -86,10 +93,11 @@ class ReportPDFService:
 
         pdf.set_font("Helvetica", "B", 20)
         pdf.set_text_color(0, 0, 0)
-        title = "BUG STATUS REPORT" if is_bugs else "PROJECT STATUS UPDATE"
+        title = "BUG STATUS REPORT" if is_bugs else "CUSTOM STATUS REPORT" if is_custom else "PROJECT STATUS UPDATE"
         pdf.cell(0, 12, title, new_x="LMARGIN", new_y="NEXT")
 
-        date_str = datetime.now(timezone.utc).strftime("Bug Report - %d %B %Y" if is_bugs else "Daily Briefing - %d %B %Y")
+        date_fmt = "Bug Report - %d %B %Y" if is_bugs else "Custom Report - %d %B %Y" if is_custom else "Daily Briefing - %d %B %Y"
+        date_str = datetime.now(timezone.utc).strftime(date_fmt)
         pdf.set_font("Helvetica", "", 11)
         pdf.set_text_color(100, 100, 100)
         pdf.cell(0, 8, date_str, new_x="LMARGIN", new_y="NEXT")
