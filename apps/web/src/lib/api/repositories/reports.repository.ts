@@ -47,19 +47,33 @@ export class ReportsRepository {
     return response.data;
   }
 
-  async generateDocument(productIds: string[], reportType: string = "general"): Promise<Blob> {
+  async generateDocument(
+    productIds: string[], reportType: string = "general",
+    taskStatuses?: string[], includeBugs?: boolean,
+  ): Promise<Blob> {
     const response = await this.client.post(
       `${this.basePath}/generate-document`,
-      { product_ids: productIds, report_type: reportType },
+      {
+        product_ids: productIds, report_type: reportType,
+        ...(taskStatuses && { task_statuses: taskStatuses }),
+        ...(includeBugs !== undefined && { include_bugs: includeBugs }),
+      },
       { responseType: "blob", timeout: 180_000 },
     );
     return response.data;
   }
 
-  async generatePDF(productIds: string[], reportType: string = "general"): Promise<Blob> {
+  async generatePDF(
+    productIds: string[], reportType: string = "general",
+    taskStatuses?: string[], includeBugs?: boolean,
+  ): Promise<Blob> {
     const response = await this.client.post(
       `${this.basePath}/generate-pdf`,
-      { product_ids: productIds, report_type: reportType },
+      {
+        product_ids: productIds, report_type: reportType,
+        ...(taskStatuses && { task_statuses: taskStatuses }),
+        ...(includeBugs !== undefined && { include_bugs: includeBugs }),
+      },
       { responseType: "blob", timeout: 180_000 },
     );
     return response.data;
