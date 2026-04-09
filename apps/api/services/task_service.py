@@ -41,9 +41,17 @@ class TaskService(BaseService[Task]):
         task_type: str = "task",
         page: int = 1,
         page_size: int = 50,
+        user=None,
     ) -> dict:
         """List tasks with optional filtering. Excludes drafts by default."""
         base = select(Task).where(Task.task_type == task_type)
+
+        # Non-admin users only see tasks from projects they're members of
+        if user and not user.has_any_role(AppRole.SUPERADMIN, AppRole.ADMIN):
+            user_products = select(ProductMember.product_id).where(
+                ProductMember.profile_id == user.profile_id
+            )
+            base = base.where(Task.product_id.in_(user_products))
         if task_type == "marketing_task":
             base = base.where(Task.parent_id.is_(None))
         if not include_drafts:
@@ -257,6 +265,8 @@ class TaskService(BaseService[Task]):
         task_data = data.model_dump()
         task_data["created_by"] = user.profile_id
         task_type = task_data.get("task_type", "task")
+        await self._verify_project_membership(task_data["product_id"], user)
+
         is_bug = task_type == "bug"
         is_marketing = task_type == "marketing_task"
         if is_bug:
@@ -286,6 +296,10 @@ class TaskService(BaseService[Task]):
         """Update a task with assignee validation and status/assignee auth."""
         if "assignee_id" in data and data["assignee_id"]:
             await self._validate_assignee(UUID(str(data["assignee_id"])))
+        # Project membership check
+        if user is not None:
+            task_for_check = await self.get_or_404(entity_id)
+            await self._verify_project_membership(task_for_check.product_id, user)
         task = None
         if user is not None and not self._can_manage_tasks(user):
             task = await self.get_or_404(entity_id)
@@ -333,6 +347,7 @@ class TaskService(BaseService[Task]):
         Only PM/superadmin may delete tasks in other statuses.
         """
         task = await self.get_or_404(task_id)
+        await self._verify_project_membership(task.product_id, user)
         is_manager = self._can_manage_tasks(user)
         is_creator = (
             task.created_by is not None and task.created_by == user.profile_id
@@ -378,6 +393,18 @@ class TaskService(BaseService[Task]):
         return user.has_any_role(
             AppRole.SUPERADMIN, AppRole.PROJECT_MANAGER, AppRole.ENGINEER,
         )
+
+    async def _verify_project_membership(self, product_id: UUID, user: AuthenticatedUser) -> None:
+        """Ensure user is a member of the project. Superadmins bypass."""
+        if user.has_any_role(AppRole.SUPERADMIN, AppRole.ADMIN):
+            return
+        stmt = select(ProductMember.id).where(
+            ProductMember.product_id == product_id,
+            ProductMember.profile_id == user.profile_id,
+        ).limit(1)
+        result = await self.repo.session.execute(stmt)
+        if result.scalar_one_or_none() is None:
+            raise forbidden("You are not a member of this project")
 
     async def _is_product_pm(self, product_id: UUID, profile_id: UUID) -> bool:
         """Check if user is a PM on this product or a global PM."""

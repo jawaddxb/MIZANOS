@@ -1,6 +1,7 @@
 """SQLAlchemy models for all database tables."""
 
 from .ai import AIChatMessage, AIChatSession
+from .api_key import ApiKey
 from .audit import Audit, RepoScanHistory, RepositoryAnalysis
 from .deployment import DeploymentChecklistItem
 from .document import (
@@ -75,6 +76,8 @@ __all__ = [
     "EnvironmentType",
     "NotificationType",
     "ProjectSourceType",
+    # API Key
+    "ApiKey",
     # AI
     "AIChatSession",
     "AIChatMessage",

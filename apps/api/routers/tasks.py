@@ -58,6 +58,7 @@ async def list_tasks(
         status=status, priority=priority, pillar=pillar, search=search,
         task_type=task_type,
         include_drafts=include_drafts, page=page, page_size=page_size,
+        user=user,
     )
 
 
