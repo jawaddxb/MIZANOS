@@ -9,6 +9,7 @@ import {
   Network,
   BookOpen,
   LayoutTemplate,
+  Key,
   Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -48,6 +49,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "TOOLS",
     items: [
       { href: "/templates", icon: LayoutTemplate, label: "Templates" },
+      { href: "/settings?tab=api-keys", icon: Key, label: "API Keys" },
     ],
   },
 ];

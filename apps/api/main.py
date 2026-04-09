@@ -15,6 +15,7 @@ from apps.api.config import settings
 from apps.api.middleware.logging import LoggingMiddleware
 from apps.api.middleware.security_headers import SecurityHeadersMiddleware
 from apps.api.routers import (
+    api_keys,
     auth,
     products,
     tasks,
@@ -98,7 +99,7 @@ app.add_middleware(
     allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "Accept"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "X-API-Key"],
 )
 
 def _cors_headers(request: Request) -> dict[str, str]:
@@ -138,6 +139,7 @@ async def cors_generic_exception_handler(
 
 # Register routers
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
+app.include_router(api_keys.router, prefix="/api-keys", tags=["api-keys"])
 # product_members must come before products so /all-members isn't caught by /{product_id}
 app.include_router(product_members.router, prefix="/products", tags=["product-members"])
 app.include_router(products.router, prefix="/products", tags=["products"])

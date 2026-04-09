@@ -78,9 +78,19 @@ class ProductService(BaseService[Product]):
         status: str | None = None,
         search: str | None = None,
         include_archived: bool = False,
+        user=None,
     ) -> dict:
-        """List products with filtering."""
+        """List products with filtering. Non-admin users see only their projects."""
+        from apps.api.models.enums import AppRole
+
         stmt = select(Product)
+
+        # Project-level access: API key users (non-admin) see only their member projects
+        if user and user.is_api_key and not user.has_any_role(AppRole.SUPERADMIN, AppRole.ADMIN):
+            member_pids = select(ProductMember.product_id).where(
+                ProductMember.profile_id == user.profile_id
+            )
+            stmt = stmt.where(Product.id.in_(member_pids))
 
         if not include_archived:
             stmt = stmt.where(Product.archived_at.is_(None))

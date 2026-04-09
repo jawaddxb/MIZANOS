@@ -46,6 +46,7 @@ async def list_products(
         status=status,
         search=search,
         include_archived=include_archived,
+        user=user,
     )
 
 

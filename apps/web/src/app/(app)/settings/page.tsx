@@ -28,6 +28,7 @@ const HolidaysTab = dynamic(() => import("@/components/organisms/settings/Holida
 const ComponentLibraryTab = dynamic(() => import("@/components/organisms/settings/ComponentLibraryTab").then((m) => ({ default: m.ComponentLibraryTab })), { loading: () => <TabSkeleton /> });
 const WorkflowRulesTab = dynamic(() => import("@/components/organisms/settings/WorkflowRulesTab").then((m) => ({ default: m.WorkflowRulesTab })), { loading: () => <TabSkeleton /> });
 const GitHubPatsTab = dynamic(() => import("@/components/organisms/settings/GitHubPatsTab").then((m) => ({ default: m.GitHubPatsTab })), { loading: () => <TabSkeleton /> });
+const ApiKeysTab = dynamic(() => import("@/components/organisms/settings/ApiKeysTab").then((m) => ({ default: m.ApiKeysTab })), { loading: () => <TabSkeleton /> });
 const OrgSettingsTab = dynamic(() => import("@/components/organisms/settings/OrgSettingsTab").then((m) => ({ default: m.OrgSettingsTab })), { loading: () => <TabSkeleton /> });
 const AIConfigTab = dynamic(() => import("@/components/organisms/settings/AIConfigTab").then((m) => ({ default: m.AIConfigTab })), { loading: () => <TabSkeleton /> });
 
@@ -51,6 +52,7 @@ const ALL_TABS = [
   { id: "modules", label: "Modules" },
   { id: "integrations", label: "Integrations" },
   { id: "github-pats", label: "GitHub PATs" },
+  { id: "api-keys", label: "API Keys" },
   { id: "notifications", label: "Notifications" },
   { id: "holidays", label: "Holidays" },
   { id: "library", label: "Library" },
@@ -160,6 +162,8 @@ export default function SettingsPage() {
             <IntegrationsTabWrapper />
           ) : activeTab === "github-pats" ? (
             <GitHubPatsTabWrapper />
+          ) : activeTab === "api-keys" ? (
+            <ApiKeysTab />
           ) : (
             <GenericSettingsTab tabId={activeTab} />
           )}
